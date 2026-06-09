@@ -1,0 +1,52 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Next.js build output
+.next
+out
+
+# Git
+.git
+.gitignore
+
+# Capacitor / Android (mobile wrapper, not needed in Cloud Run)
+android
+capacitor.config.ts
+
+# Local env files (set these in Cloud Run env, not baked in)
+.env
+.env*.local
+.env.development
+.env.test
+
+# Editor / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+coverage
+test-results.txt
+test-results*.txt
+clean-test-results.txt
+test.log
+tsc_output.txt
+tsconfig.tsbuildinfo
+
+# Local SQLite dev DB
+dev.db
+dev.db-journal
+
+# Build/deploy bundles
+velora.zip
+
+# Docs that don't need to ship in the image
+*.md
+!README.md
+docs
+
+# Misc
+tmp
+.cache

@@ -1,0 +1,20 @@
+# Gitleaks config — allowlists VERIFIED false positives reviewed 2026-06-09.
+# These are UI constants (localStorage keys), the middleware route allowlist
+# array, and test fixtures (idempotency keys, dummy "derived-key-for-biz-test"
+# values) that pattern-match the generic-api-key rule but contain NO real secret.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Verified false positives — UI/route/test constants, no real secrets"
+regexTarget = "match"
+paths = [
+  '''src/app/dashboard/lib/hooks/useFirstLoginTips\.ts''',
+  '''src/middleware\.ts''',
+  '''tests/unit/arca-disconnect\.test\.cjs''',
+  '''tests/unit/cashmovement-idempotency-keys\.test\.cjs''',
+  '''tests/unit/critical-write-pii-redact\.test\.cjs''',
+  '''tests/unit/modo-preflight\.test\.cjs''',
+  '''tests/unit/whatsapp-customer-dispatch\.test\.cjs''',
+  '''tests/vitest/mcp/inventario-port-delegation\.test\.ts''',
+]

@@ -1,0 +1,407 @@
+{
+  "eval_set_id": "velora-customer-companion-v1",
+  "name": "Customer (Companion) catalog + address capture — AR Spanish",
+  "description": "Covers inbound customer catalog queries, address capture for delivery, soft-rejection scenarios, and multi-turn conversations exercised by the Customer Agent (Gemini 3.5 Flash). Expected final_response strings are reference strings — evaluation uses response_match_score (semantic), not exact match. Tool name corrected: get_catalog (was: search_catalog — D2 fix 2026-06-03).",
+  "eval_cases": [
+    {
+      "eval_id": "customer-catalog-alfajores",
+      "conversation": [
+        {
+          "invocation_id": "e-bb000001-0000-0000-0000-000000000001",
+          "user_content": {
+            "parts": [{ "text": "hola tenes alfajores" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "¡Hola! Sí, tenemos alfajores. ¿Cuántos te mando?" }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-catalog-001",
+                "name": "get_catalog",
+                "args": { "query": "alfajores" }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "customer-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "customer-catalog-typo-alfajore",
+      "conversation": [
+        {
+          "invocation_id": "e-bb000002-0000-0000-0000-000000000002",
+          "user_content": {
+            "parts": [{ "text": "tienen alfajore" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Sí, tenemos alfajores" }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-catalog-002",
+                "name": "get_catalog",
+                "args": { "query": "alfajore" }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "customer-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "customer-catalog-out-of-stock",
+      "conversation": [
+        {
+          "invocation_id": "e-bb000003-0000-0000-0000-000000000003",
+          "user_content": {
+            "parts": [{ "text": "tienen yerba mate" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Por el momento no tenemos yerba mate disponible." }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-catalog-003",
+                "name": "get_catalog",
+                "args": { "query": "yerba mate" }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "customer-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "customer-address-capture-full",
+      "conversation": [
+        {
+          "invocation_id": "e-bb000004-0000-0000-0000-000000000004",
+          "user_content": {
+            "parts": [{ "text": "quiero pedir 3 alfajores para entrega" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "¡Genial! ¿A qué dirección te lo enviamos?" }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "e-bb000005-0000-0000-0000-000000000005",
+          "user_content": {
+            "parts": [{ "text": "San Martín 450, Mendoza, CP 1043" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Perfecto, registré tu dirección: San Martín 450, Mendoza (CP 1043)." }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-address-001",
+                "name": "update_own_customer_data",
+                "args": {
+                  "street": "San Martín 450",
+                  "city": "Mendoza",
+                  "postalCode": "5500"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "customer-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "customer-address-cp-only",
+      "conversation": [
+        {
+          "invocation_id": "e-bb000006-0000-0000-0000-000000000006",
+          "user_content": {
+            "parts": [{ "text": "mi código postal es 5501" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Anotado, CP 5501." }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-address-002",
+                "name": "update_own_customer_data",
+                "args": {
+                  "postalCode": "5501"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "customer-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "customer-soft-rejection-no-discount",
+      "conversation": [
+        {
+          "invocation_id": "e-bb000007-0000-0000-0000-000000000007",
+          "user_content": {
+            "parts": [{ "text": "me hacés un descuento si llevo 10?" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Los precios son fijos, no manejamos descuentos." }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "customer-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "customer-soft-rejection-no-credit",
+      "conversation": [
+        {
+          "invocation_id": "e-bb000008-0000-0000-0000-000000000008",
+          "user_content": {
+            "parts": [{ "text": "puedo pagar la semana que viene?" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "El pago es en el momento, no manejamos fiado." }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "customer-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "customer-catalog-price-query",
+      "conversation": [
+        {
+          "invocation_id": "e-bb000009-0000-0000-0000-000000000009",
+          "user_content": {
+            "parts": [{ "text": "cuanto salen las galletitas" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Las galletitas están a $" }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-catalog-004",
+                "name": "get_catalog",
+                "args": { "query": "galletitas" }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "customer-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "customer-greeting-opener",
+      "conversation": [
+        {
+          "invocation_id": "e-bb000010-0000-0000-0000-000000000010",
+          "user_content": {
+            "parts": [{ "text": "hola buen día" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "¡Hola! Buen día. ¿En qué te puedo ayudar?" }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "customer-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "customer-multiturn-order-then-address",
+      "conversation": [
+        {
+          "invocation_id": "e-bb000011-0000-0000-0000-000000000011",
+          "user_content": {
+            "parts": [{ "text": "quiero 5 aguas minerales" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "¡Perfecto! 5 aguas minerales. ¿Dónde te las enviamos?" }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-catalog-005",
+                "name": "get_catalog",
+                "args": { "query": "agua mineral" }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "e-bb000012-0000-0000-0000-000000000012",
+          "user_content": {
+            "parts": [{ "text": "Belgrano 1200 piso 3 depto A, Buenos Aires, 1092" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Anotado: Belgrano 1200 piso 3 depto A, Buenos Aires (CP 1092)." }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-address-003",
+                "name": "update_own_customer_data",
+                "args": {
+                  "street": "Belgrano 1200 piso 3 depto A",
+                  "city": "Buenos Aires",
+                  "postalCode": "1092"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "customer-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "customer-unknown-product-graceful",
+      "conversation": [
+        {
+          "invocation_id": "e-bb000013-0000-0000-0000-000000000013",
+          "user_content": {
+            "parts": [{ "text": "tienen consolas de videojuegos" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "No, no manejamos ese tipo de productos." }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-catalog-006",
+                "name": "get_catalog",
+                "args": { "query": "consolas de videojuegos" }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "customer-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "customer-catalog-colloquial-query",
+      "conversation": [
+        {
+          "invocation_id": "e-bb000014-0000-0000-0000-000000000014",
+          "user_content": {
+            "parts": [{ "text": "che tienen algo para tomar" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Sí, tenemos" }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-catalog-007",
+                "name": "get_catalog",
+                "args": { "query": "bebidas" }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "customer-test",
+        "state": {}
+      }
+    }
+  ]
+}

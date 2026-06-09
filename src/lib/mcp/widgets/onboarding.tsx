@@ -1,0 +1,234 @@
+// onboarding.tsx — MCP App widget: connection hub "Conectá tu negocio".
+//
+// READ-ONLY — this widget never calls a mutating tool.
+// It shows the business's integration status (7 integrations) and offers
+// launcher buttons that open Velora's official connect/import pages in
+// the browser via app.openLink.
+//
+// Design principles (industry-sourced):
+//   - Status rows with connected / not-connected chips (green check / neutral).
+//   - One primary CTA per not-connected row (OpenAI Apps SDK guideline: no dead ends).
+//   - Action buttons call app.openLink({ url }) — URL comes from integration.connectUrl.
+//   - Native semantic elements: <main>, <ul>, <li> (W3C First Rule of ARIA).
+//   - Chameleon theming via ext-apps useHostStyleVariables/useHostFonts.
+//   - Typography: rem units, ≥ 0.875rem minimum per 2026 CSS standards.
+//
+// Data contract: structuredContent.prefill = { integrations: IntegrationStatus[], baseUrl: string }
+// where IntegrationStatus = { key, label, connected, missing, guidance, connectUrl, connectMethod }
+//
+// openLink: the HOST must declare openLinks capability in its AppBridge. The app
+// widget has no control over this — app.openLink() returns { isError: true } if
+// the host denies or doesn't support it. Handled gracefully (no crash).
+//
+// Button → URL mapping (per-row, driven by integration.connectUrl):
+//   Each not-connected integration row shows "Conectar {label}" → integration.connectUrl
+//   "Subir foto de stock"   → baseUrl + /dashboard              (camera/photo-extract)
+//   "Subir archivo de stock"→ baseUrl + /dashboard?tab=inventario (xlsx/csv import)
+//
+// Honesty constraint: Meta Embedded Signup not fully implemented.
+//   WhatsApp button deep-links to dashboard — no claim of a full signup flow here.
+//
+// CSP: no allowUnsafeEval — do NOT add it without a CSP audit.
+
+import React, { useEffect, useState } from "react";
+import { createRoot } from "react-dom/client";
+import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface IntegrationStatus {
+  key: string;
+  label: string;
+  connected: boolean;
+  missing: string[];
+  guidance: string;
+  connectUrl: string;
+  connectMethod: "oauth" | "form";
+}
+
+interface Prefill {
+  integrations: IntegrationStatus[];
+  baseUrl: string;
+}
+
+// ── Stock upload buttons (always visible, independent of integration status) ──
+
+interface StockActionDef {
+  key: string;
+  label: string;
+  path: string;
+}
+
+const STOCK_ACTIONS: StockActionDef[] = [
+  { key: "upload-photo", label: "Subir foto de stock", path: "/dashboard" },
+  { key: "upload-file", label: "Subir archivo de stock", path: "/dashboard?tab=inventario" },
+];
+
+// ── Main widget ───────────────────────────────────────────────────────────────
+
+function OnboardingHub(): React.JSX.Element {
+  const { app, isConnected, error } = useApp({
+    appInfo: { name: "onboarding", version: "1.0.0" },
+    // capabilities: {} — app capabilities (McpUiAppCapabilities).
+    // openLinks is a HOST capability declared in AppBridge, not here.
+    capabilities: {},
+  });
+  useHostStyleVariables(app, app?.getHostContext());
+  useHostFonts(app, app?.getHostContext());
+
+  const [prefill, setPrefill] = useState<Prefill | null>(null);
+  const [toolResultReceived, setToolResultReceived] = useState(false);
+  const [openLinkError, setOpenLinkError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!app) return;
+    // Render data arrives ONLY via ontoolresult (structuredContent).
+    // ontoolinput is intentionally NOT wired: carries raw INPUT args, no resolved fields.
+    const apply = (params: { structuredContent?: unknown; arguments?: unknown }) => {
+      // Mark that a result was received regardless of whether it's usable.
+      // This distinguishes "still waiting" from "result arrived but unusable"
+      // so we can show an error state instead of infinite "Cargando…".
+      setToolResultReceived(true);
+      const raw = (params.structuredContent ?? params.arguments ?? {}) as { prefill?: Prefill } & Prefill;
+      const args = (raw.prefill ?? raw) as Prefill;
+      if (args.integrations && args.baseUrl !== undefined) {
+        setPrefill(args);
+      }
+    };
+    app.ontoolresult = (params) => apply(params);
+  }, [app]);
+
+  async function handleOpenLink(url: string) {
+    if (!app || !prefill) return;
+    const result = await app.openLink({ url });
+    if (result?.isError) {
+      // Host denied or doesn't support openLink — show the URL for manual copy.
+      setOpenLinkError(url);
+    }
+  }
+
+  if (error) {
+    return <Centered>No pudimos abrir el panel de conexiones. {error.message}</Centered>;
+  }
+  if (!isConnected) return <Centered>Conectando…</Centered>;
+  // If a tool result arrived but carried no valid integrations payload (e.g.
+  // open_onboarding returned isError:true), show an actionable error instead of
+  // hanging on "Cargando…" forever.
+  if (!prefill && toolResultReceived) {
+    return <Centered>No pudimos cargar el estado de tus integraciones. Probá de nuevo.</Centered>;
+  }
+  if (!prefill) return <Centered>Cargando estado de integraciones…</Centered>;
+
+  const { integrations } = prefill;
+  const connectedCount = integrations.filter((i) => i.connected).length;
+  const pendingIntegrations = integrations.filter((i) => !i.connected && i.connectUrl);
+
+  return (
+    <main className="mx-auto flex max-w-md flex-col gap-4 p-5 text-ink">
+      <div className="flex items-start justify-between gap-2">
+        <h1 className="text-xl font-semibold leading-snug">Conectá tu negocio</h1>
+        <span className="shrink-0 rounded-full border border-line bg-surface-2 px-3 py-1 text-sm font-medium text-ink-soft">
+          {connectedCount}/{integrations.length}
+        </span>
+      </div>
+
+      {/* Integration status list — each pending row includes its own connect CTA */}
+      <ul className="flex flex-col gap-2" aria-label="Estado de integraciones">
+        {integrations.map((item) => (
+          <li
+            key={item.key}
+            className="flex items-center justify-between gap-3 rounded-control bg-surface-2 px-4 py-3"
+          >
+            <span className="text-base text-ink">{item.label}</span>
+            {item.connected ? (
+              <span
+                aria-label="Conectado"
+                className="flex items-center gap-1 rounded-full px-2 py-0.5 text-sm font-medium"
+                style={{
+                  backgroundColor: "var(--color-green-100, #dcfce7)",
+                  color: "var(--color-green-800, #166534)",
+                }}
+              >
+                <svg
+                  aria-hidden="true"
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  fill="currentColor"
+                >
+                  <path d="M10 3L5 8.5 2 5.5l-.7.7 3.7 3.7 5.7-5.7L10 3z" />
+                </svg>
+                Conectado
+              </span>
+            ) : item.connectUrl ? (
+              <button
+                type="button"
+                onClick={() => handleOpenLink(item.connectUrl)}
+                className="shrink-0 rounded-control border border-line bg-surface px-3 py-1.5 text-sm font-medium text-ink"
+              >
+                Conectar
+              </button>
+            ) : (
+              <span className="shrink-0 text-sm font-medium text-ink-soft">Sin conectar</span>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      {/* Stock upload buttons — always visible */}
+      <section aria-label="Importar catálogo">
+        <div className="flex flex-col gap-2">
+          {STOCK_ACTIONS.map((action) => (
+            <button
+              key={action.key}
+              type="button"
+              onClick={() => handleOpenLink(prefill.baseUrl + action.path)}
+              className="w-full rounded-control border border-line bg-surface px-4 py-3 text-base font-medium text-ink"
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Pending integrations summary — shown only when some are not yet connected */}
+      {pendingIntegrations.length > 0 && (
+        <p className="text-sm text-ink-soft">
+          {pendingIntegrations.length === 1
+            ? "Completá la conexión pendiente para operar con toda la potencia de Velora."
+            : `Tenés ${pendingIntegrations.length} integraciones pendientes. Completalas para operar con toda la potencia de Velora.`}
+        </p>
+      )}
+
+      {/* openLink fallback — show URL if host denied */}
+      {openLinkError && (
+        <div
+          role="alert"
+          className="rounded-control border border-line bg-surface-2 p-3 text-sm text-ink-soft"
+        >
+          No pudimos abrir el enlace automáticamente. Copialo y pegalo en tu navegador:
+          <br />
+          <span className="break-all text-ink">{openLinkError}</span>
+        </div>
+      )}
+
+      {/* All connected state */}
+      {connectedCount === integrations.length && (
+        <p className="rounded-control bg-surface-2 p-4 text-base text-ink-soft">
+          ¡Todo conectado! Tu negocio está listo para operar.
+        </p>
+      )}
+    </main>
+  );
+}
+
+// ── Presentational primitives ─────────────────────────────────────────────────
+
+function Centered({ children }: { children: React.ReactNode }): React.JSX.Element {
+  return <div className="mx-auto max-w-md p-8 text-center text-base text-ink-soft">{children}</div>;
+}
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────────
+
+const rootEl = document.getElementById("root");
+if (rootEl) createRoot(rootEl).render(<OnboardingHub />);

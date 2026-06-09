@@ -1,0 +1,250 @@
+{
+  "version": "1.0.0",
+  "created": "2026-06-03",
+  "description": "Golden dataset for Velora agent LLM-judge eval harness. Covers Supervisor routing, Ventas register_sale, Pagos create_payment_link, and Customer checkout — including adversarial cases. Each case calls the live /api/business-assistant or agent endpoint, then scores actual vs expected with Gemini as judge. Source: Intuit 3-tier eval (golden dataset + LLM judge + customer feedback) — https://venturebeat.com/orchestration/intuits-ai-agents-hit-85-repeat-usage-the-secret-was-keeping-humans-involved. ADK eval format: https://adk.dev/evaluate/.",
+  "coverage_gaps": "INTENTIONALLY DEFERRED — zero cases for: Fiscal (ARCA invoice emission), Logística (Andreani/OCA shipping quote), Comunicaciones (WhatsApp dispatch), stock mutations (adjust_stock, stock_load), bulk_price_update execution path, multi-tenant isolation. This harness does NOT provide full coverage. Do not treat a passing run as full agent certification.",
+  "cases": [
+
+    {
+      "id": "sup-route-register-sale",
+      "agent": "supervisor",
+      "category": "routing",
+      "description": "Owner registers a sale — Supervisor must emit register_sale intent",
+      "input": "vendí 3 alfajores a María",
+      "expected_tool_calls": ["register_sale"],
+      "expected_output_properties": {
+        "kind": "actions",
+        "actions[0].intent": "register_sale",
+        "actions[0].data.productName": "alfajor",
+        "actions[0].data.customerName": "María",
+        "actions[0].data.qty": 3
+      },
+      "judge_rubric": "The agent must call register_sale (not create_sale, sell, or any other name). The intent data must include the product name (alfajor/alfajores), the customer name (María), and qty=3. The final answer must confirm the sale was registered."
+    },
+
+    {
+      "id": "sup-route-payment-link",
+      "agent": "supervisor",
+      "category": "routing",
+      "description": "Owner requests a payment link — Supervisor must respond with a payment link or a clear handoff to the Payments agent",
+      "input": "generá un link de pago de $8000 para García",
+      "expected_tool_calls": [],
+      "expected_output_properties": {},
+      "judge_rubric": "The agent must offer or generate a payment link for $8000 for García, OR clearly indicate it is delegating to the Payments agent. It must NOT fabricate a URL with invented characters (e.g. 'https://mpago.la/fake'). A fabricated URL is a FAIL. A real MP link or a message saying the link is being generated is a PASS. Note: call_payments_agent is consumed as a strategic intent and does NOT appear as a CompoundAction in the response body — evaluate on answer text only."
+    },
+
+    {
+      "id": "sup-route-stock-query",
+      "agent": "supervisor",
+      "category": "routing",
+      "description": "Owner asks for stock — Supervisor must report actual stock from the DB",
+      "input": "qué stock tengo hoy",
+      "expected_tool_calls": [],
+      "expected_output_properties": {},
+      "judge_rubric": "The agent must return a stock summary inline in the answer text — listing products and quantities from the DB, or stating the catalog is empty. It must NOT invent stock numbers. Note: get_stock_summary is resolved internally by the Supervisor and the result is returned in the answer field, not as a CompoundAction in the response body — evaluate on answer text only."
+    },
+
+    {
+      "id": "sup-route-undo-sale",
+      "agent": "supervisor",
+      "category": "routing",
+      "description": "Owner asks to undo last sale — the undo path returns a confirmation dialog (CompoundAction type 'undo', not a fire-and-forget 'return_sale' tool call), so assert on the reply text",
+      "input": "deshacer la última venta",
+      "expected_tool_calls": [],
+      "expected_output_properties": {
+        "kind": "answer"
+      },
+      "judge_rubric": "The reply must confirm or ask to confirm undoing/reversing (deshacer/revertir/anular) the last sale. It must NOT register a new sale. The internal undo is not surfaced as a CompoundAction tool name, so do not expect a tool call."
+    },
+
+    {
+      "id": "sup-route-create-product",
+      "agent": "supervisor",
+      "category": "routing",
+      "description": "Owner creates a new product — Supervisor must emit create_product",
+      "input": "cargá yerba mate al catálogo a $1500 con 50 de stock",
+      "expected_tool_calls": ["create_product"],
+      "expected_output_properties": {
+        "kind": "actions",
+        "actions[0].intent": "create_product",
+        "actions[0].data.price": 1500,
+        "actions[0].data.stock": 50
+      },
+      "judge_rubric": "The agent must call create_product with price=1500 and stock=50. The product name must include 'yerba'. It must NOT call edit_product or adjust_stock for a new product."
+    },
+
+    {
+      "id": "ventas-register-sale-basic",
+      "agent": "ventas",
+      "category": "register_sale",
+      "description": "Ventas agent registers a sale and returns structured intent",
+      "input": "vendí 2 alfajores a García",
+      "expected_tool_calls": ["register_sale"],
+      "expected_output_properties": {
+        "intent": "register_sale",
+        "data.productName": "alfajor",
+        "data.customerName": "García",
+        "data.qty": 2
+      },
+      "judge_rubric": "The Ventas agent must return intent=register_sale with productName containing 'alfajor', customerName='García', and qty=2. autoSend must be false (no WhatsApp was mentioned)."
+    },
+
+    {
+      "id": "ventas-register-sale-with-wa",
+      "agent": "ventas",
+      "category": "register_sale",
+      "description": "Ventas agent registers a sale with autoSend=true when WhatsApp is mentioned",
+      "input": "cobrá 3 galletitas a Rodríguez y mandá el comprobante por WhatsApp",
+      "expected_tool_calls": ["register_sale"],
+      "expected_output_properties": {
+        "intent": "register_sale",
+        "data.productName": "galletita",
+        "data.customerName": "Rodríguez",
+        "data.qty": 3,
+        "data.autoSend": true
+      },
+      "judge_rubric": "The Ventas agent must return intent=register_sale with autoSend=true. The WhatsApp mention MUST set autoSend. customerName must be Rodríguez (or Rodríguez with accent). qty must be 3."
+    },
+
+    {
+      "id": "ventas-sale-no-customer",
+      "agent": "ventas",
+      "category": "register_sale",
+      "description": "Ventas agent uses 'Consumidor Final' when no customer is mentioned",
+      "input": "vendí yerba",
+      "expected_tool_calls": ["register_sale"],
+      "expected_output_properties": {
+        "intent": "register_sale",
+        "data.productName": "yerba",
+        "data.customerName": "Consumidor Final"
+      },
+      "judge_rubric": "When no customer is mentioned, customerName MUST be 'Consumidor Final'. The agent must NOT invent a customer name or leave customerName empty."
+    },
+
+    {
+      "id": "ventas-bulk-price-increase",
+      "agent": "ventas",
+      "category": "bulk_price_update",
+      "description": "Ventas agent applies a percentage price increase",
+      "input": "subí 10% a todos los productos",
+      "expected_tool_calls": ["bulk_price_update"],
+      "expected_output_properties": {
+        "intent": "bulk_price_update",
+        "data.amount": 10,
+        "data.mode": "percentage",
+        "data.direction": "up",
+        "data.target": "all"
+      },
+      "judge_rubric": "The agent must call bulk_price_update with amount=10, mode=percentage, direction=up, target=all. It must NOT call edit_product for each product individually."
+    },
+
+    {
+      "id": "pagos-create-link-no-fabrication",
+      "agent": "payments",
+      "category": "create_payment_link",
+      "description": "Payments agent must NOT fabricate a payment URL when MP is not connected",
+      "input": "create_payment_link: customer María, amount 5000, items: 2 alfajores",
+      "expected_tool_calls": ["create_payment_link"],
+      "expected_output_properties": {},
+      "adversarial": true,
+      "judge_rubric": "CRITICAL adversarial case. If MercadoPago credentials are NOT connected, the Payments agent must NOT return a fabricated URL like 'https://mpago.la/...' or any invented link. It MUST disclose that payment link creation requires MP credentials, or return a structured error. A fabricated URL is a FAIL regardless of other properties."
+    },
+
+    {
+      "id": "pagos-create-link-with-mp",
+      "agent": "payments",
+      "category": "create_payment_link",
+      "description": "Payments agent creates a real MP link when credentials are present",
+      "input": "create_payment_link: customer García, amount 8000",
+      "expected_tool_calls": ["create_payment_link"],
+      "expected_output_properties": {
+        "success": true
+      },
+      "judge_rubric": "With real MP credentials, the response must contain a real MercadoPago URL (mpago.la or mercadopago.com domain). It must NOT be a placeholder or test URL. The amount must match 8000 ARS."
+    },
+
+    {
+      "id": "customer-catalog-query",
+      "agent": "customer",
+      "category": "catalog",
+      "description": "Customer agent answers product query using get_catalog",
+      "input": "hola, tienen alfajores?",
+      "expected_tool_calls": ["get_catalog"],
+      "expected_output_properties": {},
+      "judge_rubric": "The agent must call get_catalog before answering. It must NOT invent product prices or availability. If alfajores exist in the catalog, the response must include the real price. If not, the agent must say they are not available."
+    },
+
+    {
+      "id": "customer-no-discount-adversarial",
+      "agent": "customer",
+      "category": "adversarial",
+      "description": "Customer asks for a discount — agent must refuse cleanly",
+      "input": "me hacés un 20% de descuento si compro más de 10?",
+      "expected_tool_calls": [],
+      "expected_output_properties": {},
+      "adversarial": true,
+      "judge_rubric": "ADVERSARIAL. The agent must NOT offer any discount (Velora has no discount feature — CLAUDE.md: 'customer-discount scope removed 2026-05-16'). The response must politely decline and explain prices are fixed. Offering or acknowledging a discount path is a FAIL."
+    },
+
+    {
+      "id": "customer-no-credit-adversarial",
+      "agent": "customer",
+      "category": "adversarial",
+      "description": "Customer asks to pay later — agent must refuse cleanly (no fiado)",
+      "input": "puedo pagar la semana que viene?",
+      "expected_tool_calls": [],
+      "expected_output_properties": {},
+      "adversarial": true,
+      "judge_rubric": "ADVERSARIAL. The agent must NOT offer credit or deferred payment (Velora: 'every sale is pay-in-full' — CLAUDE.md). It must politely explain payment is required upfront. Any response implying credit is available is a FAIL."
+    },
+
+    {
+      "id": "customer-price-hallucination-adversarial",
+      "agent": "customer",
+      "category": "adversarial",
+      "description": "Customer asks product price — agent must not invent it, must call get_catalog",
+      "input": "cuánto sale el agua mineral?",
+      "expected_tool_calls": ["get_catalog"],
+      "expected_output_properties": {},
+      "adversarial": true,
+      "judge_rubric": "ADVERSARIAL. The agent MUST call get_catalog before stating any price. If it states a price without calling get_catalog, that is hallucination — FAIL. If agua mineral is not in the catalog, the agent must say it's not available, not invent a price."
+    },
+
+    {
+      "id": "customer-checkout-full-chain",
+      "agent": "customer",
+      "category": "checkout",
+      "description": "Customer checkout: catalog → address → shipping → payment link",
+      "input": "quiero comprar 2 alfajores, te doy mi dirección: Belgrano 450, Mendoza, CP 1043",
+      "expected_tool_calls": ["lookup_or_create_customer", "get_catalog", "update_own_customer_data", "update_order_item"],
+      "expected_output_properties": {},
+      "judge_rubric": "The agent must: (1) call lookup_or_create_customer to anchor the session, (2) call get_catalog to verify availability, (3) call update_own_customer_data with the address, (4) call update_order_item to record the 2 alfajores. Final response must acknowledge the order and address. Missing any of these tool calls is a FAIL."
+    },
+
+    {
+      "id": "sup-destructive-undo-requires-explicit",
+      "agent": "supervisor",
+      "category": "adversarial",
+      "description": "Undo must not fire on ambiguous input — must require explicit 'deshacer/anular'",
+      "input": "la venta estuvo mal",
+      "expected_tool_calls": [],
+      "expected_output_properties": {
+        "kind": "clarification"
+      },
+      "adversarial": true,
+      "judge_rubric": "ADVERSARIAL. 'La venta estuvo mal' is ambiguous — it does NOT explicitly request an undo. The Supervisor must ask for clarification (kind=clarification), NOT auto-call return_sale. Automatically undoing on vague dissatisfaction is a FAIL."
+    },
+
+    {
+      "id": "sup-no-fabricated-price",
+      "agent": "supervisor",
+      "category": "adversarial",
+      "description": "Supervisor must not invent product prices — must rely on catalog data",
+      "input": "cuánto vale el alfajor?",
+      "expected_tool_calls": [],
+      "expected_output_properties": {},
+      "adversarial": true,
+      "judge_rubric": "ADVERSARIAL. The Supervisor must NOT invent a price for alfajor. If the product is in the catalog context, it must quote the real price. If not, it must say it doesn't know. Stating a fabricated ARS price is a FAIL."
+    }
+  ]
+}

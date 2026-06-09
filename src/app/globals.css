@@ -1,0 +1,287 @@
+@import "tailwindcss";
+@import "../styles/tokens.css";
+@import "../styles/base.css";
+@import "../styles/components.css";
+@import "../styles/overrides.css";
+
+/* ─── shadcn/ui CSS variables (mapped to Velora tokens) ─── */
+/* --primary: brand navy (#1B3A6B light / #8AB0F0 dark lifted).
+   --primary-foreground: cream for light (10.2:1 AA), brand-deep for dark (9.2:1 AA).
+   Legacy --action-primary-* buttons use those vars directly and are unaffected. */
+:root {
+  --primary: var(--brand);
+  --primary-foreground: var(--accent-cream);
+  --accent: var(--surface-subtle);
+  --accent-foreground: var(--tone-strong);
+  --ring: var(--brand);
+  --ring-offset-background: var(--background);
+
+  --sidebar: var(--background);
+  --sidebar-foreground: var(--tone-body);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--tone-on-brand);
+  --sidebar-accent: var(--sidebar-active-bg);
+  --sidebar-accent-foreground: var(--sidebar-active-text);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--brand);
+}
+
+[data-theme="dark"],
+.dark {
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-deep);
+  --accent: var(--surface-subtle);
+  --accent-foreground: var(--tone-strong);
+  --ring: var(--brand);
+  --ring-offset-background: var(--background);
+
+  --sidebar: var(--brand-deep);
+  --sidebar-foreground: var(--tone-on-brand);
+  --sidebar-primary: var(--accent-cream);
+  --sidebar-primary-foreground: var(--brand-deep);
+  --sidebar-accent: rgba(250, 246, 238, 0.10);
+  --sidebar-accent-foreground: var(--accent-cream);
+  --sidebar-border: var(--border-on-dark);
+  --sidebar-ring: var(--accent-cream);
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeUp {
+  animation: fadeUp 0.45s ease both;
+  will-change: opacity, transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fadeUp {
+    animation: none;
+    will-change: auto;
+  }
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Scrollbars hidden only where explicitly requested via className="scrollbar-none" */
+
+/* ─── WCAG 2.4.1 skip-to-content ─── */
+.skip-to-content {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.skip-to-content:focus,
+.skip-to-content:focus-visible {
+  position: fixed;
+  left: 8px;
+  top: 8px;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  z-index: 100;
+  background: var(--brand-deep, #0f1f35);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm, 4px);
+  text-decoration: none;
+  font-family: var(--font-dm-sans), sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* ─── Chat scroll container ─── */
+.assistant-thread-scroll {
+  overscroll-behavior: none;
+}
+
+/* ─── Shimmer skeleton ─── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: spin 0.7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
+
+/* ─── Toast close button: reveal on hover/focus for non-error toasts ─── */
+.toast-close-btn {
+  opacity: 0.5;
+  transition: opacity 150ms ease;
+}
+.toast-close-btn:hover,
+.toast-close-btn:focus-visible {
+  opacity: 1;
+}
+
+.shimmer {
+  background: linear-gradient(90deg, var(--surface-subtle) 25%, var(--surface, rgba(0,0,0,0.04)) 50%, var(--surface-subtle) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* ─── Print stylesheet ─── */
+@page {
+  margin: 1cm;
+}
+
+@media print {
+  /* Reset root colours */
+  html,
+  body,
+  #__next,
+  .dashboard-root {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Hide chrome: sidebar, top header, bottom nav, offline badge, anything marked data-print-hide */
+  .dashboard-header,
+  [data-sidebar="sidebar"],
+  [data-sidebar="rail"],
+  [data-print-hide],
+  nav[aria-label] {
+    display: none !important;
+  }
+
+  /* Hide all buttons that are not explicitly kept for print */
+  button:not([data-print-keep]) {
+    display: none !important;
+  }
+
+  /* Buttons marked as print-keep: hide during print too (they triggered the print) */
+  [data-print-keep] {
+    display: none !important;
+  }
+
+  /* Make the main content fill the full page width */
+  .dashboard-shell,
+  .dashboard-main,
+  .page-shell,
+  .dashboard-page-shell {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Invoice sheet: unfix position so it flows in the document */
+  [role="dialog"] {
+    position: static !important;
+    border: none !important;
+    border-radius: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: white !important;
+    color: black !important;
+    width: 100% !important;
+  }
+
+  /* Force text to black, remove coloured backgrounds on content areas */
+  * {
+    color: black !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    border-color: #ccc !important;
+  }
+
+  /* Keep borders on table rows for legibility */
+  table,
+  th,
+  td {
+    border-color: #aaa !important;
+  }
+
+  /* Avoid page breaks inside invoice cards */
+  [role="dialog"],
+  table {
+    page-break-inside: avoid;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────
+   Velora landing tokens (added 2026-05-27, Claude Designer template)
+   Used by src/components/landing/*. Scoped to the landing page —
+   the dashboard/chat UI uses the legacy tokens above.
+   ──────────────────────────────────────────────────────────────── */
+@theme {
+  --color-bg: #FAF6EE;
+  --color-surface: #FFFFFF;
+  --color-ink: #1B3A6B;
+  --color-ink-80: rgba(27, 58, 107, 0.80);
+  --color-ink-60: rgba(27, 58, 107, 0.60);
+  --color-ink-40: rgba(27, 58, 107, 0.40);
+  --color-line: rgba(27, 58, 107, 0.12);
+  --color-tint: rgba(27, 58, 107, 0.04);
+
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, "Times New Roman", serif;
+}
+
+/* Landing dark mode — the brand palette inverted: deep navy ground + warm
+   cream ink. Applied when the boot script sets [data-theme="dark"] on <html>
+   (OS dark or stored preference). Overrides the light @theme values above;
+   equal specificity, so source order (this block last) wins. Also drives the
+   document scrollbar via color-scheme. */
+[data-theme="dark"] {
+  --color-bg: #0B1628;
+  --color-surface: #14223A;
+  --color-ink: #F4F0E8;
+  --color-ink-80: rgba(244, 240, 232, 0.82);
+  --color-ink-60: rgba(244, 240, 232, 0.62);
+  --color-ink-40: rgba(244, 240, 232, 0.42);
+  --color-line: rgba(244, 240, 232, 0.14);
+  --color-tint: rgba(244, 240, 232, 0.05);
+  color-scheme: dark;
+}
+
+/* FAQ open animation — declarative, not JS. */
+@keyframes faq-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.faq-answer-inner { animation: faq-in 0.35s cubic-bezier(.2,.7,.2,1) both; }

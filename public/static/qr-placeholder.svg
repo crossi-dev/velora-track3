@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="QR placeholder slice 1">
+  <rect width="200" height="200" fill="#ffffff"/>
+  <g fill="#0f172a">
+    <!-- Esquinas posicionales tipo QR -->
+    <rect x="10" y="10" width="40" height="40"/>
+    <rect x="18" y="18" width="24" height="24" fill="#ffffff"/>
+    <rect x="24" y="24" width="12" height="12"/>
+    <rect x="150" y="10" width="40" height="40"/>
+    <rect x="158" y="18" width="24" height="24" fill="#ffffff"/>
+    <rect x="164" y="24" width="12" height="12"/>
+    <rect x="10" y="150" width="40" height="40"/>
+    <rect x="18" y="158" width="24" height="24" fill="#ffffff"/>
+    <rect x="24" y="164" width="12" height="12"/>
+    <!-- Patrón ruidoso central, cosmético -->
+    <rect x="60" y="60" width="8" height="8"/>
+    <rect x="76" y="60" width="8" height="8"/>
+    <rect x="92" y="60" width="8" height="8"/>
+    <rect x="108" y="60" width="8" height="8"/>
+    <rect x="124" y="60" width="8" height="8"/>
+    <rect x="60" y="76" width="8" height="8"/>
+    <rect x="92" y="76" width="8" height="8"/>
+    <rect x="124" y="76" width="8" height="8"/>
+    <rect x="60" y="92" width="8" height="8"/>
+    <rect x="76" y="92" width="8" height="8"/>
+    <rect x="108" y="92" width="8" height="8"/>
+    <rect x="124" y="92" width="8" height="8"/>
+    <rect x="60" y="108" width="8" height="8"/>
+    <rect x="92" y="108" width="8" height="8"/>
+    <rect x="108" y="108" width="8" height="8"/>
+    <rect x="60" y="124" width="8" height="8"/>
+    <rect x="76" y="124" width="8" height="8"/>
+    <rect x="92" y="124" width="8" height="8"/>
+    <rect x="124" y="124" width="8" height="8"/>
+    <rect x="76" y="140" width="8" height="8"/>
+    <rect x="108" y="140" width="8" height="8"/>
+  </g>
+  <text x="100" y="195" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="9" text-anchor="middle" fill="#64748b">QR placeholder</text>
+</svg>

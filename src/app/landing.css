@@ -1,0 +1,135 @@
+/* Landing page — tokens, layout, and grid.
+   Component styles → landing-components.css
+   Motion / keyframes → landing-motion.css
+   Redesign 2026-05-11: dark-first, editorial, single accent, generous whitespace */
+
+/* ─── Surface override: landing forces dark unless user explicitly set light ─── */
+:root {
+  --lp-surface-base: #0B1628;
+  --lp-surface-card: #15233E;
+  --lp-surface-subtle: #1E2F50;
+  --lp-border: rgba(255, 255, 255, 0.09);
+  --lp-border-strong: rgba(255, 255, 255, 0.16);
+  --lp-text-strong: #F5EFE0;
+  --lp-text-body: #DDD4BE;
+  --lp-text-muted: #A4ADC4;
+  --lp-text-faint: #6F7A95;
+  --lp-brand: #8AB0F0;
+  --lp-brand-soft: rgba(138, 176, 240, 0.14);
+  --lp-brand-hover: #A8C3F2;
+  --lp-success: #7FCFA3;
+  --lp-warning: #E8C679;
+  --lp-danger: #ED9A8E;
+}
+
+/* Override so the landing always renders dark regardless of user's app theme */
+html:has(.landing-page) {
+  background: var(--lp-surface-base) !important;
+  color-scheme: dark;
+}
+
+/* ─── Wrapper ─── */
+.landing-page {
+  font-family: var(--font-dm-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--lp-surface-base);
+  color: var(--lp-text-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  line-height: 1.5;
+  min-height: 100dvh;
+}
+
+.lp-wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 5vw, 48px);
+}
+
+/* ─── Section shared layout ─── */
+.lp-section-head {
+  max-width: 640px;
+  margin-bottom: clamp(36px, 5vw, 56px);
+}
+
+/* A3 fix: was 0.8125rem (13px) — bumped to meet ≥0.875rem (14px) floor */
+.lp-section-label {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-weight: 700;
+  color: var(--lp-brand);
+}
+
+.lp-section-head h2 {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+  line-height: 1.1;
+  letter-spacing: -0.018em;
+  color: var(--lp-text-strong);
+  margin: 10px 0 14px;
+  font-weight: 500;
+  text-wrap: balance;
+}
+
+.lp-section-head p {
+  color: var(--lp-text-muted);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 56ch;
+}
+
+/* ─── How it works grid ─── */
+.lp-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .lp-steps { grid-template-columns: 1fr; gap: 12px; }
+}
+
+/* ─── Features grid ─── */
+.lp-features-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.lp-feat { grid-column: span 2; }
+.lp-feat.span3 { grid-column: span 3; }
+
+@media (max-width: 920px) {
+  .lp-features-grid { grid-template-columns: repeat(2, 1fr); }
+  .lp-feat,
+  .lp-feat.span3 { grid-column: span 2; }
+}
+
+@media (max-width: 560px) {
+  .lp-features-grid { grid-template-columns: 1fr; }
+  .lp-feat,
+  .lp-feat.span3 { grid-column: span 1; }
+}
+
+/* ─── Hero grid: 55/45 desktop, single col mobile ─── */
+.lp-hero-grid {
+  display: grid;
+  gap: clamp(40px, 6vw, 72px);
+  align-items: center;
+}
+
+.lp-hero-grid.split { grid-template-columns: 1.15fr 1fr; }
+
+@media (max-width: 900px) {
+  .lp-hero-grid.split { grid-template-columns: 1fr; }
+}
+
+/* ─── Responsive visibility ─── */
+@media (max-width: 720px) { .lp-hide-sm { display: none; } }
+@media (max-width: 480px) { .lp-btn-hero { width: 100%; } }
+@media (max-width: 760px) { .lp-cta-card { grid-template-columns: 1fr; } }
+@media (max-width: 720px) {
+  .landing-page { padding-bottom: 76px; }
+}

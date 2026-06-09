@@ -1,0 +1,228 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light dark;
+  background: var(--background);
+  background-color: var(--background);
+}
+
+/* When the user explicitly chose a theme via the toggle, pin color-scheme
+   to that choice. Otherwise the browser scrollbar follows the OS preference
+   (light mode app + dark mode OS → dark scrollbar on a light page).
+   data-theme is set by THEME_BOOT_SCRIPT in src/lib/theme.ts. */
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--background);
+  background-color: var(--background);
+  color: var(--tone-strong);
+  font-family: var(--font-dm-sans), Arial, Helvetica, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Dashboard viewport lock — seals html+body scroll when dashboard is active */
+html:has(.dashboard-root) {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html:has(.dashboard-root) body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+::selection {
+  background: rgba(27, 58, 107, 0.16);
+  color: var(--tone-strong);
+}
+
+button,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color var(--duration-base) var(--ease-out),
+    background-color var(--duration-base) var(--ease-out),
+    color var(--duration-base) var(--ease-out),
+    opacity var(--duration-base) var(--ease-out);
+}
+
+a,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--tone-faint);
+}
+
+/* ─── Focus policy ──────────────────────────────────────────
+   Why focus-visible (not :focus):
+     :focus fires for mouse clicks too, which puts a ring on every
+     pressed button on desktop. focus-visible only fires for keyboard
+     and assistive-tech navigation, which is what users actually need.
+
+   What's covered:
+     Native interactive elements (button, a, input, select, textarea)
+     plus ARIA-promoted widgets ([tabindex], [role="button"|"link"|
+     "tab"|"menuitem"|"option"]). [tabindex="-1"] is excluded since
+     those are programmatically focusable but not in the tab order.
+
+   Mobile screen readers:
+     iOS VoiceOver and Android TalkBack both trigger :focus-visible
+     when navigating, so these rules give SR users a visible anchor
+     even on touch devices where the soft keyboard isn't open.
+
+   Contrast:
+     --brand-soft is the focus outline color (post v1→v2 token migration).
+     A 4px translucent box-shadow halo backs up the outline for extra
+     visibility without conflicting with component shadows.
+
+   Reduced motion:
+     Outline is a paint property (not animated), so it complies with
+     prefers-reduced-motion automatically. No transition is applied.
+*/
+
+/* Keep input affordance on text fields even for mouse focus
+   (visible caret context helps form completion). */
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--border-strong);
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Suppress focus ring on non-keyboard focus (mouse/touch) for
+   non-input elements, so desktop clicks don't leave a ring behind. */
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+[tabindex]:focus:not(:focus-visible),
+[role="button"]:focus:not(:focus-visible),
+[role="link"]:focus:not(:focus-visible),
+[role="tab"]:focus:not(:focus-visible),
+[role="menuitem"]:focus:not(:focus-visible),
+[role="option"]:focus:not(:focus-visible) {
+  outline: none;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:not([type="hidden"]):focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible,
+[role="button"]:focus-visible,
+[role="link"]:focus-visible,
+[role="tab"]:focus-visible,
+[role="menuitem"]:focus-visible,
+[role="option"]:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: inherit;
+  box-shadow: 0 0 0 4px rgba(27, 58, 107, 0.35);
+  transition: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+    background: var(--background);
+  }
+
+  body {
+    color: var(--tone-strong);
+  }
+
+  ::selection {
+    background: rgba(96, 165, 250, 0.2);
+    color: var(--tone-strong);
+  }
+}
+
+/* ─── chat message text overflow ───────────────────────────
+   Canonical 2026 (MDN + Tailwind v4 + Facebook Messenger / iOS Messages):
+   - `overflow-wrap: break-word` is the standard property — it only breaks
+     a word when it would otherwise overflow the container.
+   - `word-break: break-word` is non-standard (deprecated) and `overflow-wrap:
+     anywhere` is over-aggressive — both split SHORT words like "Hola" in
+     two lines inside a flex bubble without `min-width: 0` (audited 2026-05-26).
+   Refs:
+     https://developer.mozilla.org/en-US/docs/Web/CSS/overflow-wrap
+     https://developer.mozilla.org/en-US/docs/Web/CSS/word-break  */
+.chat-bubble-text {
+  overflow-wrap: break-word;
+}
+
+/* ─── Toast vertical offset ─────────────────────────────────
+   Composed from layout tokens so the toast clears whatever stacks
+   along the bottom of the dashboard (input bar always; bottom nav
+   only on mobile). Other surfaces (login, onboarding) fall back
+   to 88px inside Toast.tsx. */
+.dashboard-root {
+  --toast-bottom-offset: calc(var(--input-bar-height) + var(--toast-gap));
+}
+@media (max-width: 767px) {
+  :root {
+    --input-bar-height: 60px;   /* mobile composer (min-height 48 + 12 padding) */
+  }
+  .dashboard-root {
+    --toast-bottom-offset: calc(
+      var(--nav-bottom-height) + var(--input-bar-height) + var(--toast-gap)
+    );
+  }
+}
+
+/* Granular reduced-motion:
+   - Keep --duration-fast (essential feedback like button press) at 120ms.
+   - Collapse --duration-base and --duration-slow so decorative transitions/animations vanish.
+   - Disable transform: scale() micro-interactions entirely.
+*/
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-base: 0.01ms;
+    --duration-slow: 0.01ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Disable active-scale micro-interactions */
+  .btn:active,
+  .btn-tall:active,
+  [data-press-scale]:active {
+    transform: none !important;
+  }
+
+  /* Focus rings are static paint, but force no transition just in
+     case a global rule animates outline/box-shadow elsewhere. */
+  *:focus,
+  *:focus-visible {
+    transition: none !important;
+  }
+}

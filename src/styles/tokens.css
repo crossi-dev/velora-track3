@@ -1,0 +1,440 @@
+/* Velora — Editorial Design Tokens v2
+   Carries the Velora Deck aesthetic into the product:
+   - Cream surfaces (warm off-white) instead of pure white
+   - Navy sidebar / brand
+   - Fraunces escalated for UI headings + KPI numerics
+   - Lucide-style 1.5px iconography
+   - Generous spacing (editorial respiration) */
+
+:root {
+  /* === BRAND CORE (deck-aligned) === */
+  --brand: #1B3A6B;            /* navy primary */
+  --brand-deep: #0F1F35;       /* sidebar / hero darks */
+  --brand-soft: #E6EBF3;       /* navy at ~10% — chips, hover */
+  --brand-accent: #2F5BA8;     /* hover/active for primary */
+  --brand-ink: #06122A;        /* text on cream when extra weight */
+
+  /* Supporting brand colors from the deck */
+  --accent-green: #2D7D5F;     /* market closing — money positive */
+  --accent-green-soft: #E0EEE7;
+  --accent-cream: #FAF6EE;     /* deck cream — primary app surface */
+  --accent-cream-deep: #F1EBDD; /* deeper cream for surface-subtle */
+
+  /* === SURFACES (light mode) ===
+     Cream-first, like the deck. White is reserved for cards/inputs. */
+  --background: #FAF6EE;       /* app canvas — warm cream */
+  --surface: #FFFFFF;          /* cards, modal panels */
+  --surface-subtle: #F1EBDD;   /* deeper cream — chips, table headers */
+  --surface-overlay: rgba(15, 31, 53, 0.55); /* modal backdrop, navy-tinted */
+  --surface-hero: var(--brand-deep); /* navy hero zones */
+
+  /* Borders — warm, low contrast */
+  --border: #E5DFD0;           /* warm cream border */
+  --border-strong: #C9C0AB;
+  --border-on-dark: rgba(255, 255, 255, 0.12);
+
+  /* === TONE (text) === */
+  --tone-strong: #1A2540;      /* near-navy for body text — softer than pure black */
+  --tone-body: #34405C;
+  --tone-muted: #6B7591;       /* secondary, captions */
+  --tone-faint: #9BA1B5;       /* placeholders */
+  --tone-on-brand: #FAF6EE;    /* cream on navy — body */
+  --tone-on-brand-muted: rgba(250, 246, 238, 0.75); /* 2026-05-20: bumped 0.65→0.75 to clear WCAG AA on --brand-deep #0F1F35 */
+
+  /* === SEMANTIC === */
+  --success: #2D7D5F;
+  --success-soft: #E0EEE7;
+  --danger: #B43E2F;
+  --danger-soft: #F4E0DA;
+  --warning: #B8851C;
+  --warning-soft: #F5EBCC;
+  --info: var(--brand);
+  --info-soft: var(--brand-soft);
+
+  /* === BUBBLE / CHAT ===
+   * WhatsApp-style two-party conversation per Carlos 2026-05-26.
+   * Same brand family, two clearly distinguishable tones:
+   * - sent (user, right margin)    → brand-soft   (~12% brand tint, more saturated)
+   * - received (Velora, left margin)→ neutral surface with subtle brand wash
+   * The shape (rounded-tr-sm vs rounded-tl-sm) + opposite alignment + tone
+   * step together signal "two parties talking", not two unrelated boxes.
+   * Pattern ref: Facebook Messenger + iOS Messages 2026 canonical
+   * (ishadeed.com/article/facebook-messenger-chat-component). */
+  --bubble-sent: var(--brand-soft);
+  --bubble-received: var(--surface-raised, #ffffff);
+  --bubble-border: var(--border);
+
+  /* === TYPOGRAPHY === */
+  --font-fraunces: "Fraunces", ui-serif, Georgia, "Times New Roman", serif;
+  --font-dm-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Menlo, monospace;
+
+  /* === LAYOUT === */
+  --nav-top-height: 72px;       /* desktop topbar — taller than v1 */
+  --nav-top-height-mobile: 56px;
+  --nav-bottom-height: 76px;
+  --input-bar-height: 88px;     /* desktop composer footer (min-height 68 + 20 padding) */
+  --toast-gap: 8px;             /* breathing room above the input bar */
+  --sidebar-width: 256px;
+  --content-max: 1440px;
+  --gutter: 32px;               /* generous editorial gutter */
+  --gutter-tight: 20px;
+  --gutter-loose: 48px;
+
+  /* === Z-INDEX STACK — single source of truth ===
+   * Order: sidebar-backdrop < sidebar-panel < sidebar-strip < topnav < sheet-backdrop < sheet < toast < tooltip < overlay-secondary < overlay
+   * NOTE: Quick* forms (backdrop z-[80], panel z-[81]) share the sheet band intentionally.
+   *       They MUST NOT be open simultaneously with a BottomSheet — enforce at UX flow level.
+   * All new layers must be added here first. Collisions are visible in review. */
+  --z-sidebar-backdrop: 50;     /* mobile overlay behind the panel */
+  --z-sidebar-panel: 60;        /* slide-over sidebar panel */
+  --z-sidebar-strip: 65;        /* icon strip — above panel so toggle stays clickable when panel is open */
+  --z-topnav: 70;               /* dashboard header — above panel top edge */
+  --z-sheet-backdrop: 80;       /* above sidebar (z-60) and topnav (z-70) */
+  --z-sheet: 81;                /* sheet panel = backdrop + 1 */
+  --z-toast: 90;                /* toasts float above everything */
+  --z-tooltip: 95;              /* tooltips/popovers above toasts */
+  --z-overlay-secondary: 98;    /* secondary overlays (quota banners) — below overlay */
+  --z-overlay: 99;              /* critical full-screen overlays (OfflineBanner) */
+
+  /* === SHEETS (bottom-sheet pattern usado por InvoiceDetailSheet, ProductDetailSheet, ContactCreateSheet, BottomSheet, y los Quick* forms) === */
+  --sheet-radius: 16px;         /* esquinas top-left/top-right del sheet */
+  --sheet-max-height: 88vh;     /* deja aire al status bar / address bar */
+
+  /* === RADII (slightly tighter than v1 for editorial feel) === */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-pill: 9999px;
+
+  /* === SHADOWS — softer, warmer === */
+  --shadow-xs: 0 1px 2px rgba(15, 31, 53, 0.04);
+  --shadow-sm: 0 2px 8px rgba(15, 31, 53, 0.06);
+  --shadow-md: 0 8px 24px rgba(15, 31, 53, 0.08);
+  --shadow-lg: 0 24px 48px rgba(15, 31, 53, 0.12);
+  --shadow-hero: 0 30px 60px rgba(15, 31, 53, 0.18);
+
+  /* === TYPE SCALE (editorial — Fraunces in UI) ===
+     We use Fraunces for: page titles, KPI numbers, section headers, modal titles
+     DM Sans for: body, labels, buttons, captions, table content */
+  --display-1: 4rem;         /* hero numbers, login title */
+  --display-2: 3rem;         /* page titles */
+  --display-3: 2.25rem;      /* section titles, large KPIs */
+  --heading-1: 1.75rem;      /* card titles, dialog headers */
+  --heading-2: 1.375rem;     /* secondary headings */
+  --heading-3: 1.125rem;     /* tertiary */
+  --body-lg: 1.0625rem;      /* article-style body */
+  --body: 1rem;              /* default UI text */
+  --body-sm: 0.875rem;       /* dense tables */
+  --caption: 0.875rem;
+  --label: 0.875rem;         /* uppercase chips, eyebrows */
+
+  /* Letter spacing — Fraunces likes negative tracking at scale */
+  --track-display: -0.025em;
+  --track-heading: -0.015em;
+  --track-body: -0.005em;
+  --track-label: 0.06em;    /* uppercase eyebrow */
+
+  /* === SIDEBAR (light mode) === */
+  --sidebar-bg: var(--background);
+  --sidebar-border: var(--border);
+  --sidebar-logo: var(--brand);
+  --sidebar-biz-name: var(--tone-muted);
+  --sidebar-text: var(--tone-body);
+  --sidebar-text-muted: var(--tone-muted);
+  --sidebar-active-bg: var(--brand-soft);
+  --sidebar-active-text: var(--brand);
+  --sidebar-hover-bg: rgba(27, 58, 107, 0.06);
+  --sidebar-indicator: var(--brand);
+  --sidebar-icon-active: var(--brand);
+  --sidebar-icon-muted: var(--tone-muted);
+}
+
+/* === DARK MODE — refined for contrast ===
+   Strategy: keep cream as a literal accent (it's a brand color, not just "light surface"),
+   layer navy surfaces with clear separation, ensure WCAG AA on body text + muted text. */
+[data-theme="dark"] {
+  /* Brand — desaturated for dark bg, but still navy in feel */
+  --brand: #8AB0F0;            /* lifted navy — 7.2:1 on background */
+  --brand-deep: #02060F;       /* deepest navy — sidebar/hero, distinct from bg */
+  --brand-soft: rgba(138, 176, 240, 0.18);
+  --brand-accent: #A8C3F2;
+  --brand-ink: #E2EAF7;
+
+  --accent-green: #7FCFA3;
+  --accent-green-soft: rgba(127, 207, 163, 0.16);
+  /* Cream stays cream — it's a brand color, used on dark heroes the same way light mode uses it */
+  --accent-cream: #F5EFE0;
+  --accent-cream-deep: #E8DFC9;
+
+  /* Surface ladder — each step ~6% lighter for clear separation */
+  --background: #0B1628;       /* app canvas */
+  --surface: #15233E;           /* cards — distinct from bg */
+  --surface-subtle: #1E2F50;    /* table headers, chips */
+  --surface-overlay: rgba(0, 0, 0, 0.72);
+  --surface-hero: #02060F;      /* heroes go DEEPER than bg in dark — inverted from light */
+
+  /* Borders — stronger so cards read as cards */
+  --border: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.20);
+  --border-on-dark: rgba(255, 255, 255, 0.14);
+
+  /* Tones — cream-warm text for editorial continuity */
+  --tone-strong: #F5EFE0;       /* primary text — 13.8:1 on bg */
+  --tone-body: #DDD4BE;         /* body — 9.6:1 */
+  --tone-muted: #A4ADC4;        /* muted — 5.8:1, passes AA */
+  --tone-faint: #6F7A95;        /* placeholders only */
+  --tone-on-brand: #02060F;     /* on cream button → near-black navy */
+  --tone-on-brand-muted: rgba(245, 239, 224, 0.62); /* cream-muted on hero — readable */
+
+  /* Semantic — lifted for dark bg */
+  --success: #7FCFA3;
+  --success-soft: rgba(127, 207, 163, 0.18);
+  --danger: #ED9A8E;
+  --danger-soft: rgba(237, 154, 142, 0.18);
+  --warning: #E8C679;
+  --warning-soft: rgba(232, 198, 121, 0.18);
+  --info: var(--brand);
+  --info-soft: var(--brand-soft);
+
+  /* Chat bubbles — WhatsApp two-party visual in dark mode.
+   * - sent (right): brand-tint 20% (clear self color)
+   * - received (left): neutral surface-raised so the LEFT message reads as
+   *   "from the other side" — not a softer version of the user's own.
+   * Same canonical reference as light mode (FB Messenger + iOS Messages 2026). */
+  --bubble-sent: rgba(138, 176, 240, 0.20);
+  --bubble-received: var(--surface-raised, var(--surface));
+  --bubble-border: var(--border);
+
+  /* Shadows — heavier in dark for depth */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.55);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.65);
+  --shadow-hero: 0 30px 60px rgba(0, 0, 0, 0.7);
+
+  /* === SIDEBAR (dark mode) === */
+  --sidebar-bg: var(--brand-deep);
+  --sidebar-border: var(--border-on-dark);
+  --sidebar-logo: var(--accent-cream);
+  --sidebar-biz-name: rgba(245, 239, 224, 0.62);
+  --sidebar-text: var(--tone-body);
+  --sidebar-text-muted: rgba(245, 239, 224, 0.62);
+  --sidebar-active-bg: rgba(250, 246, 238, 0.10);
+  --sidebar-active-text: var(--accent-cream);
+  --sidebar-hover-bg: rgba(250, 246, 238, 0.06);
+  --sidebar-indicator: var(--accent-cream);
+  --sidebar-icon-active: var(--accent-cream);
+  --sidebar-icon-muted: rgba(245, 239, 224, 0.62);
+}
+
+/* === BASE STYLES === */
+* { box-sizing: border-box; }
+
+body {
+  font-family: var(--font-dm-sans);
+  font-size: var(--body);
+  color: var(--tone-strong);
+  background: var(--background);
+  letter-spacing: var(--track-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* === TYPOGRAPHY UTILITIES === */
+.font-fraunces { font-family: var(--font-fraunces); font-optical-sizing: auto; }
+.font-dm-sans  { font-family: var(--font-dm-sans); }
+.font-mono     { font-family: var(--font-mono); }
+.font-mono-nums { font-variant-numeric: tabular-nums; }
+
+/* Editorial display text — for page titles, hero numbers */
+.t-display-1 {
+  font-family: var(--font-fraunces);
+  font-size: var(--display-1);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: var(--track-display);
+}
+.t-display-2 {
+  font-family: var(--font-fraunces);
+  font-size: var(--display-2);
+  font-weight: 400;
+  line-height: 1.0;
+  letter-spacing: var(--track-display);
+}
+.t-display-3 {
+  font-family: var(--font-fraunces);
+  font-size: var(--display-3);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: var(--track-display);
+}
+.t-heading-1 {
+  font-family: var(--font-fraunces);
+  font-size: var(--heading-1);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: var(--track-heading);
+}
+.t-heading-2 {
+  font-family: var(--font-fraunces);
+  font-size: var(--heading-2);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: var(--track-heading);
+}
+.t-heading-3 {
+  font-family: var(--font-dm-sans);
+  font-size: var(--heading-3);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: var(--track-heading);
+}
+.t-body-lg {
+  font-family: var(--font-dm-sans);
+  font-size: var(--body-lg);
+  font-weight: 400;
+  line-height: 1.55;
+}
+.t-body {
+  font-family: var(--font-dm-sans);
+  font-size: var(--body);
+  font-weight: 400;
+  line-height: 1.5;
+}
+.t-body-strong {
+  font-family: var(--font-dm-sans);
+  font-size: var(--body);
+  font-weight: 600;
+  line-height: 1.5;
+}
+.t-body-sm {
+  font-family: var(--font-dm-sans);
+  font-size: var(--body-sm);
+  font-weight: 400;
+  line-height: 1.45;
+}
+.t-caption {
+  font-family: var(--font-dm-sans);
+  font-size: var(--caption);
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--tone-muted);
+}
+.t-label {
+  font-family: var(--font-dm-sans);
+  font-size: var(--label);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--tone-muted);
+}
+.t-wordmark {
+  font-family: var(--font-fraunces);
+  font-size: 2rem;
+  font-weight: 400;
+  line-height: 0.9;
+  letter-spacing: -0.025em;
+}
+.t-value-sm {
+  font-family: var(--font-fraunces);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.005em;
+}
+
+/* Component primitives (.btn, .badge, .form-input, .surface-*, .section-marker,
+   .list-row) viven en components.css — esta hoja queda para tokens + utilidades
+   tipográficas + scrollbar/focus globales. */
+
+/* Scrollbar utilities */
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { scrollbar-width: none; }
+
+/* Hide focus rings on mouse, keep them on keyboard */
+:focus:not(:focus-visible) { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* === ACTION TOKENS (semánticos para botones y motion) ===
+   Tokens con lógica propia en dark mode — quedan como first-class
+   citizens en lugar de aliases v1. El resto de los compat shims se
+   eliminó al migrar consumidores a tokens v2 directos.
+
+   WCAG 2.2 AA verified 2026-05-09 (light mode, AssistantInputBar pairs):
+     tone-strong on surface          = 14.3:1  AA  (#1A2540 on #FFFFFF)
+     tone-muted  on surface          =  4.56:1 AA  (placeholder; AA floor 4.5:1)
+     tone-strong on surface-subtle   = 12.1:1  AA  (#1A2540 on #F1EBDD)
+     action-primary-fg on action-primary-bg = 10.2:1 AA  (cream #FAF6EE on navy #1B3A6B)
+
+   Dark mode (verified 2026-05-09 against --background #0B1628):
+     tone-strong (#F5EFE0)           = 13.8:1 AA
+     tone-body   (#DDD4BE)           =  9.6:1 AA
+     tone-muted  (#A4ADC4)           =  5.8:1 AA
+     action-primary-fg (#02060F brand-deep) on action-primary-bg (#8AB0F0 brand) = 9.2:1 AA
+
+   Dueño revision history: don't change these tokens without re-running the
+   contrast pairs in scripts/_probe-catalog.mjs or equivalent — every value
+   above is load-bearing for AA compliance on the assistant input bar. */
+:root {
+  --action-primary-bg: var(--brand);
+  --action-primary-fg: var(--accent-cream);
+  --action-primary-hover: var(--brand-accent);
+  --action-secondary-bg: var(--surface);
+  --action-secondary-fg: var(--tone-strong);
+  --action-secondary-border: var(--border-strong);
+  --action-secondary-hover: var(--surface-subtle);
+  --action-ghost-bg: transparent;
+  --action-ghost-fg: var(--tone-strong);
+  --action-ghost-hover: var(--surface-subtle);
+  --action-danger-bg: var(--danger);
+  --action-danger-fg: var(--accent-cream);
+  --action-danger-hover: #93311F;
+
+  --success-border: rgba(45, 125, 95, 0.18);
+  --danger-border: rgba(180, 62, 47, 0.18);
+  --warning-border: rgba(184, 133, 28, 0.30);
+
+  --duration-fast: 100ms;
+  --duration-base: 150ms;
+  --duration-enter: 250ms;
+  --duration-slow: 300ms;
+  --duration-ambient: 1400ms;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Spacing — 4px-based scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 1.75rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+}
+
+[data-theme="dark"] {
+  --action-primary-bg: var(--brand);
+  --action-primary-fg: var(--brand-deep);
+  --action-primary-hover: var(--brand-accent);
+  --action-danger-fg: var(--brand-deep);
+  --action-danger-hover: #D87A6E;
+
+  --success-border: rgba(127, 207, 163, 0.30);
+  --danger-border: rgba(237, 154, 142, 0.30);
+  --warning-border: rgba(232, 198, 121, 0.30);
+}

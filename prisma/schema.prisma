@@ -1,0 +1,1896 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  image          String?
+  // "owner" = dueño OAuth. Único rol posible en User — empleados usan Employee.role.
+  role           String    @default("owner")
+  // Monotonic counter for stateless JWT invalidation. Increment to force all
+  // existing tokens for this user to be rejected on the next validated request.
+  // See src/lib/auth-session-version.ts for the helper and cache layer.
+  sessionVersion Int       @default(1)
+  accounts       Account[]
+  sessions       Session[]
+  business       Business?
+  createdAt      DateTime  @default(now())
+}
+
+// SECURITY NOTE: refresh_token and access_token are stored as plaintext — standard NextAuth/Auth.js behavior.
+// Protected by: (1) Neon PostgreSQL not publicly accessible, (2) tokens require the OAuth client secret to be useful,
+// (3) access tokens expire in ~1 hour. Token encryption at rest is a post-launch hardening item (requires custom adapter).
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// GROWTH NOTE (Fix #38): Con strategy:"jwt", NextAuth valida sesiones con cookies JWT y no necesita
+// esta tabla para autenticar requests. Sin embargo, PrismaAdapter igual escribe una fila por cada
+// inicio de sesión. NextAuth NO limpia estas filas automáticamente — crecen 1 fila por login.
+// Para un MVP con bajo volumen esto es aceptable. Post-launch: agregar un cron job que elimine
+// filas donde expires < now(). Ej: DELETE FROM "Session" WHERE expires < NOW();
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// OwnerChatUsage — daily counter per business of messages sent to
+// /api/business-assistant by the owner. Used to enforce the free-tier
+// daily message cap (FREE_DAILY_CHAT_LIMIT env, default 50). Resets daily
+// by ART date string ("YYYY-MM-DD"). Testers in TESTER_EMAILS bypass the
+// counter increment entirely.
+model OwnerChatUsage {
+  id         String   @id @default(cuid())
+  businessId String
+  // ART date string ("YYYY-MM-DD") — natural day grouping, no timezone math
+  // at query time. Reset is implicit when a new date row appears.
+  date       String
+  count      Int      @default(0)
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, date])
+  @@index([businessId, date])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Business {
+  id                            String                      @id @default(cuid())
+  name                          String
+  type                          String
+  cuit                          String?
+  address                       String?
+  // Código postal del negocio (origen para cotizaciones de envío Andreani).
+  // Separado de address (texto libre) para tener un campo numérico limpio.
+  // Migración: 20260517200000_add_business_postal_code.sql
+  postalCode                    String?
+  phone                         String?
+  ivaCondition                  String?                     @default("Monotributista")
+  puntoVenta                    String?
+  iibb                          String?
+  activityStart                 String?
+  // Courier preferido para envíos: "Andreani" | "OCA" | "ninguno". Aditivo —
+  // el agente de Logística ya es provider-agnostic; esto es la preferencia del negocio.
+  courierPreference             String?
+  // Proveedor de cobro del negocio: "mercadopago" (default) | "alias_cbu" |
+  // a futuro "banco_galicia". El agente de Pagos lo lee para elegir el adapter.
+  paymentProvider               String?                     @default("mercadopago")
+  workerCount                   Int                         @default(0)
+  openingCash                   Decimal                     @default(0) @db.Decimal(14, 2)
+  // Set to true once the owner explicitly confirms a starting cash amount during
+  // chat-driven onboarding (turn 4). 0 is a valid amount, so a numeric check is
+  // not enough to know whether the owner answered the question yet.
+  openingCashConfigured         Boolean                     @default(false)
+  // Captured during turn 3 of the conversational onboarding. Possible values include
+  // "Efectivo", "Mercado Pago", "Tarjeta", "Transferencia". Default empty array keeps
+  // pre-migration rows backwards compatible without forcing a NULL handling layer.
+  paymentMethods                String[]                    @default([])
+  // Set to true after the owner closes their first chat-driven sale. Used by the
+  // sale post-commit hook to inject the Web Push priming chat message exactly once
+  // (the moment of value at the end of onboarding T6). Persisted on Business so the
+  // primer never re-fires across sessions or devices.
+  firstSaleConfirmed            Boolean                     @default(false)
+  // Set to true when the owner explicitly defers the Mercado Pago connection step
+  // during onboarding T6 ("Más tarde"). Suppresses the T6 prompt for the rest of
+  // the session and beyond; the owner can connect via Settings → Mercado Pago.
+  mercadoPagoOnboardingDeferred Boolean                     @default(false)
+  // T12: owner explicitly skipped the customer loading step during onboarding.
+  // Suppresses the T_CUSTOMERS prompt. Owner can load customers later from
+  // Settings → Contactos or by uploading an Excel.
+  customersOnboardingSkipped    Boolean                     @default(false)
+  // T13: owner explicitly deferred the ARCA/AFIP connection step ("Más tarde").
+  // Suppresses the T_ARCA prompt. Owner can connect later via the fiscal panel.
+  arcaOnboardingDeferred        Boolean                     @default(false)
+  // T14: owner explicitly deferred the Andreani/courier credentials step.
+  // Suppresses the T_ANDREANI prompt. Owner can connect later via the logistics panel.
+  andreaniOnboardingDeferred    Boolean                     @default(false)
+  // BYOA — AFIP/ARCA delegation.
+  // The owner delegates their CUIT to Velora's ARCA account via "Administrador de
+  // Relaciones de Clave Fiscal". Velora then emits invoices on their behalf using
+  // Velora's own cert. Stored in canonical format XX-XXXXXXXX-X.
+  // TODO: reemplazar el placeholder de CUIT en el copy del chat por el CUIT real de
+  // Velora cuando esté registrado en ARCA.
+  // Migración: 20260525120000_arca_andreani_byoa.sql
+  arcaDelegationCuit            String?
+  // "awaiting_cuit" while the onboarding state machine waits for the owner to
+  // paste their CUIT after opening the AFIP portal. Null at rest.
+  arcaDelegationPendingStep     String?
+  // BYOA — Andreani API credentials.
+  // The owner generates a token in developers.andreani.com, pastes it into chat.
+  // Velora encrypts it with AES-256-GCM (credential-cipher.ts) before persisting.
+  // andreaniApiToken stores the ciphertext; andreaniApiUser is optional metadata.
+  // Migración: 20260525120000_arca_andreani_byoa.sql
+  andreaniApiToken              String?
+  andreaniApiUser               String?
+  // "awaiting_token" while the onboarding state machine waits for the owner to
+  // paste their Andreani API token. Null at rest.
+  andreaniTokenPendingStep      String?
+  taxRate                       Decimal                     @db.Decimal(12, 4)
+  currency                      String                      @default("ARS")
+  email                         String?
+  whatsappPhone                 String?
+  // Alias personal MP/CVU del dueño (ej. "carlos.mp"). Cobro QR slice 2 — "modo
+  // informal": el empleado tipea "cobro alias 5000" y la app muestra el alias
+  // en grande para que el cliente transfiera. Se mantiene null hasta que el
+  // dueño lo declare en Ajustes; sin alias seteado, el flujo alias muestra
+  // un error chip.
+  alias                         String?
+  // Monotonic counter for the deterministic employee login token. Include in the
+  // HMAC input when deriving the PIN-entry URL token. Increment via
+  // rotateBusinessLoginToken() to invalidate all existing login URLs immediately
+  // (e.g. when an employee leaves and the owner wants to re-issue links).
+  // Migración: 20260519300000_add_employee_session_version.sql
+  loginTokenVersion             Int                         @default(1)
+  openingTime                   String?                     @default("09:00")
+  closingTime                   String?                     @default("20:00")
+  allowNegativeStock            Boolean                     @default(false)
+  defaultCustomer               String                      @default("Consumidor Final")
+  allowSaleWithoutCustomer      Boolean                     @default(true)
+  openReceiptAfterSale          Boolean                     @default(false)
+  autoCreateProductOnStockLoad  Boolean                     @default(false)
+  suggestWhatsappAfterSale      Boolean                     @default(true)
+  lowStockThreshold             Int                         @default(5)
+  sessionDurationHours          Int?                        @default(8)
+  // Set during onboarding T5 once the owner creates a product. Stores the productId
+  // of the most-recently-created product so the T5c turn can emit adjust_stock with
+  // the real product ID (instead of an empty string). Cleared once T5c resolves
+  // (quantity entered) or T5d resolves (owner says "listo"). Null otherwise.
+  pendingStockProductId         String?
+  // Demo mode: set true by default; quota gates destructive write actions.
+  // Flip demoMode=false when the business becomes a paying client.
+  // demoActionsLimit is configurable per-business; default matches
+  // the platform default (50). Gated by DEMO_QUOTA_ENABLED env flag.
+  demoMode                      Boolean                     @default(true)
+  demoActionsUsed               Int                         @default(0)
+  demoActionsLimit              Int                         @default(50)
+  // Stamped each time the once-daily onboarding nudge fires. Used by
+  // ownerDailyNudgeStage to skip the nudge when it already ran today (ART tz).
+  // Replaces the __proactive_nudge__ ChatMessage sentinel (removed 2026-05-19).
+  // Migración: 20260519210000_add_business_last_proactive_nudge_at.sql
+  lastProactiveNudgeAt          DateTime?
+  // Onboarding redesign 2026-05-25: T3 (catalog) skip flag.
+  // Set when the owner taps "No tengo todavía" at the import-first T3 turn.
+  // Suppresses re-prompt; the owner can add products later via NLU or inventory tab.
+  // Migración: 20260525200000_onboarding_redesign.sql
+  skippedCatalog                Boolean                     @default(false)
+  // Onboarding redesign 2026-05-25: T4 guided first-sale prompt flag.
+  // Set after the guided first-sale message is shown exactly once (aha moment).
+  // Prevents re-display on subsequent messages.
+  // Migración: 20260525200000_onboarding_redesign.sql
+  firstSalePromptShown          Boolean                     @default(false)
+  // Re-engagement nudge 2026-05-25: timestamp of when T4 was shown (used to
+  // calculate the 24h window for the first-sale nudge cron job).
+  // Migración: 20260525210000_first_sale_nudge.sql
+  firstSalePromptShownAt        DateTime?
+  // Re-engagement nudge 2026-05-25: marks that the 24h first-sale nudge was sent.
+  // Prevents repeated nudges if the cron runs while the owner still hasn't sold.
+  // Migración: 20260525210000_first_sale_nudge.sql
+  firstSaleNudgeSent            Boolean                     @default(false)
+  // Per-owner toggle to enable low-stock WhatsApp alerts. Default OFF
+  // (changed 2026-05-25 — was implicit ON via whatsappPhone presence).
+  // Owner opts-in via Settings → Notificaciones por WhatsApp.
+  // Migración: 20260525700000_add_business_notify_low_stock_wa.sql
+  notifyLowStockWa              Boolean                     @default(false)
+  // E.164 WhatsApp Business phone number for businesses that have not yet
+  // completed Meta Embedded Signup (lower-tier capability signal).
+  // Populated manually or via a lightweight onboarding step; does NOT imply
+  // a full WabaConnection row exists. Null until set.
+  // Migración: 20260528100000_add_waba_connection.sql
+  whatsappBusinessPhoneE164     String?
+  // Proactive onboarding — integration nudge tracking (2026-06-06).
+  // Gate-release anchor: timestamp of the business's first confirmed sale.
+  // MP idle-window starts here (24h). Null until the first sale commits.
+  // Migración: 20260606000000_add_integration_nudge_columns.sql
+  firstSaleAt                   DateTime?
+  // Per-integration nudge shown/dismissed timestamps. All nullable — null means
+  // "not yet shown". Used by the integration-nudge cron and post-commit hooks
+  // to gate idle-fallback nudges and honor the 48h dismiss window.
+  // Migración: 20260606000000_add_integration_nudge_columns.sql
+  mpNudgeShownAt                DateTime?
+  mpNudgeDismissedAt            DateTime?
+  whatsappNudgeShownAt          DateTime?
+  whatsappNudgeDismissedAt      DateTime?
+  andreaniNudgeShownAt          DateTime?
+  andreaniNudgeDismissedAt      DateTime?
+  arcaNudgeShownAt              DateTime?
+  arcaNudgeDismissedAt          DateTime?
+  createdAt                     DateTime                    @default(now())
+  userId                        String?                     @unique
+  user                          User?                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products                      Product[]
+  customers                     Customer[]
+  suppliers                     Supplier[]
+  sales                         Sale[]
+  cashMovements                 CashMovement[]
+  invoices                      Invoice[]
+  stockMovements                StockMovement[]
+  stockLoads                    StockLoad[]
+  counters                      BusinessCounter[]
+  chatMessages                  ChatMessage[]
+  ownerChatUsage                OwnerChatUsage[]
+  budgets                       Budget[]
+  employees                     Employee[]
+  businessRules                 BusinessRule[]
+  delegationPolicies            DelegationPolicy[]
+  businessDocuments             BusinessDocument[]
+  paymentIntents                PaymentIntent[]
+  mpConnection                  MpConnection?
+  arcaCredential                ArcaCredential?
+  modoConnection                ModoConnection?
+  courierCredentials            CourierCredential[]
+  businessChannelCredentials    BusinessChannelCredential[]
+  wabaConnection                WabaConnection?
+  andreaniShipments             AndreaniShipment[]
+  ocaShipments                  OcaShipment[]
+  employeeNotes                 EmployeeNote[]
+  trustedPeerAgents             TrustedPeerAgent[]
+  tenantToolConfig              TenantToolConfig?
+  cajaSessions                  CajaSession[]
+  priceTiers                    ProductPriceTier[]
+  onboardingOauthAcks           OnboardingOauthAck[]
+}
+
+// Empleado del comercio. Auth paralelo a NextAuth/Google OAuth (para el dueño):
+// el empleado se loguea con PIN corto, NO con OAuth. Cada acción que ejecute
+// queda audit-eada con su Employee.id en CriticalWriteEvent.actorEmployeeId.
+//
+// Roles: "owner" (User) y "employee" (Employee). Un solo rol de empleado.
+// Solo el dueño OAuth puede crear/borrar/listar empleados.
+model Employee {
+  id                         String         @id @default(cuid())
+  businessId                 String
+  name                       String         @db.VarChar(255)
+  pinHash                    String         @db.VarChar(200) // scrypt hash con salt embebido
+  role                       String         @default("employee")
+  active                     Boolean        @default(true)
+  lastLoginAt                DateTime?
+  failedPinAttempts          Int            @default(0)
+  lockedUntil                DateTime?
+  // Consecutive lockout count — increments each time the account hits the
+  // failed-attempt threshold and gets locked. Drives exponential backoff
+  // (5m → 15m → 1h → 6h → 24h, capped). Reset to 0 on successful login.
+  // Must persist beyond the active lockout window; otherwise the schedule
+  // resets every cycle and an attacker can grind PINs at the longest
+  // single step indefinitely.
+  consecutiveLockouts        Int            @default(0)
+  // Set to true after THIS employee closes their first sale through chat.
+  // Used by the post-commit hook to inject the Web Push priming chat message
+  // exactly once per employee (mirrors Business.firstSaleConfirmed for the
+  // owner). Persisted on Employee so the primer never re-fires across
+  // sessions, devices, or browser PIN re-auths.
+  firstSaleConfirmed         Boolean        @default(false)
+  // Onboarding query-task completion — persisted so stock/sales query detection
+  // survives session refresh and window scroll (previously regex-only on
+  // recentHistory which reset on every new session).
+  onboardingStockQueryDoneAt DateTime?
+  onboardingSalesQueryDoneAt DateTime?
+  // Cobro QR and sale_send onboarding tasks — persisted to survive session refresh.
+  onboardingCobroQrDoneAt    DateTime?
+  onboardingSaleSendDoneAt   DateTime?
+  // Set once all onboarding tasks are done — used as fast-path short-circuit
+  // so we skip the criticalWriteEvent lookup on every subsequent request.
+  onboardingCompletedAt      DateTime?
+  // Tracks when the once-daily Companion welcome last fired for this employee
+  // (ART timezone). employeeDailyWelcomeStage reads this at request time;
+  // no Cloud Scheduler needed. Nullable: existing rows have no welcome history
+  // and will receive the greeting on the next chat open after onboarding completes.
+  lastWelcomeAt              DateTime?
+  // Monotonic counter for stateless session invalidation. Embed in cookie payload
+  // on login; validate on every request in resolveActor. Increment via
+  // invalidateEmployeeSessions() to force all existing cookies to expire immediately.
+  // Migración: 20260519300000_add_employee_session_version.sql
+  sessionVersion             Int            @default(1)
+  createdAt                  DateTime       @default(now())
+  business                   Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  targetedMessages           ChatMessage[]  @relation("TargetedMessages")
+  sales                      Sale[]
+  notes                      EmployeeNote[]
+  openedCajaSessions         CajaSession[]  @relation("OpenedBySessions")
+  closedCajaSessions         CajaSession[]  @relation("ClosedBySessions")
+
+  @@unique([businessId, name])
+  @@index([businessId, active])
+}
+
+// GROWTH NOTE (Fix #35 / Fix #36): Esta tabla crece indefinidamente. El DELETE del chat inserta
+// un marcador de reset (kind="chat_reset") y filtra mensajes anteriores en las lecturas, pero
+// las filas viejas quedan en la base de datos. Decisión de diseño: preservar historial para
+// posible recuperación. Aceptable para MVP. Post-launch: implementar TTL o archivado de mensajes
+// anteriores al último reset marker (ej: DELETE WHERE createdAt < latestReset AND businessId = X).
+//
+// VISIBILITY (Brief Discovery v1, Gap 1 — 2026-04-29):
+// El Brief promete "un solo chat por negocio con filtro de visibilidad por mensaje".
+// Hasta el 2026-04-29 todo era público (cualquier miembro del business veía todo).
+// El campo `visibility` clasifica el mensaje al momento de escribirlo:
+//   - "public"         — todos los miembros del business lo ven (default; back-compat).
+//   - "owner_only"     — solo el dueño OAuth + agentes (companion / supervisor) lo ven.
+//                        Útil para análisis privados, decisiones autónomas del supervisor,
+//                        consultas reflexivas que no quieren llegar al empleado.
+//   - "employee_only"  — solo el empleado autor + companion lo ven (no el dueño).
+//                        Útil para dudas íntimas donde el empleado se sentiría expuesto.
+// La aplicación del filtro en queries de lectura es responsabilidad del backend
+// (route handlers + GET /api/chat/messages). Default "public" preserva back-compat
+// con todos los mensajes históricos pre-migration.
+//
+// DECISIÓN (conservadora): el campo se modela como String free-text (no enum Postgres).
+// Razones: (1) Prisma+Postgres enums migran con dolor (CREATE TYPE + ALTER); (2) el
+// resto del schema usa String para campos enumerables (Sale.status, ChatMessage.kind,
+// ChatMessage.source, AgentEventLog.status, etc.) — consistencia; (3) si más adelante
+// agregamos "manager_only" o "ephemeral", no requiere migration. La validación del
+// dominio del campo se hace en código (Zod / runtime check).
+model ChatMessage {
+  id               String    @id @default(cuid())
+  businessId       String
+  clientMessageId  String
+  kind             String
+  source           String    @default("assistant")
+  text             String    @db.VarChar(8192)
+  // Tappable quick-reply chips emitted by supervisor (onboarding T2/T3/T5,
+  // push primer, etc.). Optional + JSON to keep the schema additive — old
+  // rows persist as null and render exactly like before.
+  chips            Json?
+  // Audience filter — ver bloque comment arriba. Default "public" para back-compat.
+  visibility       String    @default("public")
+  // Si está seteado, solo ese empleado ve el mensaje (para alertas personalizadas).
+  targetEmployeeId String?
+  // Customer-side conversation thread anchor — populated by the velora-whatsapp-inbound
+  // worker so the Customer Agent loads recent turns and keeps continuity across the
+  // checkout flow (catalog → address → shipping → payment). Nullable for owner/employee
+  // threads (existing rows + dashboard chats remain untouched).
+  // Migration: 20260528180000_add_chatmessage_customer_id/migration.sql
+  customerId       String?
+  ackedAt          DateTime?
+  createdAt        DateTime  @default(now())
+  business         Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  targetEmployee   Employee? @relation("TargetedMessages", fields: [targetEmployeeId], references: [id], onDelete: SetNull)
+  customer         Customer? @relation("CustomerThreadMessages", fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@unique([businessId, clientMessageId])
+  @@index([businessId, createdAt])
+  @@index([businessId, visibility, createdAt])
+  @@index([businessId, targetEmployeeId, createdAt])
+  @@index([businessId, customerId, createdAt])
+}
+
+model BusinessCounter {
+  id          String   @id @default(cuid())
+  businessId  String
+  counterType String
+  // BigInt prevents Int4 overflow at ~2.1B. Invoice sequence numbers, draft
+  // counters, and budget counters all increment here; a busy multi-branch
+  // franchise would hit the Int ceiling without this change.
+  // Migration: 20260519310000_customer_name_index_and_business_counter_bigint.sql
+  value       BigInt   @default(0)
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, counterType])
+}
+
+model Invoice {
+  id              String    @id @default(cuid())
+  businessId      String
+  saleId          String    @unique
+  customerId      String?
+  invoiceNumber   String
+  sequenceNumber  Int
+  documentType    String    @default("receipt")
+  issuedAt        DateTime  @default(now())
+  currency        String
+  totalAmount     Decimal
+  payloadJson     String
+  status          String    @default("issued")
+  createdAt       DateTime  @default(now())
+  // ── AFIP/ARCA fiscal fields (RG 2485 / WSFE FECAESolicitar) ──────────────
+  // Populated after a successful WSFE call; null for non-fiscal receipts and
+  // sandbox emissions. caeCode is the 14-digit Código de Autorización Electrónica.
+  caeCode         String?
+  caeFchVto       DateTime?
+  fiscalTipo      Int?
+  fiscalPtoVta    Int?
+  fiscalNumero    Int?
+  fiscalEmittedAt DateTime?
+  // AFIP RG 4291/2018 — QR URL encoded from CAE + invoice fields.
+  // Populated alongside caeCode after a successful real WSFE call.
+  fiscalQrUrl     String?
+  business        Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  sale            Sale      @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, invoiceNumber])
+  @@unique([businessId, documentType, sequenceNumber])
+  @@index([businessId])
+  @@index([customerId])
+  @@index([businessId, issuedAt])
+  // Fast uniqueness lookup for fiscal idempotency guard (triggerFiscalIfTaxId).
+  @@index([businessId, fiscalTipo, fiscalPtoVta, fiscalNumero])
+}
+
+model Product {
+  id               String                  @id @default(cuid())
+  name             String                  @db.VarChar(255)
+  price            Decimal
+  costPrice        Decimal?
+  sku              String?
+  reorderThreshold Int                     @default(5)
+  // DB-level floor enforced via CHECK (quantity >= -9999) applied in migration
+  // 20260525910000_product_negative_stock_floor. Prisma cannot express CHECK constraints
+  // natively — the constraint lives in Postgres only.
+  // allowNegativeStock=true is allowed but bounded: runaway negatives from bugs or
+  // concurrent writes cannot go below -9999.
+  quantity         Int                     @default(0)
+  // Peso del producto en gramos. Opcional — el agente Logística lo usa para
+  // calcular el perfil del paquete; cae a 500 g/ítem cuando es null.
+  weightGrams      Int?
+  businessId       String
+  business         Business                @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  saleItems        SaleItem[]
+  stockMovements   StockMovement[]
+  priceTierEntries ProductPriceTierEntry[]
+
+  @@unique([businessId, sku])
+  @@index([businessId])
+}
+
+model Customer {
+  id                         String                      @id @default(cuid())
+  businessId                 String
+  name                       String                      @db.VarChar(255)
+  email                      String?
+  phone                      String?
+  taxId                      String?
+  // DNI del cliente — necesario para crear envíos Andreani en producción.
+  // Nullable porque la mayoría de clientes se crean sin él; el dueño puede
+  // completarlo vía chat antes de crear el envío.
+  // Migración: 20260520020000_add_customer_dni.sql
+  dni                        String?
+  // Condición IVA del cliente: "Responsable Inscripto" | "Monotributista" | "Consumidor Final" | "Exento".
+  // Determina el tipo de comprobante: "Responsable Inscripto" → Factura A; otros → Factura B / C.
+  // Nullable porque la mayoría de clientes chat-creados no lo especifican — el Fiscal Agent
+  // cae a Factura C cuando es null. El dueño puede completarlo luego vía edición.
+  // Migración: 20260518100000_add_customer_iva_condition.sql
+  ivaCondition               String?
+  address                    String?
+  postalCode                 String?
+  city                       String?
+  createdAt                  DateTime                    @default(now())
+  updatedAt                  DateTime                    @updatedAt
+  /// pgvector embedding (768 dims, Vertex text-embedding-004). Populated by
+  /// /api/scheduled/customer-embedding-refresh cron. Null until first index.
+  embedding                  Unsupported("vector(768)")?
+  embeddingUpdatedAt         DateTime?
+  // Customer Agent durable session state — cart (order, shipping_cost) and user:* keys.
+  // Persisted after each turn; loaded at turn start to restore cart across Cloud Tasks invocations.
+  // Cleared after successful payment (create_payment_link). 24h TTL enforced at application layer.
+  // app:* capability flags are NOT stored here — those are recomputed per-turn by buildCapabilityStateDelta().
+  // Migration: 20260529100000_add_customer_agent_session_state/migration.sql
+  agentSessionState          Json?
+  agentSessionStateUpdatedAt DateTime?
+  // Optional price tier for mayorista / minorista / vip pricing.
+  // Null = customer pays the base Product.price.
+  // Migration: 20260602100000_add_product_price_tier/migration.sql
+  priceTierId                String?
+  business                   Business                    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  priceTier                  ProductPriceTier?           @relation(fields: [priceTierId], references: [id], onDelete: SetNull)
+  sales                      Sale[]
+  budgets                    Budget[]
+  matchedPaymentIntents      PaymentIntent[]             @relation("PaymentIntentMatchedCustomer")
+  // Customer-facing chat thread (Customer Agent via WhatsApp). Populated by the
+  // velora-whatsapp-inbound worker so the agent loads recent turns via
+  // ChatMessageSessionService.getSession when userId is E.164.
+  // Migration: 20260528180000_add_chatmessage_customer_id/migration.sql
+  threadMessages             ChatMessage[]               @relation("CustomerThreadMessages")
+
+  @@unique([businessId, name])
+  @@index([businessId])
+  // Covers resolveCustomerIdByName: case-insensitive ILIKE on name filtered by businessId.
+  // Without this index the query degrades to a full businessId-scoped scan on every
+  // payment-agent call that resolves a customer from a free-text name.
+  @@index([businessId, name])
+  @@index([priceTierId])
+}
+
+model Supplier {
+  id           String   @id @default(cuid())
+  name         String   @db.VarChar(255)
+  contactName  String?
+  phone        String?
+  email        String?
+  leadTimeDays Int      @default(3)
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, name])
+  @@index([businessId])
+}
+
+// GROWTH NOTE (Fix #35): Sale y SaleItem crecen con cada venta y nunca se eliminan.
+// Para MVP con pequeños negocios esto es correcto — el historial de ventas es un activo.
+// Post-launch: implementar archivado de ventas antiguas (> 2 años) a tabla de historial,
+// o exportación periódica. Los índices por businessId+date aseguran consultas rápidas
+// incluso con miles de filas.
+model Sale {
+  id                     String          @id @default(cuid())
+  customerId             String?
+  date                   DateTime        @default(now())
+  totalAmount            Decimal
+  taxAmount              Decimal
+  // "paid" for sync methods (efectivo, tarjeta). "pending" for async methods
+  // (qr, transferencia) until the provider webhook or manual confirm arrives.
+  status                 String          @default("paid")
+  businessId             String
+  // Nullable: ventas creadas por el owner no tienen empleado asociado.
+  employeeId             String?
+  // Método de pago de la venta. Espeja CashMovement.paymentMethod para queries
+  // de reporte que no necesiten hacer JOIN. Valores: "efectivo" | "qr" | "transferencia" | "tarjeta".
+  // Nullable para back-compat con filas existentes. Migración: 20260519120000_add_payment_method.sql
+  paymentMethod          String?
+  // Timestamp en que se envió el WhatsApp de solicitud de transferencia al cliente.
+  // Null hasta que la notificación se envíe exitosamente. Idempotency guard para
+  // evitar doble envío en retries del post-commit. Solo se puebla cuando
+  // paymentMethod = "transferencia" y el cliente tiene teléfono registrado.
+  // Migración: 20260525300000_add_sale_payment_request_sent_at.sql
+  paymentRequestSentAt   DateTime?
+  // Idempotency guard for Andreani shipment creation. Stamped atomically via
+  // updateMany(where: logisticaTriggeredAt IS NULL) BEFORE calling the Andreani API.
+  // Both sale-post-commit (direct sale path) and payment-intent-post-confirm (MP/QR
+  // payment path) check this field — whichever wins the updateMany (count > 0) calls
+  // Andreani; the other skips. Prevents duplicate orphan bookings at Andreani.
+  // Migración: 20260525400000_add_sale_logistica_triggered_at.sql
+  logisticaTriggeredAt   DateTime?
+  // Shipping quote captured PRE-PAGO (async payment methods: qr, transferencia).
+  // Set by triggerLogisticaIfShippingData quote-only path; used by:
+  //   1. resolveSaleItemsForPreference → includes freight line in MP preference.
+  //   2. trigger-fiscal-receipt post-confirm → adds shippingLine to InvoicePayload
+  //      so the comprobante PDF shows a separate Envío row.
+  // Null for sync payment methods (efectivo, tarjeta) — they use full create flow.
+  // Migración: 20260525960000_add_sale_shipping_quote.sql
+  shippingQuoteCost      Decimal?        @db.Decimal(14, 2)
+  shippingQuoteCourier   String?
+  // shippingRequired: true when the sale includes a freight charge (promesa or link-de-pago).
+  // Mirrors the PaymentIntent.shippingRequired convention. Default false for back-compat.
+  // Migración: 20260526500000_add_sale_shipping_required_address_id.sql
+  shippingRequired       Boolean         @default(false)
+  // shippingAddressId: opaque reference to the destination address (Customer address lookup
+  // key or future ShippingAddress model ID). Null when no specific address was supplied.
+  // Migración: 20260526500000_add_sale_shipping_required_address_id.sql
+  shippingAddressId      String?
+  // Atomic-claim stamp for customer undo-sale WhatsApp notification idempotency.
+  // Set BEFORE calling sendCustomerRefundNotification (reason="undo_sale") per sale.
+  // Prevents double-send if the undo handler is retried. Mirrors paymentRequestSentAt.
+  // Migración: 20260527B_add_refund_notification_sent_at/migration.sql
+  undoNotificationSentAt DateTime?
+  business               Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer               Customer?       @relation(fields: [customerId], references: [id])
+  employee               Employee?       @relation(fields: [employeeId], references: [id])
+  saleItems              SaleItem[]
+  cashMovements          CashMovement[]
+  invoice                Invoice?
+  paymentIntents         PaymentIntent[]
+
+  @@index([businessId])
+  @@index([businessId, date])
+  @@index([customerId])
+  @@index([businessId, status])
+  @@index([businessId, employeeId])
+}
+
+// PaymentIntent — intento de cobro QR (slice 1 = QR placeholder fake; slices
+// posteriores reemplazan el QR fake por el real de Mercado Pago via OAuth).
+//
+// Estados:
+//   "pending"    — recién creado, esperando confirmación.
+//   "confirmed"  — el empleado marcó el cobro como recibido (slice 1)
+//                  o el webhook MP confirmó el pago (slice futuro).
+//   "expired"    — TTL agotado (futuro: slice de QR dinámico real).
+//   "refunded"   — slice 5: devolución cash V1. El empleado clickeó
+//                  "Devolver" en la card del cobro confirmado y se
+//                  registró un CashMovement negativo. NO usa MP refund
+//                  API (eso es V2); V1 simplemente compensa la caja.
+//   "cancelled"  — empleado lo descartó manualmente.
+//
+// `metodo`: en slice 1 siempre "qr_dynamic_fake". String (no enum) para
+// poder agregar "qr_real", "link", "cash", "transfer" sin migration.
+//
+// `saleId`: nullable a propósito — el flujo permite iniciar el cobro antes
+// de que la venta esté creada (caso futuro: cobro adelantado, seña). En
+// slice 1 siempre viene seteado.
+//
+// Idempotencia: unique compuesto (businessId, idempotencyKey) garantiza
+// que el chat handler pueda reintentar el mismo turno sin crear duplicados.
+model PaymentIntent {
+  id                       String    @id @default(cuid())
+  businessId               String
+  saleId                   String?
+  monto                    Decimal   @db.Decimal(12, 2)
+  // Método de cobro. Slice 1: "qr_dynamic_fake". Extensible a "qr_real",
+  // "cash", "transfer", "link" sin migration.
+  metodo                   String
+  // Estado del intento. "pending" | "confirmed" | "expired" | "cancelled".
+  // "expired" se setea lazily cuando el confirm se intenta tras expiresAt.
+  estado                   String    @default("pending")
+  // Clave de idempotencia del turno que creó el intent (chat command).
+  // Único por business.
+  idempotencyKey           String
+  confirmedAt              DateTime?
+  // Empleado que generó el cobro QR (PIN auth). null cuando el owner lo
+  // creó directo. Lo lee el webhook para hacer push de vuelta al empleado.
+  createdByEmployeeId      String?
+  // Empleado que apretó "marcar cobrado" (null cuando confirma webhook MP).
+  confirmedByEmployeeId    String?
+  // Slice 3 — Timeout 2 min (anti-comprobante-falso). Nullable para no romper
+  // rows existentes; los nuevos intents siempre lo traen seteado.
+  expiresAt                DateTime?
+  // Slice 5 — Devolución cash V1. refundedAt y refundedByEmployeeId solo
+  // se pueblan cuando el empleado dispara el refund manual desde la card
+  // del cobro confirmado. Nullable porque la mayoría de intents nunca
+  // se devuelven.
+  refundedAt               DateTime?
+  refundedByEmployeeId     String?
+  // Cliente resuelto por NLU al tipear "cobro 5000 a Carlos". Se persiste
+  // para que el post-confirm pueda recuperar el teléfono del cliente y
+  // enviar el comprobante por WhatsApp sin necesitar un saleId. Nullable
+  // para compatibilidad con rows existentes (cobros sin cliente asignado).
+  matchedCustomerId        String?
+  matchedCustomer          Customer? @relation("PaymentIntentMatchedCustomer", fields: [matchedCustomerId], references: [id], onDelete: SetNull)
+  // Shipping fields — parte del flujo link de pago → pago → comprobante → despacho.
+  // shippingRequired: true cuando el owner incluyó gastos de envío en el link.
+  // shippingAddress: JSON con dirección destino (street, postalCode, city, notes).
+  // shippingCostARS: monto del flete en ARS, mismo tipo que `monto`.
+  // comprobanteSentAt: timestamp en que se envió el comprobante por WhatsApp.
+  // shipmentCreatedAt: timestamp en que el Andreani Agent creó el envío.
+  shippingRequired         Boolean   @default(false)
+  shippingAddress          Json?
+  shippingCostARS          Decimal?  @db.Decimal(12, 2)
+  comprobanteSentAt        DateTime?
+  shipmentCreatedAt        DateTime?
+  // trackingWppSentAt: timestamp en que se envió el WPP de tracking al cliente
+  // post-despacho Andreani. Atomic claim stamp — updateMany WHERE NULL before
+  // calling sendCustomerTrackingWpp prevents silent double-send on webhook retry
+  // or cron replay. Pattern mirrors comprobanteSentAt / shipmentCreatedAt.
+  // Ref: Stripe idempotency-keys §atomic-phases, Shopify idempotent mutations 2026.
+  trackingWppSentAt        DateTime?
+  // paymentLinkSentAt: timestamp en que se envió el WPP del link de pago al cliente.
+  // Atomic claim stamp — updateMany WHERE NULL before calling sendCustomerPaymentLink
+  // prevents double-send when the operator taps "📲 Enviar" twice on the same chip.
+  // Pattern mirrors trackingWppSentAt / comprobanteSentAt throughout the codebase.
+  // Migración: 20260527_add_payment_intent_payment_link_sent_at/migration.sql
+  paymentLinkSentAt        DateTime?
+  // Referencia del proveedor de pago (MP: preferenceId). La usa el adapter /
+  // webhook para consultar estado. Provider-neutral — sirve para cualquier proveedor.
+  providerRef              String?
+  // URL de checkout generada por el proveedor (MP: init_point). Se persiste
+  // al crear la preferencia para poder reconstruirla desde el chip sin
+  // incrustar la URL entera en el valor del chip (límite 80 chars).
+  checkoutUrl              String?
+  // Instrucciones de transferencia para proveedores sin URL (alias/CBU).
+  // Generadas por AliasCbuAdapter al crear el cobro; se usan en el envío WA.
+  paymentInstructions      String?
+  // Promesa de pago — when the owner manually confirms a deferred payment
+  // (customer promised to pay later, e.g. transfer next month, cash on delivery).
+  // Industry standard: Stripe "manual confirmation for offline-paid" + accrual
+  // accounting Accounts Receivable pattern. Velora registers the sale + emits
+  // the receipt + creates the shipment, while the owner manages real cash
+  // collection out of band.
+  promesaExpectedAt        DateTime?
+  // Fast-track reconcile flag. Set by the MP webhook handler when it catches
+  // an exception so the next cron tick (≤1 min) picks up the PI immediately,
+  // bypassing the 5-min staleness filter. Cleared to false after successful
+  // confirm. See: https://docs.stripe.com/webhooks/process-undelivered-events
+  // Migración: 20260526_add_payment_intent_reconcile_fast_track/migration.sql
+  reconcileFastTrack       Boolean   @default(false)
+  // Inline-DLQ: counts consecutive failed confirm attempts on a fast-tracked PI.
+  // When >= 5 the runner emits CRITICAL log MP_RECONCILE_STUCK_FAST_TRACK so ops
+  // can intervene. Reset to 0 on successful confirm. Postgres pattern: NOT NULL
+  // DEFAULT 0 — no NULL ambiguity for arithmetic in the runner.
+  // Ref: Stripe retry-budget §72h / PostgreSQL DLQ inline pattern (2026).
+  // Migración: 20260526T2_add_reconcile_failure_tracking/migration.sql
+  reconcileFailureCount    Int       @default(0)
+  // Last error message from a failed confirm attempt. NULL when no failure has
+  // occurred or after a successful confirm (reset). Capped at DB VARCHAR level
+  // in the migration to keep rows lean. Nullable — no default text needed.
+  reconcileLastError       String?   @db.VarChar(500)
+  // Structured line items for standalone PIs (saleId = null).
+  // Canonical shape: Array<{ productName: string; quantity: number; unitPrice: number; subtotal: number }>.
+  // Null for legacy rows — PDF helper falls back to "Pago recibido" when null.
+  // Validated at write time via PaymentIntentItemSchema (payment-intent-items.ts).
+  // Migración: 20260526T3_add_payment_intent_items/migration.sql
+  items                    Json?
+  // Courier slug for the shipping line (e.g. "andreani", "oca"). Null when no
+  // shipping. Stored at create time to avoid hardcoding "Andreani" in PDF helpers.
+  // Backfill default "andreani" for rows with shippingCostARS != null.
+  // Migración: 20260526T5_add_payment_intent_shipping_courier/migration.sql
+  shippingCourier          String?
+  // Atomic-claim stamp for customer refund WhatsApp notification idempotency.
+  // Set BEFORE calling sendCustomerRefundNotification (reason="refund").
+  // Prevents double-send on cron retries or concurrent runners.
+  // Mirrors comprobanteSentAt / trackingWppSentAt / paymentLinkSentAt patterns.
+  // Migración: 20260527B_add_refund_notification_sent_at/migration.sql
+  refundNotificationSentAt DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  business                 Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  sale                     Sale?     @relation(fields: [saleId], references: [id], onDelete: SetNull)
+
+  @@unique([businessId, idempotencyKey])
+  @@index([businessId, estado, createdAt])
+  @@index([businessId, createdByEmployeeId])
+  @@index([saleId])
+  // MP webhook fallback: findFirst({ where: { providerRef } }) when ?businessId=
+  // is absent (old Checkout Pro preferences without the query param). Without this
+  // index the query is a full table scan.
+  @@index([providerRef])
+  @@index([businessId, providerRef])
+}
+
+// DLQ record: written by the Pub/Sub push subscriber when Cloud Tasks exhausts
+// retries on a payment-confirm task. Surfaces in Cloud Logging + CriticalWriteEvent
+// audit trail. Used by ops to manually replay or investigate failed confirms.
+// Ref: https://cloud.google.com/tasks/docs/reference/rest/v2/projects.locations.queues#RetryConfig
+model PaymentConfirmDlq {
+  id              String    @id @default(cuid())
+  // Cloud Tasks task name (full resource path) — used as a dedup key.
+  taskName        String    @unique
+  paymentIntentId String
+  businessId      String
+  // Raw Pub/Sub message data (base64) preserved for manual replay.
+  rawMessage      String
+  // Human-readable error surfaced by Cloud Tasks on the last attempt.
+  lastError       String?
+  attemptCount    Int       @default(0)
+  resolvedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([businessId])
+  @@index([paymentIntentId])
+}
+
+// DLQ record: mirrors PaymentConfirmDlq but for payment-cancel tasks.
+// Written by /api/internal/dlq/payment-cancel when Cloud Tasks exhausts retries
+// on a velora-payment-cancel task. Every queue must have symmetric DLQ coverage
+// so permanent cancel failures are surfaced in the audit trail for ops replay.
+// Ref: https://cloud.google.com/tasks/docs/reference/rest/v2/projects.locations.queues#RetryConfig
+// DLQ symmetry pattern: https://sreschool.com/blog/dead-letter-queue-dlq/
+model PaymentCancelDlq {
+  id              String    @id @default(cuid())
+  // Cloud Tasks task name (full resource path) — used as a dedup key.
+  taskName        String    @unique
+  paymentIntentId String
+  businessId      String
+  // Raw Pub/Sub message data (base64) preserved for manual replay.
+  rawMessage      String
+  // Human-readable error surfaced by Cloud Tasks on the last attempt.
+  lastError       String?
+  attemptCount    Int       @default(0)
+  resolvedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([businessId])
+  @@index([paymentIntentId])
+}
+
+// GROWTH NOTE (Fix #35): Crece junto con Sale — N items por venta, sin TTL ni archivado.
+// Aceptable para MVP. Ver nota en Sale sobre estrategia de archivado post-launch.
+model SaleItem {
+  id        String   @id @default(cuid())
+  saleId    String
+  productId String?
+  quantity  Int
+  unitPrice Decimal
+  unitCost  Decimal?
+  sale      Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([saleId])
+  @@index([productId])
+  // Added 2026-05-23: planner-velocity does saleItem.groupBy({ where: { saleId: IN [...]} })
+  // aggregating quantity by productId. Composite covers the group-by + sum without
+  // a separate row fetch. Source: debt audit C7.
+  @@index([saleId, productId, quantity])
+}
+
+// GROWTH NOTE (Fix #35): Un registro por movimiento de caja (ventas + ajustes manuales).
+// Crece indefinidamente. Para MVP aceptable — es el libro de caja del negocio.
+// Post-launch: implementar cierre de caja mensual/anual con archivado de movimientos históricos.
+model CashMovement {
+  id              String   @id @default(cuid())
+  businessId      String
+  saleId          String?
+  type            String
+  description     String   @db.VarChar(2000)
+  amount          Decimal
+  // Método de pago de la venta. Valores: "efectivo" | "qr" | "transferencia" | "tarjeta".
+  // Nullable para back-compat con filas existentes. Migración: 20260519120000_add_payment_method.sql
+  paymentMethod   String?
+  // Client-supplied idempotency key for standalone (saleId=null) cash movements.
+  // Persisted so the partial unique index (below) can enforce DB-level dedup even when
+  // the IdempotencyRecord is bypassed by a retry from a different client or cold-start race.
+  // Nullable: legacy rows and sale-linked movements do not carry this field.
+  // Migración: 20260525900000_add_cashmovement_dedup_key
+  clientMessageId String?
+  date            DateTime @default(now())
+  createdAt       DateTime @default(now())
+  business        Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  sale            Sale?    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  // Partial unique index enforced in DB: fires only when clientMessageId IS NOT NULL.
+  // Prevents duplicate standalone cash movements from concurrent retries.
+  // Created via raw migration 20260525900000_add_cashmovement_dedup_key (Prisma cannot
+  // express partial unique indexes natively — index exists in DB, not modelled here).
+
+  @@index([businessId, date])
+  @@index([saleId])
+}
+
+// GROWTH NOTE (Fix #35): Un registro por cada movimiento de stock (ventas, ajustes, compras).
+// Crece indefinidamente. Para MVP aceptable — es el historial de stock.
+// Post-launch: considerar TTL de 12-24 meses o archivado de movimientos pre-fecha.
+model StockMovement {
+  id             String   @id @default(cuid())
+  businessId     String
+  productId      String?
+  productName    String
+  quantityBefore Int
+  quantityAfter  Int
+  delta          Int
+  unitCost       Decimal?
+  reason         String   @default("manual")
+  referenceId    String?
+  createdAt      DateTime @default(now())
+  business       Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  product        Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, createdAt])
+  @@index([productId])
+  // Added 2026-05-23: enables efficient per-business + per-product velocity queries
+  // without scanning by businessId+createdAt then filtering productId in memory.
+  // Source: debt audit C7.
+  @@index([businessId, productId, createdAt])
+}
+
+// StockLoad — saga parent record for bulk stock ingress operations.
+// Written BEFORE items commit (status=in_progress), updated to completed
+// inside the same atomic transaction, or marked failed in the catch block.
+// Ensures partial ingress is always visible as failed rather than silently
+// leaving items 0..N-1 committed when item N fails.
+// Migración: 20260525930000_add_stockload_parent
+model StockLoad {
+  id             String    @id @default(cuid())
+  businessId     String
+  status         String // 'in_progress' | 'completed' | 'failed'
+  itemCount      Int
+  completedCount Int       @default(0)
+  startedAt      DateTime  @default(now())
+  completedAt    DateTime?
+  errorReason    String?
+  business       Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, startedAt])
+}
+
+// GROWTH NOTE (Fix #35): Esta es la tabla de mayor crecimiento — se escribe en cada mutación
+// crítica (ventas, stock, chat, facturas, etc.). Sin TTL ni poda automática.
+// El mecanismo de poda de IdempotencyRecord (pruneIdempotencyRecords) NO alcanza a esta tabla.
+// Post-launch PRIORITARIO: agregar cron job que elimine eventos > 90 días
+// (ej: DELETE FROM "CriticalWriteEvent" WHERE "createdAt" < NOW() - INTERVAL '90 days').
+model CriticalWriteEvent {
+  id              String   @id
+  businessId      String
+  actorUserId     String // Owner (OAuth) actor. Required hoy por compatibilidad;
+  // si actor es empleado, este field guarda el userId del owner
+  // del business (nunca empty) y actorEmployeeId identifica al empleado real.
+  actorEmployeeId String? // Empleado (PIN auth). null cuando actor es el owner directo.
+  routeScope      String
+  actionType      String
+  resourceType    String
+  resourceId      String?
+  summary         String
+  payloadJson     String
+  // Absorbed from the former AuditLog model (2026-05-16 simplification).
+  // Populated when the caller has before/after diff context (e.g. read-audit,
+  // stock-load). null for write-path events that don't carry a diff.
+  inputJson       String?
+  beforeJson      String?
+  afterJson       String?
+  createdAt       DateTime @default(now())
+
+  @@index([businessId, actionType, createdAt])
+  @@index([businessId, actorEmployeeId, createdAt])
+  @@index([businessId, resourceId])
+  // Added 2026-05-23: audit-cleanup cron deletes `WHERE createdAt < cutoff` with
+  // no businessId filter. Standalone (createdAt) index lets the delete plan
+  // use a single range scan instead of a full table scan. Source: debt audit C7.
+  @@index([createdAt])
+}
+
+// AgentEventLog — bus audit del tráfico A2A entre Empleado y Supervisor.
+// Cada vez que el Empleado publica un EmployeeEvent (LOW_STOCK, etc.) o
+// el dueño dispara un coaching request, se escribe una fila acá. Después
+// del round-trip al Supervisor se actualiza con la decisión + push count.
+//
+// Sirve para 2 cosas:
+//   1. Demo del pitch — "mostrame qué cruzó entre agentes" → query directo.
+//   2. Federación futura — el Supervisor de Franquicia agregará las filas
+//      de los Supervisores de Sucursal para tener vista global.
+model AgentEventLog {
+  id              String    @id @default(cuid())
+  businessId      String
+  // ID del evento bajo el contrato (EmployeeEvent.eventId, etc.). Único
+  // por business — permite idempotencia si el publish reintentea.
+  eventId         String    @db.VarChar(128)
+  // Contrato + versión bajo el que viaja el payload. Permite que el log
+  // soporte múltiples contratos a futuro (employee.event, coaching, etc.)
+  // sin schema migration.
+  protocol        String
+  protocolVersion String
+  // Tipo dentro del contrato (LOW_STOCK / OWNER_FRICTION / etc).
+  eventType       String
+  // Quién emitió. Cuando el dueño dispara coaching, actorEmployeeId=null.
+  actorUserId     String?
+  actorEmployeeId String?
+  // Origen lógico del mensaje en el bus.
+  source          String // "employee_agent" | "owner" | "supervisor"
+  // Destino lógico (quién decide).
+  destination     String // "supervisor" | "owner_push" | "cashier_chat"
+  // El payload completo serializado. Source of truth.
+  payloadJson     String    @db.Text
+  // La respuesta estructurada del Supervisor (SupervisorNotification o
+  // similar). null hasta que el round-trip completa.
+  decisionJson    String?   @db.Text
+  pushSent        Int       @default(0)
+  status          String    @default("pending") // pending | delivered | dropped | error
+  errorMessage    String?
+  createdAt       DateTime  @default(now())
+  processedAt     DateTime?
+
+  @@unique([businessId, eventId])
+  @@index([businessId, createdAt])
+  @@index([businessId, eventType, createdAt])
+}
+
+model IdempotencyRecord {
+  id             String    @id @default(cuid())
+  businessId     String
+  actionType     String
+  idempotencyKey String
+  requestHash    String
+  status         String
+  responseStatus Int?
+  responseBody   String?   @db.Text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  completedAt    DateTime?
+
+  @@unique([businessId, actionType, idempotencyKey])
+  @@index([businessId, actionType, createdAt])
+}
+
+model PurchaseRequest {
+  id            String   @id
+  businessId    String
+  supplierId    String?
+  requestNumber String
+  issuedAt      DateTime
+  currency      String
+  totalAmount   Decimal
+  payloadJson   String
+  createdAt     DateTime @default(now())
+
+  @@unique([businessId, requestNumber])
+  @@index([businessId, issuedAt])
+  @@index([supplierId])
+  @@map("MockPurchaseRequest")
+}
+
+model Budget {
+  id           String       @id @default(cuid())
+  businessId   String
+  budgetNumber String
+  customerName String?
+  customerId   String?
+  status       String       @default("draft")
+  currency     String
+  totalAmount  Decimal      @default(0)
+  note         String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  business     Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer     Customer?    @relation(fields: [customerId], references: [id])
+  items        BudgetItem[]
+
+  @@unique([businessId, budgetNumber])
+  @@index([businessId, createdAt])
+  @@index([customerId])
+}
+
+model BudgetItem {
+  id        String  @id @default(cuid())
+  budgetId  String
+  productId String?
+  name      String
+  quantity  Int
+  unitPrice Decimal
+  budget    Budget  @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+
+  @@index([budgetId])
+}
+
+model AiRateLimit {
+  userId String
+  date   DateTime @db.Date
+  count  Int      @default(0)
+
+  @@id([userId, date])
+  @@map("AiRateLimit")
+}
+
+// Web Push subscription per (business, device). One row per browser/PWA
+// install that opted in via Notification.requestPermission(). The cron at
+// 20:00 AR fans out to every non-expired row of every business with
+// movements that day. `expired` is set when the push service responds 404
+// or 410 — we never delete to preserve audit/debug history.
+model PushSubscription {
+  id          String   @id @default(cuid())
+  businessId  String
+  userId      String
+  // "webpush" = W3C Web Push (VAPID) — desktop/mobile browser
+  // "fcm"     = Firebase Cloud Messaging — Capacitor Android native app
+  kind        String   @default("webpush")
+  endpoint    String
+  p256dh      String
+  auth        String
+  // FCM registration token — populated when kind = "fcm", null otherwise.
+  fcmToken    String?
+  deviceLabel String?
+  expired     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([businessId, endpoint])
+  @@index([businessId, expired])
+  @@index([businessId, kind, expired])
+}
+
+// Idempotency log for the daily summary push cron. UNIQUE(businessId, dateAR)
+// guarantees at-most-once delivery per calendar day in Argentina TZ even if
+// Cloud Scheduler retries the cron within the same window. status:
+//   "pending"  — claim row; another invocation must skip
+//   "sent"     — push delivered to ≥1 subscription
+//   "no-op"    — business had movements today but no sales (per contract: skip)
+//   "failed"   — every subscription failed; do NOT retry tomorrow's cron will
+//                cover the next day's summary, by design no debt accumulates
+model DailySummaryPushLog {
+  id         String    @id @default(cuid())
+  businessId String
+  dateAR     String
+  status     String
+  sentAt     DateTime?
+  error      String?
+  createdAt  DateTime  @default(now())
+
+  @@unique([businessId, dateAR])
+  @@index([dateAR])
+}
+
+// ============================================================
+// P0 — Brief Discovery v1 (2026-04-29)
+// Modelos nuevos para Reglas activas + Perímetro de delegación.
+// Ver: project_velora_gap_analysis_2026_04_29.md (Gap 2 + Gap 3).
+// ============================================================
+
+// BusinessRule — Regla activa que el supervisor gatilla según contexto.
+//
+// Brief: el dueño carga reglas tipo "el baño hay que limpiarlo cada 2 horas",
+// "siempre saludar al cliente cuando entra", "si llega un proveedor con mercadería,
+// avisame antes de aceptar". El supervisor evalúa estas reglas contra el contexto
+// actual (tiempo, eventos, comportamiento esperado) y, cuando una regla aplica,
+// le pasa al companion el `message` para que el empleado lo reciba en su chat.
+//
+// Tipos de regla (`kind`):
+//   - "time-based"      — recurrente por tiempo. `trigger` lleva una cron expression
+//                          (formato estándar "*/n * * * *", o "every:120m" si preferimos
+//                          parser custom — definir en código). Ej: "cada 2 horas".
+//   - "condition-based" — gatillada por evento o condición observable. `trigger` lleva
+//                          el nombre del evento o condición ("low_stock", "cash_at_risk",
+//                          "shift_close", "no_sales_60min"). El supervisor mapea el
+//                          evento del bus A2A al trigger.
+//   - "behavior-based"  — comportamiento esperado siempre presente. `trigger` describe
+//                          la situación ("on_customer_enter", "on_sale_start", "on_shift_open").
+//                          El companion lo aplica como guideline conversacional, no como
+//                          mensaje aislado.
+//
+// DECISIÓN (conservadora): `kind` y `trigger` son String free-text, no enum.
+// Razones: (1) consistencia con el resto del schema; (2) cron expressions y nombres
+// de evento son strings naturalmente; (3) agregar tipos nuevos no requiere migration.
+// Validación de dominio en código (Zod en el endpoint de creación + en el supervisor evaluator).
+//
+// DECISIÓN (conservadora): `message` es String simple. Si más adelante necesitamos
+// templating ("Recordale a {{employee.name}} que limpie el baño"), agregamos un campo
+// `messageTemplate` o un `params` JSON sin breaking change. Por ahora YAGNI.
+//
+// `active`: soft-disable. El dueño puede pausar una regla sin borrarla (preserva
+// historial y permite reactivar). Cuando active=false, el supervisor NO la evalúa.
+//
+// Index: businessId+active+kind cubre el query típico del supervisor "dame las
+// reglas activas de este negocio del tipo X que tengo que evaluar ahora".
+// CronCheckpoint — Tracks the last successful run timestamp for a scheduled
+// job so the handler can replay any 5-min slots missed between runs (e.g.
+// Cloud Scheduler firing 1-2 min late, a deploy gap, or a transient 5xx).
+// Singleton-per-job: one row per `jobName`. The handler reads `lastRunAt`
+// at the start of a run, iterates every slot from there to "now" (capped
+// at CATCH_UP_WINDOW_MS), then writes back the new `lastRunAt`. Idempotency
+// at the ChatMessage level (clientMessageId per rule+slot+employee) makes
+// catch-up safe to overlap a previous successful run.
+model CronCheckpoint {
+  jobName   String    @id
+  lastRunAt DateTime
+  // HIGH-3-3: CronLock — set to now() at run start, cleared in finally.
+  // If runningAt is fresh (< 4 min) another instance is already running — skip.
+  runningAt DateTime?
+  updatedAt DateTime  @updatedAt
+}
+
+model BusinessRule {
+  id         String   @id @default(cuid())
+  businessId String
+  // Tipo de regla. Ver bloque comment arriba. Valores: "time-based" | "condition-based" | "behavior-based".
+  kind       String
+  // Disparador concreto. Para time-based: cron expression. Para condition-based: nombre del evento.
+  // Para behavior-based: nombre de la situación. Parser en código.
+  trigger    String
+  // Mensaje que el supervisor pasa al companion cuando la regla gatilla.
+  // El companion lo entrega al empleado con su tono cálido habitual.
+  message    String   @db.VarChar(2000)
+  // Soft-disable. El dueño pausa una regla sin perder configuración.
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, active])
+  // Cubre el query del supervisor "dame reglas activas de tipo X" sin scan completo.
+  @@index([businessId, active, kind])
+}
+
+// DelegationPolicy — Perímetro de delegación que el supervisor respeta al decidir solo.
+//
+// Brief: el dueño configura una sola vez "podés dar descuentos hasta 10% sin preguntarme",
+// "podés aprobar devoluciones de productos en buen estado dentro de los primeros 7 días",
+// "si llega un proveedor con mercadería pagada, dale ingreso al stock automáticamente".
+// El supervisor consulta la policy ANTES de decidir autónomamente. Si la decisión
+// cae dentro del perímetro y `requiresOwner=false`, ejecuta. Si excede el perímetro
+// o `requiresOwner=true`, escala al dueño (vía notification triage).
+//
+// `scope`: dominio de la decisión. Valores propuestos (extensibles):
+//   - "discount"  — descuentos a clientes (maxValue = porcentaje máximo).
+//   - "return"    — aceptación de devoluciones (conditions = JSON con días, estado, etc.).
+//   - "stock"     — ajustes de stock automáticos (maxValue = unidades, conditions = razones).
+//   - "supplier"  — recepción de mercadería (conditions = pago previo, supplier whitelist).
+//   - "credit"    — fiado a clientes conocidos (maxValue = monto máximo).
+//   - "price"     — cambios de precio dentro de banda (maxValue = % de variación).
+//   - Otros que aparezcan con el uso. NO enum por mismas razones que BusinessRule.kind.
+//
+// `maxValue`: límite numérico (Decimal nullable). Semántica depende de `scope`:
+//   - discount: porcentaje (10.00 = 10%).
+//   - credit: monto (5000.00 ARS).
+//   - stock: unidades (50).
+//   - price: porcentaje de variación.
+//   - Para scopes sin límite numérico (return con conditions complejas), null.
+//
+// `conditions`: criterios adicionales serializados como JSON String.
+// Ej (return): {"daysFromPurchase":7,"productState":"unused","requiresReceipt":true}
+// Ej (supplier): {"paid":true,"whitelistedSupplierIds":["sup_123","sup_456"]}
+// Ej (discount): {"customerSegment":"regular","minTicket":1000}
+// El supervisor parsea este JSON al evaluar.
+//
+// DECISIÓN (conservadora): `conditions` queda como String JSON (no tabla aparte ni
+// JSONB nativo). Razones: (1) simpler — no requiere DSL ni schema secunjuan;
+// (2) consistente con `payloadJson` / `decisionJson` / `inputJson` ya usados en
+// AgentEventLog, AuditLog, CriticalWriteEvent; (3) si crece la complejidad, podemos
+// migrar a JSONB en una pasada posterior sin breaking change estructural; (4) Postgres
+// permite query sobre String JSON con casts si hace falta. ALTERNATIVA descartada por
+// ahora: tabla `DelegationPolicyCondition` con (policyId, key, value) — más relacional
+// pero overkill para MVP. SSE revisa.
+//
+// `requiresOwner`: bypass explícito. Cuando true, el supervisor NUNCA decide solo
+// en este scope, escala SIEMPRE al dueño. Útil para dominios sensibles (ej: ventas
+// > $50K, devoluciones > 30 días) que el dueño quiere ver siempre. Es la
+// "valla manual" sobre el perímetro.
+//
+// `active`: soft-disable como en BusinessRule.
+//
+// Constraint: NO hay UNIQUE(businessId, scope) intencionalmente — un negocio puede
+// tener varias policies para el mismo scope con conditions distintas (ej: "descuento
+// hasta 10% para clientes regulares" + "descuento hasta 5% para nuevos"). El
+// supervisor evalúa en orden de createdAt y usa la primera policy que matchee.
+// Si más adelante el SSE decide forzar una sola policy por scope, agregamos
+// @@unique([businessId, scope]) en migration posterior.
+//
+// Index: businessId+active+scope cubre el query del supervisor "dame las policies
+// activas de este negocio para el scope X que voy a evaluar ahora".
+model DelegationPolicy {
+  id            String   @id @default(cuid())
+  businessId    String
+  // Dominio de la decisión. Ver bloque comment arriba.
+  scope         String
+  // Límite numérico. Semántica depende del scope. null para policies sin límite numérico.
+  maxValue      Decimal?
+  // JSON String con criterios adicionales. Ver ejemplos en bloque comment.
+  conditions    String   @db.VarChar(2000)
+  // Si true, el supervisor escala al dueño SIEMPRE en este scope, ignorando maxValue/conditions.
+  requiresOwner Boolean  @default(false)
+  // Soft-disable.
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, active, scope])
+}
+
+// BusinessDocument — RAG layer para reglas y procedimientos del negocio.
+// Cada row es un chunk de texto (sliding window ~350 tokens) de un PDF o DOCX
+// subido por el dueño. El embedding (768-dim, text-embedding-004) permite
+// retrieval semántico en el Companion/Supervisor — los top-K chunks relevantes
+// se inyectan en el system prompt como "## Reglas y procedimientos del negocio".
+//
+// Tenant isolation: TODA query incluye WHERE "businessId" = $1 antes del ANN scan.
+// Re-ingest limpio: al subir una nueva versión del mismo archivo se borran los
+// chunks existentes por (businessId, sourceFile) antes de insertar los nuevos.
+model BusinessDocument {
+  id         String                     @id @default(cuid())
+  businessId String
+  business   Business                   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  sourceFile String
+  sourcePage Int
+  chunkIndex Int
+  chunkText  String
+  embedding  Unsupported("vector(768)")
+  createdAt  DateTime                   @default(now())
+
+  @@index([businessId, sourceFile])
+}
+
+// Few-shot example library para Companion y Supervisor.
+// Alimentado por: seed inicial (ejemplos hardcodeados + Amazon MASSIVE),
+// y auto-aprendizaje cuando confidence >= 0.85 en producción.
+// Retrieval: cosine similarity >= 0.74. Dedup: >= 0.90.
+model PromptExample {
+  id         String                      @id @default(cuid())
+  /// "companion" | "supervisor"
+  agentType  String
+  /// Texto del usuario (input crudo)
+  input      String
+  /// JSON correcto que el agente debería devolver
+  outputJson String
+  /// Intent principal (register_sale, edit_product, etc.)
+  intentType String
+  /// Embedding del input (768 dims, Vertex text-embedding-004)
+  embedding  Unsupported("vector(768)")?
+  /// "seed_velora" | "seed_massive" | "auto_learned"
+  source     String                      @default("auto_learned")
+  createdAt  DateTime                    @default(now())
+
+  @@index([agentType, intentType])
+}
+
+// Feedback explícito del usuario sobre respuestas del agente.
+// "up" = correcto, "down" = incorrecto.
+// Alimenta el pipeline de mejora de few-shot y detección de misses.
+model MessageFeedback {
+  id              String   @id @default(cuid())
+  businessId      String
+  clientMessageId String
+  feedback        String // "up" | "down"
+  userInput       String? // mensaje del usuario que generó la respuesta
+  assistantAnswer String? // respuesta del agente que se está evaluando
+  createdAt       DateTime @default(now())
+
+  @@unique([businessId, clientMessageId])
+  @@index([businessId, feedback, createdAt])
+}
+
+// MpConnection — credenciales OAuth de Mercado Pago por negocio (Cobro QR slice 7).
+//
+// El dueño conecta su cuenta MP via OAuth. El callback intercambia el `code`
+// por (accessToken, refreshToken, publicKey, expiresAt). Las credenciales
+// quedan persistidas para que slices posteriores (slice 8 = QR real) puedan
+// llamar a la API de Mercado Pago en nombre del comercio.
+//
+// SECURITY NOTE: V1 guarda accessToken / refreshToken en plaintext, mismo
+// patrón que Account.access_token / Account.refresh_token (NextAuth) ya
+// presente en el schema. Protegido por: (1) Postgres no público;
+// (2) los tokens requieren MP_CLIENT_SECRET para refrescarse; (3) accessToken
+// expira en ~6h. Encryption-at-rest queda como hardening post-launch.
+//
+// Único por negocio (@unique en businessId): un comercio = una cuenta MP.
+// Re-conectar sobreescribe la fila vía upsert.
+model MpConnection {
+  id                     String   @id @default(cuid())
+  businessId             String   @unique
+  business               Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  // user_id que devuelve MP en el token exchange. Sirve para mostrar
+  // "Conectado como {mpUserId}" en la UI y para correlacionar webhooks.
+  mpUserId               String
+  // Encrypted tokens (AES-256-GCM, slice A — envelope encryption).
+  // Formato: "<iv_b64>:<tag_b64>:<ct_b64>".
+  // Plaintext accessToken/refreshToken columns dropped in migration 20260519350000.
+  accessTokenCiphertext  String?
+  refreshTokenCiphertext String?
+  publicKey              String?
+  // ID externo del POS registrado bajo la cuenta MP del comercio.
+  // Requerido para QR dinámico in-store (PUT /instore/orders/qr/seller/collectors/…).
+  // Null hasta que el dueño configure o provisione su POS (WS1-B seam).
+  externalPosId          String?
+  // true si el comercio activó el modo "live" (recibe pagos reales),
+  // false si las credenciales son de sandbox/testing.
+  liveMode               Boolean  @default(false)
+  scope                  String?
+  expiresAt              DateTime
+  connectedAt            DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+// OAuthState — short-lived token para validar el callback OAuth contra el
+// state que disparó el redirect. Se crea al inicio de /connect y se borra
+// (consume-once) cuando llega el callback. TTL 30 min — si el dueño abandona
+// el flujo, el row queda hasta que el cron de limpieza lo barre.
+model OAuthState {
+  state      String   @id
+  businessId String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+// RateLimitBucket — token bucket distribuido, multi-instance safe.
+//
+// Reemplaza el Map<string,number[]> en memoria de route-helpers.ts.
+// El algoritmo es token bucket con lazy refill: en cada check se calcula
+// tokens += elapsed_seconds * refillRate, se capea a capacity, y se decrementa 1.
+// La operación es atómica (CTE INSERT … ON CONFLICT DO UPDATE + UPDATE en una sola
+// transacción) para evitar race conditions entre instancias Cloud Run.
+//
+// Cleanup: cron audit-cleanup borra filas con updatedAt > 7 días (buckets inactivos).
+// Index en updatedAt para que el DELETE sea O(pruned) y no full-scan.
+model RateLimitBucket {
+  key          String   @id // ej: "ai:user:cmxxx", "expensive:ip:1.2.3.4"
+  tokens       Float // tokens disponibles (float — refill fraccional)
+  capacity     Float // max tokens; igual a maxRequests del scope
+  refillRate   Float // tokens/segundo = capacity / windowSeconds
+  lastRefillAt DateTime // timestamp del último refill (para elapsed)
+  updatedAt    DateTime @updatedAt // usado para cleanup TTL
+
+  @@index([updatedAt])
+}
+
+// AndreaniShipment — envío creado a través del Andreani Agent A2A.
+//
+// Registra el ciclo de vida completo de un despacho: creación, etiqueta,
+// tracking y entrega. Un envío corresponde a una Sale (@unique saleId).
+// Los eventos de tracking llegan vía webhook y se acumulan en el campo Json.
+model AndreaniShipment {
+  id                String    @id @default(cuid())
+  businessId        String
+  business          Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  saleId            String    @unique
+  trackingNumber    String    @unique
+  service           String // "sucursal" | "domicilio" | "express"
+  status            String // "created" | "in_transit" | "delivered" | "failed"
+  // GCS object key (bare path, e.g. pdfs/label/{businessId}/{trackingNumber}.pdf).
+  // NEVER a signed URL — signed URLs have 15-min TTL and go 403 after expiry.
+  // Consumers must call getAndreaniLabelSignedUrl(shipment) to get a fresh URL on-demand.
+  // Mock mode stores the Andreani sandbox URL directly (no GCS key).
+  // Migración semántica: 20260525920000_andreani_label_gcs_path
+  labelPdfPath      String? // bare GCS key or mock sandbox URL
+  estimatedDelivery DateTime?
+  events            Json      @default("[]") // array de tracking events
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([businessId])
+  @@index([trackingNumber])
+}
+
+// OcaShipment — envío creado a través del OCA adapter (Logística Agent).
+//
+// Registra el ciclo de vida de un despacho OCA: creación (IngresoORMultiplesRetiros),
+// etiqueta (GetPdfDeEtiquetasPorOrdenOrNumeroEnvio) y tracking (EstadoActual).
+// Un envío corresponde a una Sale (@unique saleId).
+// Migración: 20260520030000_add_oca_shipment.sql
+model OcaShipment {
+  id                String    @id @default(cuid())
+  businessId        String
+  business          Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  saleId            String    @unique
+  // idOrdenRetiro devuelto por IngresoORMultiplesRetiros — es el tracking number de OCA.
+  trackingNumber    String    @unique
+  // Código operativa usado al crear el envío.
+  operativa         String
+  service           String // e.g. "oca_operativa_12345"
+  status            String // "created" | "in_transit" | "delivered" | "failed"
+  // URL pública de la etiqueta PDF (sin psw en la query string).
+  labelUrl          String?
+  estimatedDelivery DateTime?
+  events            Json      @default("[]") // array de tracking events
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([businessId])
+  @@index([trackingNumber])
+}
+
+// EmployeeNote — anotaciones del empleado al dueño para revisión al cierre del turno.
+//
+// El Companion escribe una fila cuando el empleado narra algo no operativo
+// ("se rompió la heladera", "vino un proveedor") en lugar de intentar
+// ejecutar una acción. El dueño las ve en el panel "Notas del equipo" y
+// las marca como leídas con acknowledgedAt.
+model EmployeeNote {
+  id             String    @id @default(cuid())
+  businessId     String
+  employeeId     String
+  content        String
+  createdAt      DateTime  @default(now())
+  acknowledgedAt DateTime?
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, acknowledgedAt])
+  @@index([businessId, createdAt])
+}
+
+// TrustedPeerAgent — agentes A2A externos que el owner agregó explícitamente.
+//
+// Antes de que el Supervisor pueda invocar un agente externo, el dueño debe
+// agregarlo aquí. `isPeerTrusted` consulta esta tabla; `addTrustedPeer` escribe
+// el AgentCard descubierto. domain es la clave de negocio — un string URL-like
+// que identifica al peer (ej. "somosvelora.com/api/peers/distribuidora-mendoza"
+// para el mock del demo, o "distribuidora-mendoza.com.ar" para un peer real).
+//
+// `agentCardJson`: snapshot del AgentCard descubierto. Se refresca en cada
+// llamada a addTrustedPeer. Permite al Supervisor consultar skills offline
+// sin re-descubrir el agente en cada turno.
+//
+// `lastUsedAt`: se actualiza cada vez que el Supervisor invoca al peer.
+// Nulo hasta el primer uso exitoso.
+model TrustedPeerAgent {
+  id            String    @id @default(cuid())
+  businessId    String
+  // Dominio o path-domain del peer. Clave de negocio.
+  domain        String
+  // Nombre legible extraído del AgentCard (ej. "Distribuidora Mendoza").
+  agentName     String
+  // Snapshot JSON del AgentCard. Nullable para rows donde el discovery falló
+  // pero el owner quiso agregar el peer igual (manual override futuro).
+  agentCardJson String?   @db.Text
+  addedAt       DateTime  @default(now())
+  lastUsedAt    DateTime?
+  business      Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, domain])
+  @@index([businessId])
+}
+
+// ArcaCredential — configuración AFIP/ARCA por negocio para factura electrónica real.
+model ArcaCredential {
+  id                   String    @id @default(cuid())
+  businessId           String    @unique
+  business             Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  cuit                 String
+  puntoVenta           Int
+  condicionIva         String
+  certGcsPath          String
+  // DEPRECATED: passphrase stored as AES-256-GCM ciphertext with KEK in env.
+  // Kept for backward-compat (legacy fallback): if passphraseSecretName is null,
+  // the reader falls back to decrypting this field. New rows MUST set
+  // passphraseSecretName instead and leave this field null (or keep old value
+  // until migration script clears it).
+  encryptedPassphrase  String?
+  // CURRENT: passphrase stored in Secret Manager.
+  // Value is the secretId (e.g. "velora-arca-passphrase-{businessId}"),
+  // NOT the full resource name — the helper resolves "latest" at read time.
+  passphraseSecretName String?
+  // "production" | "homo" — which AFIP/ARCA endpoint this cert is registered for.
+  // Default "production" preserves existing rows (platform was ARCA_PRODUCTION=true).
+  environment          String    @default("production")
+  // Delegation mode: merchant delegates the WSFE web service to Velora's provider
+  // CUIT via AFIP Administrador de Relaciones. When true, cert + passphrase are
+  // resolved from Velora's provider env vars (VELORA_PROVIDER_CERT_GCS_PATH /
+  // VELORA_PROVIDER_PASSPHRASE_SECRET) rather than from this row's certGcsPath /
+  // passphraseSecretName. The row's `cuit` field still carries the MERCHANT'S CUIT
+  // (used as <ar:Cuit> in WSFE Auth — the represented party).
+  isProviderDelegation Boolean   @default(false)
+  // Informational: Velora's provider CUIT, captured at delegation-connect time for
+  // audit/observability. Does NOT drive any runtime logic (the env var is the source
+  // of truth). Null on non-delegation rows.
+  providerCuit         String?
+  // L2 DB cache for WSAA Ticket de Acceso — shared across Cloud Run instances
+  // to avoid hitting the AFIP ~1000 logins/day rate limit under multi-instance scaling.
+  cachedToken          String?
+  cachedSign           String?
+  cachedExpiresAt      DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+// ModoConnection — per-business MODO payment credentials (bring-your-own-account).
+//
+// MODO is an Argentine digital wallet / payment rail. The real MODO API spec is
+// not yet available; this model stores the credential blob so the onboarding
+// harness is fully wired. When the spec arrives only ModoAdapter methods change.
+//
+// `encryptedCredentials` stores an arbitrary JSON blob (AES-256-GCM, same key as
+// MP tokens: MP_TOKEN_ENCRYPTION_KEY). The plaintext shape will be finalised when
+// the MODO API spec arrives; for now any non-empty non-polluted JSON is accepted.
+//
+// UNIQUE on businessId — one credential set per business.
+// onDelete: Cascade — removing the business removes the MODO credential.
+model ModoConnection {
+  id                   String   @id @default(cuid())
+  businessId           String   @unique
+  business             Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  // AES-256-GCM ciphertext of MODO credential JSON.
+  // Format: "<iv_b64>:<tag_b64>:<ct_b64>" (same as mp-token-cipher.ts).
+  // NEVER read without decrypting. NEVER log. NEVER return to clients.
+  encryptedCredentials String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+// CourierCredential — per-business courier API credentials (bring-your-own-account).
+//
+// Supports Andreani, OCA, and Correo Argentino under one shape.
+// `encryptedCredentials` stores a provider-specific JSON blob (AES-256-GCM,
+// same key as MP tokens: MP_TOKEN_ENCRYPTION_KEY). The plaintext JSON shape
+// for each provider:
+//
+//   andreani: { clientId, clientSecret, contratoDomicilio, contratoSucursal, contratoExpress }
+//   oca:      { (TBD — OCA API adapter not yet implemented) }
+//   correo:   { (TBD — Correo Argentino API adapter not yet implemented) }
+//
+// UNIQUE on (businessId, provider) — one credential per courier per business.
+// onDelete: Cascade — removing the business removes all courier credentials.
+model CourierCredential {
+  id                   String   @id @default(cuid())
+  businessId           String
+  business             Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  // "andreani" | "oca" | "correo" — string for extensibility; validated in application layer.
+  provider             String
+  // AES-256-GCM ciphertext of provider-specific JSON credentials.
+  // Format: "<iv_b64>:<tag_b64>:<ct_b64>" (same as mp-token-cipher.ts).
+  // NEVER read without decrypting. NEVER log. NEVER return to clients.
+  encryptedCredentials String
+  // "production" | "sandbox" — which Andreani endpoint this credential set targets.
+  // Default "production" preserves existing rows (platform was ANDREANI_PRODUCTION=true).
+  environment          String   @default("production")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([businessId, provider])
+}
+
+// BusinessChannelCredential — per-business (BYOA) credentials for messaging /
+// fulfillment channels: Twilio SMS, Resend email, PedidosYa. Mirrors
+// CourierCredential exactly. BYOA-only — NO global fallback (Velora is a product
+// FOR clients; each client brings its own account). One row per provider per
+// business; upserts are safe via the unique constraint.
+model BusinessChannelCredential {
+  id                   String   @id @default(cuid())
+  businessId           String
+  business             Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  // "twilio_sms" | "resend" | "pedidosya" — string for extensibility; validated in app layer.
+  provider             String
+  // AES-256-GCM ciphertext of provider-specific JSON credentials (mp-token-cipher format).
+  // NEVER read without decrypting. NEVER log. NEVER return to clients.
+  encryptedCredentials String
+  // "production" | "sandbox" — which endpoint this credential set targets.
+  environment          String   @default("production")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([businessId, provider])
+}
+
+// A2aJtiSeen — JTI (JWT ID) nonce cache for A2A replay protection.
+//
+// Every inbound agent assertion JWT carries a unique `jti`. After signature
+// validation succeeds, markJtiSeen() inserts the jti here. A P2002 on insert
+// means the same token was already accepted — replay attack, rejected.
+//
+// Cleanup: audit-cleanup cron deletes expired rows (expiresAt < now()).
+// Index on expiresAt makes that DELETE O(pruned), not a full-scan.
+// Row TTL matches the JWT exp window (60 s) plus drift margin — rows become
+// eligible for deletion as soon as they expire.
+model A2aJtiSeen {
+  jti       String   @id
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
+
+// WebhookSecurityIncident — distributed IP-ban tracker for MP webhook abuse.
+//
+// Replaces the in-memory `mismatchTracker` Map in webhook-security.ts that was
+// per-instance only. Under Cloud Run autoscaling, an attacker could distribute
+// N probes across N instances and never hit the threshold on any single one.
+// This table makes the counter and ban state global across all instances.
+//
+// How it works:
+//   - On each tenant-mismatch, upsert this table: increment count, update lastSeenAt.
+//   - When count >= MISMATCH_THRESHOLD, write blockedUntil = now() + BAN_DURATION.
+//   - On each inbound request, SELECT WHERE ip = $ip AND blockedUntil > now().
+//   - Cleanup: audit-cleanup cron deletes rows with expiresAt < now() (1-day TTL).
+//
+// Index on (ipAddress, eventType) covers both the upsert key and the ban check query.
+// Index on expiresAt makes TTL cleanup O(pruned).
+model WebhookSecurityIncident {
+  id           String    @id @default(cuid())
+  ipAddress    String
+  // Webhook event type. Currently "mp_tenant_mismatch"; kept generic for future use.
+  eventType    String
+  count        Int       @default(1)
+  firstSeenAt  DateTime  @default(now())
+  lastSeenAt   DateTime  @updatedAt
+  // Null until threshold is crossed; set to now() + BAN_DURATION_MS when count >= threshold.
+  blockedUntil DateTime?
+  // TTL for cleanup cron. Set to firstSeenAt + 1 day on insert; updated on each hit.
+  expiresAt    DateTime
+
+  @@unique([ipAddress, eventType])
+  @@index([ipAddress, eventType])
+  @@index([expiresAt])
+}
+
+// WabaConnection — per-tenant WhatsApp Business Account credentials.
+//
+// Populated when the owner completes Meta Embedded Signup via Velora's
+// Tech Provider flow. Velora acts as a Tech Provider (not a direct BSP),
+// so each business owns its WABA and Velora holds a Business Integration
+// System User token scoped to that WABA.
+//
+// Sources:
+//   Meta Tech Provider model:
+//     https://developers.facebook.com/documentation/business-messaging/whatsapp/embedded-signup/onboarding-customers-as-a-tech-provider
+//   Meta access tokens (Business Integration System User):
+//     https://developers.facebook.com/documentation/business-messaging/whatsapp/access-tokens/
+//
+// Security: accessTokenCiphertext is AES-256-GCM encrypted (same convention as
+// MpConnection.accessTokenCiphertext — format "<iv_b64>:<tag_b64>:<ct_b64>").
+// NEVER read without decrypting. NEVER log. NEVER return to clients.
+//
+// Unique on businessId: one WABA per business. Re-connecting overwrites via upsert.
+// onDelete: Cascade — removing the business removes the WABA connection.
+model WabaConnection {
+  id                    String    @id @default(cuid())
+  businessId            String    @unique
+  business              Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  // WhatsApp Business Account ID (numeric string, e.g. "123456789012345").
+  wabaId                String
+  // Phone Number ID — internal alphanumeric identifier used for inbound routing
+  // and outbound API calls (not the human-readable phone number).
+  phoneNumberId         String
+  // AES-256-GCM ciphertext of the Business Integration System User token.
+  // Format: "<iv_b64>:<tag_b64>:<ct_b64>" (same as mp-token-cipher.ts).
+  accessTokenCiphertext String
+  connectedAt           DateTime  @default(now())
+  lastVerifiedAt        DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([phoneNumberId])
+}
+
+// TenantToolConfig — per-tenant MCP tool-pack backend overrides.
+//
+// Each row holds optional slug overrides for the 9 tool-pack factories.
+// A null field means "use the global CATALOG_BACKEND / FISCAL_BACKEND / …
+// env var" — identical to today's behaviour for all existing tenants.
+// An absent row means all fields are null (all env var / default "velora").
+//
+// Kept separate from Business (which is already 60+ fields) to avoid schema
+// bloat and to allow future credential additions without touching the core
+// tenant table.
+//
+// Additive migration — no data loss, safe on existing rows.
+// Migración: 20260602000000_add_tenant_tool_config.sql
+model TenantToolConfig {
+  id         String   @id @default(cuid())
+  businessId String   @unique
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  // Per-pack backend override slugs. Null = fall back to global env var.
+  catalog    String?
+  customer   String?
+  fiscal     String?
+  logistica  String?
+  messaging  String?
+  payments   String?
+  promesa    String?
+  supplier   String?
+  ventas     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// CajaSession — cash drawer shift per business.
+//
+// Models a single open/close cycle of a physical cash drawer (turno de caja).
+// Shape sourced from Square CashDrawerShift API (industry-standard reference):
+//   https://developer.squareup.com/reference/square/cash-drawers-api
+//
+// States: OPEN (shift in progress) → CLOSED (shift settled).
+// A business can only have one OPEN shift at a time (enforced at app layer;
+// no DB unique constraint because multi-drawer businesses may open multiple
+// shifts simultaneously — reserve the option).
+//
+// openedCashAmount  — float declared by the employee who opened the drawer.
+// closedCashAmount  — float counted by the employee who closed the drawer.
+// expectedCashAmount — computed at close time: openedCashAmount + net cash movements.
+// variance          — closedCashAmount − expectedCashAmount (negative = shortage).
+//
+// openedByEmployeeId / closedByEmployeeId — nullable to support owner-only flows
+// where no Employee row exists (owner acts directly).
+//
+// onDelete: Cascade — removing the business removes all its caja sessions.
+//
+// Additive migration — no data loss, safe on existing rows.
+// Migración: 20260603000000_add_caja_session.sql
+model CajaSession {
+  id                 String    @id @default(cuid())
+  businessId         String
+  business           Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  // OPEN | CLOSED
+  state              String    @default("OPEN")
+  openedAt           DateTime  @default(now())
+  // Cash declared by the opener at shift start.
+  // NUMERIC(14,2) — exact decimal storage; avoids IEEE-754 float drift in
+  // cash reconciliation (e.g. variance showing -0.0000002 instead of 0).
+  // Source: https://www.postgresql.org/docs/current/datatype-numeric.html (VERIFIED HTTP 200)
+  openedCashAmount   Decimal  @db.Decimal(14, 2)
+  // Populated at close time.
+  closedAt           DateTime?
+  // Cash physically counted by the closer.
+  closedCashAmount   Decimal? @db.Decimal(14, 2)
+  // Expected = openedCashAmount + net cash movements during the shift.
+  // Computed at close; stored to survive subsequent cash-movement edits.
+  expectedCashAmount Decimal? @db.Decimal(14, 2)
+  // variance = closedCashAmount − expectedCashAmount. Negative = shortage.
+  variance           Decimal? @db.Decimal(14, 2)
+  // Optional note from the opener / closer.
+  openNote           String?
+  closeNote          String?
+  // Who opened and who closed — nullable for owner-only flows.
+  openedByEmployeeId String?
+  openedByEmployee   Employee? @relation("OpenedBySessions", fields: [openedByEmployeeId], references: [id], onDelete: SetNull)
+  closedByEmployeeId String?
+  closedByEmployee   Employee? @relation("ClosedBySessions", fields: [closedByEmployeeId], references: [id], onDelete: SetNull)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([businessId, state])
+  @@index([businessId, openedAt])
+}
+
+// ── Price tiers (mayorista / minorista / vip) ─────────────────────────────────
+//
+// Source (industry reference, verified HTTP 200):
+//   Lightspeed Retail price books:
+//     https://x-series-support.lightspeedhq.com/hc/en-us/articles/360000051606
+//   Square CatalogPricingRule:
+//     https://developer.squareup.com/reference/square/objects/CatalogPricingRule
+//
+// ProductPriceTier — tier definition per tenant (mayorista, minorista, vip…).
+// ProductPriceTierEntry — price override per (tier, product).
+//   Null entry = product has no override for this tier → use base Product.price.
+// Customer.priceTierId — optional FK: customer belongs to a tier.
+//
+// Migration: 20260602100000_add_product_price_tier/migration.sql
+
+model ProductPriceTier {
+  id          String                  @id @default(cuid())
+  businessId  String
+  // Human-readable label (max 64 chars) shown in UI + agent prompts.
+  // Examples: 'mayorista', 'minorista', 'vip', 'distribuidor'.
+  label       String                  @db.VarChar(64)
+  description String?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  business    Business                @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  entries     ProductPriceTierEntry[]
+  customers   Customer[]
+
+  @@unique([businessId, label])
+  @@index([businessId])
+}
+
+model ProductPriceTierEntry {
+  id        String           @id @default(cuid())
+  tierId    String
+  productId String
+  price     Decimal
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  tier      ProductPriceTier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  product   Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([tierId, productId])
+  @@index([tierId])
+  @@index([productId])
+}
+
+// Dedup token for the OAuth re-entry ack (design §6/§14.8).
+// One row per (businessId, integration, slotDate) where slotDate is the ART
+// calendar day (YYYY-MM-DD, UTC-3). The UNIQUE constraint makes the insert
+// atomic across all Cloud Run instances — P2002 means "already claimed today".
+// Separate from ChatMessage so:
+//   (a) the token is invisible to chat-history queries (owner never sees it),
+//   (b) the token is invisible to the recentAlerts query (no Supervisor pollution),
+//   (c) slotDate allows reconnect to re-ack the next ART day.
+// Migración: 20260607000000_add_onboarding_oauth_ack.sql
+model OnboardingOauthAck {
+  id          String   @id @default(cuid())
+  businessId  String
+  integration String
+  slotDate    String   // YYYY-MM-DD ART (UTC-3)
+  createdAt   DateTime @default(now())
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, integration, slotDate])
+  @@index([businessId, createdAt])
+}
