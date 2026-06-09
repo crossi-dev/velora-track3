@@ -1,0 +1,119 @@
+/* CobroResult — public payment result page
+   Mobile-first, Velora editorial tokens, no auth required.
+   Typography: all font-size values in rem; body ≥ 1rem; caption ≥ 0.875rem.
+   Fluid headline via clamp() per global typography standard. */
+
+.page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--background);
+  padding: 1.5rem 1rem;
+}
+
+/* ── Card ── */
+.card {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  padding: 2rem 1.75rem 2.25rem;
+  font-family: var(--font-dm-sans, system-ui);
+}
+
+/* ── Header wordmark ── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: flex-start;
+}
+
+.mark {
+  /* Invert the dark SVG mark to navy — blends on cream surface */
+  opacity: 0.85;
+}
+
+.wordmark {
+  font-family: var(--font-fraunces, Georgia, serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--brand);
+}
+
+/* ── Status badge ── */
+.badge {
+  width: 5rem;
+  height: 5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.badgeSuccess {
+  background: var(--success-soft);
+}
+
+.badgeFailure {
+  background: var(--warning-soft);
+}
+
+.badgePending {
+  background: var(--info-soft);
+}
+
+.badgeIcon {
+  font-size: 2.25rem;
+  line-height: 1;
+  /* Respect prefers-reduced-motion — no animation on icon */
+}
+
+/* ── Content block ── */
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+/* Fluid headline: 1.75rem on small screens → 2.25rem on wide.
+   Never below 1.75rem (28px) — well above h1 floor per typography standard. */
+.headline {
+  font-family: var(--font-fraunces, Georgia, serif);
+  font-size: clamp(1.75rem, 5vw, 2.25rem);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: var(--track-heading, -0.015em);
+  color: var(--tone-strong);
+  margin: 0;
+}
+
+/* Body copy: 1rem (16px) — at the mandatory minimum for body text. */
+.body {
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--tone-body);
+  margin: 0;
+  max-width: 30ch;
+}
+
+/* ── Payment reference footer ── */
+/* caption: 0.875rem (14px) — at the minimum allowed caption size. */
+.ref {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--tone-muted);
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  align-self: center;
+}

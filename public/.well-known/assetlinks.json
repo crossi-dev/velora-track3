@@ -1,0 +1,13 @@
+[
+  {
+    "_comment": "TODO: Agregar la huella de Play App Signing después de la primera subida a Play Console. Obtenerla en: Play Console → Setup → App integrity → App signing key certificate → SHA-256 certificate fingerprint. Para desarrollo local, agregar la huella del keystore de debug únicamente en entornos locales, no en producción.",
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.somosvelora.app",
+      "sha256_cert_fingerprints": [
+        "REEMPLAZAR_CON_HUELLA_PLAY_APP_SIGNING"
+      ]
+    }
+  }
+]

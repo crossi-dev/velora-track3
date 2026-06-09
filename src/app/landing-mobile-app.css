@@ -1,0 +1,141 @@
+/* Landing móvil app (Capacitor WebView) — pantalla única, propósito: auth gate.
+   No reusa el header / footer / features de la website. Diseño tipo onboarding
+   de app nativa: brand → propuesta → role picker → trust line. */
+
+.lp-app {
+  min-height: 100dvh;
+  background: var(--lp-surface-base);
+  color: var(--lp-text-strong);
+  display: flex;
+  flex-direction: column;
+  padding: max(env(safe-area-inset-top), 24px) 20px max(env(safe-area-inset-bottom), 20px);
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+}
+
+/* Brand block — top, centered. Generous vertical air on tall phones. */
+.lp-app-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: max(8vh, 32px) 0 24px;
+}
+
+.lp-app-mark {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--lp-brand-hover), var(--lp-brand));
+  box-shadow: 0 8px 32px -10px rgba(138, 176, 240, 0.45),
+              0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  color: #FFFFFF;
+}
+
+.lp-app-wordmark {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 500;
+  font-size: 2rem;
+  letter-spacing: -0.015em;
+  margin: 0;
+  color: var(--lp-text-strong);
+}
+
+.lp-app-tagline {
+  font-size: 0.9375rem;
+  color: var(--lp-text-muted);
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+/* Hero copy — short and punchy. The role picker carries the action weight. */
+.lp-app-headline {
+  text-align: center;
+  margin: 24px auto 32px;
+  max-width: 320px;
+}
+
+.lp-app-headline h2 {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 500;
+  font-size: 1.625rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin: 0 0 8px;
+  color: var(--lp-text-strong);
+}
+
+.lp-app-headline h2 em {
+  font-style: italic;
+  color: var(--lp-brand);
+}
+
+.lp-app-headline p {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--lp-text-muted);
+  margin: 0;
+}
+
+/* Role picker container — wraps the existing RolePicker component without
+   modifying it. The cards inherit .lp-role-card styles. */
+.lp-app-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Footer trust line — minimal, single sentence, no copyright / links. */
+.lp-app-trust {
+  margin-top: auto;
+  padding-top: 32px;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--lp-text-muted);
+  line-height: 1.5;
+}
+
+.lp-app-trust-dot { opacity: 0.5; padding: 0 6px; }
+
+/* Splash — first paint while client detects Capacitor. Avoids flicker between
+   server-rendered web landing and native landing. */
+.lp-app-splash {
+  min-height: 100dvh;
+  background: var(--lp-surface-base);
+  display: grid;
+  place-items: center;
+}
+
+.lp-app-splash .lp-app-mark {
+  width: 80px;
+  height: 80px;
+}
+
+/* Error banner (auth errors carried over from query string) — inline, brand-soft. */
+.lp-app-error {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 28%, transparent);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 20px;
+}
+
+.lp-app-error button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  font-size: 1.125rem;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+}

@@ -1,0 +1,984 @@
+/* Mobile safe scroll — grid handles bottom nav, only need modest bottom padding */
+.content-safe-scroll {
+  padding-bottom: 1.25rem;
+}
+
+@media (max-width: 767px) {
+  .content-safe-scroll {
+    padding-left: max(1rem, env(safe-area-inset-left, 1rem));
+    padding-right: max(1rem, env(safe-area-inset-right, 1rem));
+  }
+}
+
+.app-main {
+  padding: 0;
+}
+
+.app-nav {
+  margin: 0 auto;
+  display: flex;
+  width: 100%;
+  max-width: 84rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1rem 1.1rem;
+}
+
+.app-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.app-nav-link {
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  padding: 0.48rem 0.88rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--tone-body);
+  letter-spacing: 0.01em;
+}
+
+.app-nav-link:hover {
+  background: rgba(226, 232, 240, 0.8);
+}
+
+.app-nav-link[data-active="true"] {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.app-nav-link[data-active="false"] {
+  background: transparent;
+}
+
+.app-footer {
+  margin: 0 auto;
+  display: flex;
+  width: 100%;
+  max-width: 84rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid rgba(212, 221, 233, 0.9);
+  padding: 1.2rem 1rem 1.75rem;
+  font-size: 0.875rem;
+  color: var(--tone-muted);
+}
+
+.surface-card {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+.surface-card-soft {
+  border: 1px solid var(--border);
+  background: var(--surface-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.surface-card-flat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.surface-elevated {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+/* === EDITORIAL SECTION MARKER ===
+   The deck-style "● Section · 01" tag used at the top of each app screen.
+   Subtle but anchors every page in the brand system. */
+.section-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-dm-sans);
+  font-size: var(--label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--tone-muted);
+}
+.section-marker::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+.section-marker.on-dark { color: var(--tone-on-brand-muted); }
+.section-marker.on-dark::before { background: var(--accent-cream); }
+
+/* On-dark variants — for hero zones / sidebar / dark surfaces */
+.btn-on-dark {
+  background: var(--accent-cream);
+  color: var(--brand-deep);
+  border-color: var(--accent-cream);
+}
+.btn-on-dark:hover { background: var(--accent-cream-deep); border-color: var(--accent-cream-deep); }
+
+.badge-on-dark {
+  background: rgba(250, 246, 238, 0.12);
+  color: var(--accent-cream);
+  border-color: rgba(250, 246, 238, 0.18);
+}
+
+.page-shell {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 84rem;
+}
+
+.page-frame {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface-subtle);
+  box-shadow: none;
+}
+
+.panel-divider {
+  border-top: 1px solid var(--border);
+}
+
+.eyebrow {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--tone-muted);
+}
+
+.muted-copy {
+  color: var(--tone-muted);
+}
+
+.section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.section-title {
+  color: var(--tone-strong);
+  font-size: clamp(1.85rem, 2.35vw, 2.45rem);
+  line-height: 1.22;
+  font-weight: 650;
+  letter-spacing: -0.013em;
+}
+
+.section-copy {
+  max-width: 42rem;
+  color: var(--tone-muted);
+  line-height: 1.66;
+}
+
+.meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-subtle);
+  padding: 0.4rem 0.76rem;
+  font-size: 0.875rem;
+  color: var(--tone-body);
+}
+
+.metric-strip {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.metric-tile {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  padding: 0.9rem 1rem;
+}
+
+.metric-label {
+  color: var(--tone-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.metric-value {
+  color: var(--tone-strong);
+  font-size: 1.2rem;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.metric-note {
+  color: var(--tone-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.primary-action {
+  background: var(--action-primary-bg);
+  color: var(--action-primary-fg);
+  border: 1px solid var(--action-primary-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+.secondary-action {
+  background: var(--action-secondary-bg);
+  color: var(--action-secondary-fg);
+  border: 1px solid var(--action-secondary-border);
+  border-radius: var(--radius-lg);
+}
+
+.soft-action {
+  color: var(--tone-muted);
+}
+
+.data-table {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.data-table-header {
+  background: var(--surface-subtle);
+  border-bottom: 1px solid var(--border);
+}
+
+.assistant-shell {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Sidebar toggle — vertically centered in 56px navbar */
+.sidebar-toggle-btn {
+  top: 10px; /* (56px - 36px h-9) / 2 = 10px */
+}
+
+
+
+.assistant-panel {
+  border: none;
+  border-radius: var(--radius-xl);
+  background: transparent;
+  box-shadow: none;
+}
+
+.assistant-input-shell {
+  border: none;
+  border-radius: var(--radius-xl);
+  background: transparent;
+  box-shadow: none;
+}
+
+.status-banner {
+  border-radius: var(--radius-lg);
+  border: none;
+  background: transparent;
+}
+
+/* ─── notification panel entry ──────────────────────────── */
+
+.notification-panel-enter {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+.notification-panel-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  .app-nav-links {
+    border-color: rgba(74, 97, 129, 0.68);
+    background: rgba(14, 22, 34, 0.84);
+  }
+
+  .app-nav-link {
+    color: var(--tone-body);
+  }
+
+  .app-footer {
+    border-top-color: rgba(65, 83, 109, 0.72);
+    color: var(--tone-muted);
+  }
+
+  .surface-card {
+    background: rgba(18, 29, 44, 0.92);
+  }
+
+  .surface-card-soft {
+    background: rgba(21, 34, 52, 0.94);
+  }
+
+  .page-frame {
+    border-color: rgba(43, 60, 83, 0.9);
+    background: rgba(11, 18, 29, 0.93);
+  }
+
+  .eyebrow,
+  .section-copy,
+  .metric-label,
+  .metric-note,
+  .soft-action {
+    color: var(--tone-muted);
+  }
+
+  .section-title,
+  .metric-value {
+    color: var(--tone-strong);
+  }
+
+  .meta-chip,
+  .metric-tile,
+  .secondary-action,
+  .data-table,
+  .assistant-panel,
+  .assistant-input-shell,
+  .status-banner {
+    background: rgba(19, 31, 47, 0.84);
+    color: var(--tone-strong);
+  }
+
+  input,
+  textarea,
+  select {
+    background-color: var(--surface);
+    color: var(--tone-strong);
+    border-color: var(--border);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--tone-muted);
+    opacity: 1;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    border-color: var(--border-strong);
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+}
+
+@media (min-width: 768px) {
+  .app-main {
+    padding: 0;
+  }
+
+  .app-nav {
+    padding: 1.35rem 1.5rem 1.15rem;
+  }
+
+  .app-footer {
+    padding: 1.3rem 1.5rem 1.95rem;
+  }
+
+  .metric-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .app-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ─── primitives ──────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border-radius: 9999px;
+  font-size: var(--body-sm);
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  transition:
+    background-color var(--duration-base) var(--ease-out),
+    border-color var(--duration-base) var(--ease-out),
+    box-shadow var(--duration-base) var(--ease-out),
+    opacity var(--duration-base) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-sm {
+  min-height: 36px;
+  padding: 0 0.875rem;
+  font-size: var(--body-sm);
+}
+
+.btn-lg {
+  min-height: 52px;
+  padding: 0 1.75rem;
+  font-size: var(--body);
+}
+
+/* Taller primary CTA variant — matches pre-refactor height for hero buttons */
+.btn-tall {
+  min-height: 52px;
+}
+
+.btn-primary {
+  background: var(--action-primary-bg);
+  color: var(--action-primary-fg);
+  border-color: var(--action-primary-bg);
+  box-shadow: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--action-primary-hover);
+  border-color: var(--action-primary-hover);
+}
+
+.btn-secondary {
+  background: var(--action-secondary-bg);
+  color: var(--action-secondary-fg);
+  border-color: var(--action-secondary-border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--action-secondary-hover);
+}
+
+.btn-ghost {
+  background: var(--action-ghost-bg);
+  color: var(--action-ghost-fg);
+  border-color: transparent;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--action-ghost-hover);
+  color: var(--action-secondary-fg);
+}
+
+.btn-danger {
+  background: var(--action-danger-bg);
+  color: var(--action-danger-fg);
+  border-color: var(--action-danger-bg);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--action-danger-hover);
+  border-color: var(--action-danger-hover);
+}
+
+.btn-icon {
+  min-height: 44px;
+  width: 44px;
+  padding: 0;
+  border-radius: var(--radius-md);
+}
+
+/* input */
+
+.form-input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 0.875rem;
+  border: none;
+  border-radius: 9999px;
+  background: var(--surface-subtle);
+  color: var(--tone-strong);
+  font-size: var(--body);
+  line-height: 1.5;
+  transition:
+    border-color var(--duration-base) var(--ease-out),
+    background-color var(--duration-base) var(--ease-out),
+    color var(--duration-base) var(--ease-out);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--border-strong);
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.form-input::placeholder {
+  color: var(--tone-faint);
+}
+
+/* badge */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--body-sm);
+  font-weight: 600;
+  line-height: 1;
+  border: 1px solid transparent;
+}
+
+.badge-brand {
+  background: var(--brand-soft);
+  color: var(--brand);
+  border-color: rgba(27, 58, 107, 0.12);
+}
+
+.badge-success {
+  background: var(--success-soft);
+  color: var(--success);
+  border-color: var(--success-border);
+}
+
+.badge-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: var(--danger-border);
+}
+
+.badge-neutral {
+  background: var(--surface-subtle);
+  color: var(--tone-muted);
+  border-color: var(--border);
+}
+
+.badge-warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+  border-color: var(--warning-border);
+}
+
+@media (prefers-color-scheme: dark) {
+  .btn-primary {
+    box-shadow: none;
+  }
+
+  .btn-secondary {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--tone-body);
+  }
+
+  .form-input {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--tone-strong);
+  }
+
+  .badge-brand {
+    background: rgba(27, 58, 107, 0.3);
+    color: #93b4e8;
+    border-color: rgba(27, 58, 107, 0.4);
+  }
+}
+
+/* ─── Icon size utilities ───────────────────────────────── */
+/* Phosphor icons accept a className; applied in Phase 2. */
+.icon-xs {
+  width: 14px;
+  height: 14px;
+}
+
+.icon-sm {
+  width: 16px;
+  height: 16px;
+}
+
+.icon-base {
+  width: 20px;
+  height: 20px;
+}
+
+.icon-lg {
+  width: 24px;
+  height: 24px;
+}
+
+.icon-xl {
+  width: 32px;
+  height: 32px;
+}
+
+/* ─── Typography utilities (rem-based, CLAUDE.md standards) ─── */
+.text-caption {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  font-weight: 500;
+  color: var(--tone-muted);
+}
+
+.text-body {
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.text-body-strong {
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.text-title {
+  font-size: 1.125rem;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.text-heading {
+  font-size: 1.5rem;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.text-display {
+  font-size: 2rem;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+/* ─── List row (virtualized list convention) ────────────── */
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 72px;
+  padding: 0 1rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.list-row:hover {
+  background: rgba(27, 58, 107, 0.04);
+}
+
+.list-row:active {
+  background: rgba(27, 58, 107, 0.08);
+}
+
+:where(.dark) .list-row:hover,
+:where([data-theme="dark"]) .list-row:hover {
+  background: rgba(74, 127, 191, 0.08);
+}
+
+:where(.dark) .list-row:active,
+:where([data-theme="dark"]) .list-row:active {
+  background: rgba(74, 127, 191, 0.14);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .list-row:hover {
+    background: rgba(74, 127, 191, 0.08);
+  }
+
+  :root:not([data-theme="light"]) .list-row:active {
+    background: rgba(74, 127, 191, 0.14);
+  }
+}
+
+/* ─── Radius utilities (token-bound, avoid collision with Tailwind v4) ─── */
+/* Tailwind v4 already provides .rounded-sm/md/lg/xl/2xl/full.
+   These token-bound aliases ship only for names Tailwind doesn't define. */
+.rounded-pill {
+  border-radius: var(--radius-pill);
+}
+
+.rounded-token-sm {
+  border-radius: var(--radius-sm);
+}
+
+.rounded-token-md {
+  border-radius: var(--radius-md);
+}
+
+.rounded-token-lg {
+  border-radius: var(--radius-lg);
+}
+
+.rounded-token-xl {
+  border-radius: var(--radius-xl);
+}
+
+.rounded-token-2xl {
+  border-radius: var(--radius-xl);
+}
+
+/* ─── Shadow utilities (token-bound, avoid collision with Tailwind v4) ─── */
+.shadow-card {
+  box-shadow: var(--shadow-sm);
+}
+
+.shadow-panel {
+  box-shadow: var(--shadow-md);
+}
+
+.shadow-overlay {
+  box-shadow: var(--shadow-lg);
+}
+
+/* ─── Dashboard shell layout (shadcn/ui Sidebar refactor) ──── */
+/* SidebarProvider replaces the old dashboard-root flex+margin-left pattern.
+   The sidebar spacer inside SidebarProvider handles the horizontal offset. */
+
+.dashboard-header {
+  position: relative;
+  display: flex;
+  height: var(--nav-top-height);
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 16px;
+  padding-right: 16px;
+  background: var(--background);
+  /* Defensive: collapse any border/shadow inherited from shadcn Sidebar/Inset
+     so the top of the app merges with the Android system status bar in dark
+     mode (Carlos request 2026-05-26). */
+  border-bottom: 0;
+  box-shadow: none;
+  z-index: var(--z-topnav);
+}
+
+.dashboard-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dashboard-header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.dashboard-title {
+  min-width: 0;
+  font-family: var(--font-fraunces);
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  color: var(--brand);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* dashboard-main-area: flex-1 flex column inside SidebarInset */
+.dashboard-main-area {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dashboard-main {
+  position: relative;
+  background: var(--background);
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dashboard-page-shell {
+  position: relative;
+  background: var(--background);
+  overflow: hidden;
+  z-index: 1;
+  height: 100%;
+}
+
+@media (max-width: 767px) {
+  .dashboard-header {
+    height: auto;
+    min-height: var(--nav-top-height-mobile);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+    padding-top: max(12px, env(safe-area-inset-top, 0px));
+    padding-bottom: 12px;
+    align-items: center;
+  }
+  .dashboard-title {
+    font-size: 1.5rem;
+    font-weight: 500;
+    line-height: 1;
+    padding-left: 1px;
+  }
+}
+
+/* ─── Sidebar content scrollbar — light mode only ──────────────────────────
+   Bug fix: browser default scrollbar is dark/grey on Windows light mode.
+   Override with cream-themed colors that match the sidebar surface.
+   Dark mode scrollbar is visually acceptable — not overriding it here.      */
+:root [data-sidebar="content"] {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+:root [data-sidebar="content"]::-webkit-scrollbar {
+  width: 6px;
+}
+:root [data-sidebar="content"]::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+:root [data-sidebar="content"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes notificationPanelIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes tooltipIn {
+  from { opacity: 0; transform: translateX(-50%) scale(0.95); }
+  to { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
+/* Honour user motion preferences — strip transform-based animation steps */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes notificationPanelIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes tooltipIn {
+    from { opacity: 0; transform: translateX(-50%); }
+    to   { opacity: 1; transform: translateX(-50%); }
+  }
+}
+
+.dashboard-quick-action:hover,
+.dashboard-quick-action[data-active="true"] {
+  background-color: var(--surface-subtle) !important;
+  color: var(--tone-strong) !important;
+}
+
+/* ─── Sidebar nav buttons ────────────────────────────────── */
+.sidebar-nav-btn {
+  font-size: 0.875rem;
+  padding: 10px 12px;
+  background-color: transparent;
+  color: var(--sidebar-text-muted);
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden; /* clips content to button bounds; active indicator renders at left:0 */
+}
+.sidebar-nav-btn:hover {
+  background-color: var(--sidebar-hover-bg);
+  color: var(--sidebar-active-text);
+}
+.sidebar-nav-btn--active {
+  background-color: var(--sidebar-active-bg);
+  color: var(--sidebar-active-text);
+}
+.sidebar-nav-btn--active:hover {
+  background-color: var(--sidebar-active-bg);
+}
+.sidebar-nav-btn--quick {
+  background-color: var(--sidebar-hover-bg);
+}
+.sidebar-nav-btn--quick:hover {
+  background-color: var(--sidebar-active-bg);
+  color: var(--sidebar-active-text);
+}
+.sidebar-nav-btn--icon-only {
+  padding: 0;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── Skeleton / shimmer ─────────────────────────────────── */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.skeleton {
+  background: var(--surface-subtle);
+  border-radius: var(--radius-md);
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+.skeleton-text {
+  height: 0.875rem;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-heading {
+  height: 1.5rem;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.skeleton-hero {
+  background: var(--surface-hero);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* ─── Velora mark breathing pulse (empty state) ────────── */
+@keyframes veloraMarkBreathe {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+
+.velora-mark-breathe {
+  animation: veloraMarkBreathe 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+  .velora-mark-breathe { animation: none !important; }
+}

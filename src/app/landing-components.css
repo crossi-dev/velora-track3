@@ -1,0 +1,398 @@
+/* Landing page — header, nav, buttons, hero copy, CTA row.
+   Tokens/layout → landing.css   |   Mockup/sections/footer → landing-sections.css   |   Motion → landing-motion.css */
+
+/* ─── Header ─── */
+.lp-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  /* B2 fix: solid fallback first for browsers without color-mix support */
+  background: rgba(11, 22, 40, 0.85);
+  background: color-mix(in oklab, var(--lp-surface-base) 85%, transparent);
+  backdrop-filter: saturate(140%) blur(12px);
+  border-bottom: 1px solid var(--lp-border);
+}
+
+.lp-nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+
+.lp-wordmark {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 500;
+  font-size: 1.375rem;
+  letter-spacing: -0.01em;
+  color: var(--lp-text-strong);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+/* A5 fix: visible focus ring on wordmark link */
+.lp-wordmark:focus-visible { outline: 2px solid var(--lp-brand); outline-offset: 3px; border-radius: 4px; }
+
+.lp-dot {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  background: radial-gradient(circle at 35% 30%, var(--lp-brand-hover), var(--lp-brand) 70%);
+  box-shadow: 0 0 0 1px rgba(138,176,240,0.3), 0 2px 8px rgba(138,176,240,0.3);
+  position: relative;
+}
+
+.lp-dot::after {
+  content: ""; position: absolute; inset: 5px; border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.45);
+  border-bottom-color: transparent; border-left-color: transparent;
+  transform: rotate(35deg);
+}
+
+.lp-nav-links { display: flex; align-items: center; gap: 24px; }
+
+.lp-nav-links a {
+  color: var(--lp-text-muted); text-decoration: none;
+  font-size: 1rem; font-weight: 500; transition: color 140ms ease;
+}
+
+.lp-nav-links a:hover { color: var(--lp-text-strong); }
+
+/* A5 fix: visible focus ring on nav links */
+.lp-nav-links a:focus-visible { outline: 2px solid var(--lp-brand); outline-offset: 3px; border-radius: 3px; }
+
+/* ─── Buttons ─── */
+.lp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 1.25rem;
+  border-radius: var(--radius-pill);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform 120ms ease, background 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+  white-space: nowrap;
+  outline: none;
+}
+
+.lp-btn:focus-visible { outline: 3px solid var(--lp-brand); outline-offset: 3px; }
+
+.lp-btn-primary {
+  background: var(--lp-brand);
+  color: #02060F;
+  font-weight: 700;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.12) inset, 0 6px 24px -8px rgba(138,176,240,0.5);
+}
+
+.lp-btn-primary:hover { background: var(--lp-brand-hover); }
+.lp-btn-primary:active { transform: scale(0.97); box-shadow: none; }
+
+.lp-btn-primary:disabled,
+.lp-btn-primary[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+/* A2 fix: nav button ≥44px — WCAG 2.5.5 + Apple HIG touch-target floor. Prior 40px was too small. */
+.lp-btn-nav { height: 44px; padding: 0 1rem; font-size: 0.9375rem; }
+
+/* Hero CTA */
+.lp-btn-hero { min-width: 240px; height: 52px; font-size: 1.0625rem; }
+
+/* Sticky CTA button */
+.lp-btn-sticky { height: 44px; padding: 0 1.25rem; font-size: 0.9375rem; }
+
+/* B1 fix: WhatsApp ghost link padded so rendered height ≥ 44px (WCAG 2.5.5) */
+.lp-btn-wa {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--lp-text-muted);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-decoration: none;
+  padding: 14px 0;
+  transition: color 140ms ease;
+}
+
+.lp-btn-wa:hover { color: var(--lp-text-strong); }
+
+/* A5 fix: visible focus ring on WA link */
+.lp-btn-wa:focus-visible { outline: 2px solid var(--lp-brand); outline-offset: 3px; border-radius: 3px; }
+
+/* Google G icon container */
+.lp-gicon {
+  width: 20px; height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  padding: 1px;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+/* B6 fix: restore near-white bg so Google G is legible on brand-blue (#8AB0F0) button.
+   The ghost-white rgba(255,255,255,0.12) from the original CTA card override made it invisible. */
+.lp-btn-primary .lp-gicon { background: #F3F4F6; }
+
+.lp-spinner { flex-shrink: 0; }
+
+/* Sticky CTA text */
+.lp-sticky-text { flex: 1; }
+.lp-sticky-title { font-size: 1rem; font-weight: 600; color: var(--lp-text-strong); }
+.lp-sticky-sub { font-size: 0.875rem; color: var(--lp-text-muted); }
+
+/* ─── Hero copy ─── */
+.lp-hero { padding: clamp(56px, 9vw, 104px) 0 clamp(40px, 6vw, 72px); }
+
+.lp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 10px;
+  background: var(--lp-brand-soft);
+  color: var(--lp-brand);
+  border: 1px solid rgba(138,176,240,0.2);
+  border-radius: var(--radius-pill);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.lp-pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--lp-success); flex-shrink: 0; }
+
+/* C3 fix: brand tagline above headline — "Tu negocio AI" */
+.lp-tagline {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--lp-brand);
+  margin: 10px 0 0;
+  line-height: 1.4;
+}
+
+.lp-headline {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(2.25rem, 5vw, 4rem);
+  line-height: 1.06;
+  letter-spacing: -0.022em;
+  color: var(--lp-text-strong);
+  margin: 20px 0 16px;
+  text-wrap: balance;
+}
+
+.lp-headline em { font-style: italic; color: var(--lp-brand); }
+
+.lp-lede {
+  font-size: clamp(1rem, 1.5vw, 1.1875rem);
+  color: var(--lp-text-muted);
+  max-width: 52ch;
+  text-wrap: pretty;
+  margin: 0 0 32px;
+  line-height: 1.65;
+}
+
+/* B4 fix: order [primary] [WA link] [ctaMeta] keeps both CTAs adjacent; microcopy supports both */
+.lp-cta-row { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.lp-cta-meta { color: var(--lp-text-faint); font-size: 0.875rem; }
+.lp-cta-privacy { font-size: 0.875rem; color: var(--lp-text-faint); margin: 4px 0 0; text-align: left; }
+
+/* ─── Role picker cards ─── */
+.lp-role-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 480px) {
+  .lp-role-cards { grid-template-columns: 1fr; }
+}
+
+.lp-role-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 18px 20px;
+  background: var(--lp-surface-card);
+  border: 1px solid var(--lp-border-strong);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: border-color 140ms ease, background 140ms ease, transform 120ms ease, box-shadow 140ms ease;
+  min-height: 96px;
+}
+
+.lp-role-card:hover {
+  border-color: var(--lp-brand);
+  background: var(--lp-surface-subtle);
+}
+
+.lp-role-card:active { transform: scale(0.98); }
+
+.lp-role-card:focus-visible {
+  outline: 3px solid var(--lp-brand);
+  outline-offset: 3px;
+}
+
+.lp-role-card--owner:hover,
+.lp-role-card--owner:focus-visible {
+  box-shadow: 0 0 0 1px var(--lp-brand), 0 6px 20px -8px rgba(138, 176, 240, 0.4);
+}
+
+.lp-role-card--staff.is-active,
+.lp-role-card--staff:hover {
+  border-color: var(--lp-success);
+  box-shadow: 0 0 0 1px var(--lp-success), 0 6px 20px -8px rgba(127, 207, 163, 0.3);
+}
+
+.lp-role-card:disabled,
+.lp-role-card[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.lp-role-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+/* Owner — deep navy tile, cream mark stroke */
+.lp-role-icon--owner {
+  background: var(--brand-deep, #0F1F35);
+  color: #F8FAFC;
+}
+.lp-role-icon--owner .lp-mark-bg { fill: transparent; }
+
+/* Staff — brand-tinted tile, brand-blue mark stroke */
+.lp-role-icon--staff {
+  background: var(--lp-brand-soft);
+  color: var(--lp-brand);
+}
+.lp-role-icon--staff .lp-mark-bg { fill: transparent; }
+
+.lp-role-label {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--lp-text-strong);
+  line-height: 1.2;
+}
+
+.lp-role-label--fraunces {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.125rem;
+  letter-spacing: var(--track-display, 0.02em);
+}
+
+.lp-role-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  color: var(--lp-text-muted);
+  line-height: 1.4;
+}
+
+/* ─── Staff inline form ─── */
+.lp-staff-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px;
+  background: var(--lp-surface-card);
+  border: 1px solid var(--lp-success);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 0 0 1px var(--lp-success), 0 6px 20px -8px rgba(127, 207, 163, 0.2);
+  margin-bottom: 16px;
+}
+
+.lp-staff-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--lp-text-strong);
+  line-height: 1.4;
+}
+
+.lp-staff-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.lp-staff-input {
+  flex: 1;
+  height: 44px;
+  padding: 0 14px;
+  background: var(--lp-surface-base);
+  border: 1px solid var(--lp-border-strong);
+  border-radius: var(--radius-pill);
+  color: var(--lp-text-strong);
+  font-family: inherit;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.lp-staff-input::placeholder { color: var(--lp-text-faint); }
+
+.lp-staff-input:focus {
+  border-color: var(--lp-success);
+  box-shadow: 0 0 0 3px rgba(127, 207, 163, 0.18);
+}
+
+.lp-staff-input[aria-invalid="true"] {
+  border-color: var(--lp-danger);
+  box-shadow: 0 0 0 3px rgba(237, 154, 142, 0.18);
+}
+
+.lp-staff-submit {
+  height: 44px;
+  padding: 0 1.125rem;
+  font-size: 0.9375rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.lp-staff-error {
+  font-size: 0.875rem;
+  color: var(--lp-danger);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.lp-staff-help {
+  font-size: 0.875rem;
+  color: var(--lp-text-faint);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.lp-staff-back {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--lp-brand);
+  font-size: 0.875rem;
+  font-family: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 140ms ease;
+}
+
+.lp-staff-back:hover { color: var(--lp-brand-hover); }
+.lp-staff-back:focus-visible { outline: 2px solid var(--lp-brand); outline-offset: 2px; border-radius: 2px; }
+
+@media (max-width: 480px) {
+  .lp-staff-row { flex-direction: column; align-items: stretch; }
+  .lp-staff-submit { width: 100%; }
+}

@@ -1,0 +1,1464 @@
+[
+  {
+    "section": "owner",
+    "seq": 1,
+    "intent": "answer",
+    "phrasing": "hola, ¿cómo estás?",
+    "statusCode": 401,
+    "latencyMs": 482,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 2,
+    "intent": "answer",
+    "phrasing": "¿qué podés hacer vos?",
+    "statusCode": 401,
+    "latencyMs": 132,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 3,
+    "intent": "register_sale",
+    "phrasing": "vendí 3 alfajores a Carlos",
+    "statusCode": 401,
+    "latencyMs": 130,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 4,
+    "intent": "register_sale",
+    "phrasing": "anotame venta de 5 cocas a Juan",
+    "statusCode": 401,
+    "latencyMs": 121,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 5,
+    "intent": "register_movement",
+    "phrasing": "registrá un egreso de $5000 por alquiler",
+    "statusCode": 401,
+    "latencyMs": 124,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 6,
+    "intent": "register_movement",
+    "phrasing": "ingresó $20000 de la distribuidora",
+    "statusCode": 401,
+    "latencyMs": 127,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 7,
+    "intent": "adjust_stock",
+    "phrasing": "ajustá el stock de la Coca Cola a 50 unidades",
+    "statusCode": 401,
+    "latencyMs": 119,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 8,
+    "intent": "adjust_stock",
+    "phrasing": "el inventario de alfajores quedó en 30",
+    "statusCode": 401,
+    "latencyMs": 128,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 9,
+    "intent": "edit_product",
+    "phrasing": "cambiá el precio de la Coca a $1800",
+    "statusCode": 401,
+    "latencyMs": 146,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 10,
+    "intent": "edit_product",
+    "phrasing": "actualizá la descripción del pan lactal",
+    "statusCode": 401,
+    "latencyMs": 119,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 11,
+    "intent": "delete_product",
+    "phrasing": "eliminá el producto Coca 500ml",
+    "statusCode": 401,
+    "latencyMs": 118,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 12,
+    "intent": "delete_product",
+    "phrasing": "borrá alfajores del catálogo",
+    "statusCode": 401,
+    "latencyMs": 120,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 13,
+    "intent": "create_supplier",
+    "phrasing": "agregá proveedor Distribuidora Norte teléfono 2614000000",
+    "statusCode": 401,
+    "latencyMs": 118,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 14,
+    "intent": "create_supplier",
+    "phrasing": "nuevo proveedor: Lácteos del Sur, whatsapp 2615001234",
+    "statusCode": 401,
+    "latencyMs": 120,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 15,
+    "intent": "edit_supplier",
+    "phrasing": "cambiá el teléfono del proveedor Norte a 2614999999",
+    "statusCode": 401,
+    "latencyMs": 117,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 16,
+    "intent": "edit_supplier",
+    "phrasing": "actualizá el nombre del proveedor Lácteos a Lácteos SA",
+    "statusCode": 401,
+    "latencyMs": 122,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 17,
+    "intent": "delete_supplier",
+    "phrasing": "eliminá el proveedor Distribuidora Norte",
+    "statusCode": 401,
+    "latencyMs": 123,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 18,
+    "intent": "delete_supplier",
+    "phrasing": "borrá al proveedor Lácteos del Sur",
+    "statusCode": 401,
+    "latencyMs": 114,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 19,
+    "intent": "create_customer",
+    "phrasing": "agregá cliente Juan Pérez teléfono 2615678901",
+    "statusCode": 401,
+    "latencyMs": 118,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 20,
+    "intent": "create_customer",
+    "phrasing": "nuevo cliente: Laura Gómez, cel 2614321098",
+    "statusCode": 401,
+    "latencyMs": 118,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 21,
+    "intent": "edit_customer",
+    "phrasing": "cambiá el teléfono de Juan a 2615000001",
+    "statusCode": 401,
+    "latencyMs": 125,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 22,
+    "intent": "edit_customer",
+    "phrasing": "actualizá el nombre de Laura Gómez a Laura García",
+    "statusCode": 401,
+    "latencyMs": 121,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 23,
+    "intent": "stock_load",
+    "phrasing": "llegaron 100 unidades de Coca Cola del proveedor Norte",
+    "statusCode": 401,
+    "latencyMs": 121,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 24,
+    "intent": "stock_load",
+    "phrasing": "cargá 50 alfajores que trajo el proveedor",
+    "statusCode": 401,
+    "latencyMs": 118,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 25,
+    "intent": "business_query",
+    "phrasing": "¿cuántas ventas hice hoy?",
+    "statusCode": 401,
+    "latencyMs": 117,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 26,
+    "intent": "business_query",
+    "phrasing": "¿cuál es el producto que más vendí esta semana?",
+    "statusCode": 401,
+    "latencyMs": 128,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 27,
+    "intent": "bulk_price_update",
+    "phrasing": "subí todos los precios un 10%",
+    "statusCode": 401,
+    "latencyMs": 114,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 28,
+    "intent": "bulk_price_update",
+    "phrasing": "actualizá todos los productos con aumento del 15%",
+    "statusCode": 401,
+    "latencyMs": 120,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 29,
+    "intent": "report_event",
+    "phrasing": "reportar que la heladera se rompió hoy",
+    "statusCode": 401,
+    "latencyMs": 121,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 30,
+    "intent": "report_event",
+    "phrasing": "avisar que el local tuvo corte de luz esta tarde",
+    "statusCode": 401,
+    "latencyMs": 121,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 31,
+    "intent": "create_purchase_request",
+    "phrasing": "pedido de compra: 50 Coca Cola al proveedor Norte",
+    "statusCode": 401,
+    "latencyMs": 120,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 32,
+    "intent": "create_purchase_request",
+    "phrasing": "necesito pedir 100 alfajores al proveedor",
+    "statusCode": 401,
+    "latencyMs": 125,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 33,
+    "intent": "create_product",
+    "phrasing": "agregá producto Coca Cola 500ml precio $1500 stock 50",
+    "statusCode": 401,
+    "latencyMs": 126,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 34,
+    "intent": "create_product",
+    "phrasing": "nuevo producto: Pan lactal $800 con 20 unidades",
+    "statusCode": 401,
+    "latencyMs": 120,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 35,
+    "intent": "create_budget",
+    "phrasing": "creá un presupuesto para Carlos: 10 alfajores $500",
+    "statusCode": 401,
+    "latencyMs": 118,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 36,
+    "intent": "create_budget",
+    "phrasing": "armame un presupuesto para Juan de 5 cocas",
+    "statusCode": 401,
+    "latencyMs": 119,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 37,
+    "intent": "return_sale",
+    "phrasing": "devolver la última venta de Carlos",
+    "statusCode": 401,
+    "latencyMs": 120,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 38,
+    "intent": "return_sale",
+    "phrasing": "anular la venta de Juan de hoy",
+    "statusCode": 401,
+    "latencyMs": 114,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 39,
+    "intent": "create_employee",
+    "phrasing": "crear empleado Juan con PIN 1234",
+    "statusCode": 401,
+    "latencyMs": 124,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 40,
+    "intent": "create_employee",
+    "phrasing": "nuevo empleado: Ana con PIN 5678",
+    "statusCode": 401,
+    "latencyMs": 116,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 41,
+    "intent": "reset_employee_pin",
+    "phrasing": "resetear el PIN de Juan a 9999",
+    "statusCode": 401,
+    "latencyMs": 120,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 42,
+    "intent": "reset_employee_pin",
+    "phrasing": "cambiá el PIN de Ana a 4321",
+    "statusCode": 401,
+    "latencyMs": 123,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 43,
+    "intent": "get_employee_credentials",
+    "phrasing": "¿cuál es el PIN de Juan?",
+    "statusCode": 401,
+    "latencyMs": 116,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 44,
+    "intent": "get_employee_credentials",
+    "phrasing": "dame las credenciales del empleado Ana",
+    "statusCode": 401,
+    "latencyMs": 117,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 45,
+    "intent": "create_business_rule",
+    "phrasing": "regla: si el stock de Coca baja de 10, avisarme",
+    "statusCode": 401,
+    "latencyMs": 123,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 46,
+    "intent": "create_business_rule",
+    "phrasing": "crear regla que avise cuando las ventas del día superen $50000",
+    "statusCode": 401,
+    "latencyMs": 121,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 47,
+    "intent": "update_business_rule",
+    "phrasing": "modificá la regla de stock mínimo de Coca a 5 unidades",
+    "statusCode": 401,
+    "latencyMs": 125,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 48,
+    "intent": "update_business_rule",
+    "phrasing": "actualizá la regla de ventas diarias a $80000",
+    "statusCode": 401,
+    "latencyMs": 118,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 49,
+    "intent": "delete_business_rule",
+    "phrasing": "eliminá la regla de stock de Coca",
+    "statusCode": 401,
+    "latencyMs": 122,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 50,
+    "intent": "delete_business_rule",
+    "phrasing": "borrá la regla de ventas diarias",
+    "statusCode": 401,
+    "latencyMs": 125,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 51,
+    "intent": "create_delegation_policy",
+    "phrasing": "crear política: empleados pueden devolver hasta $500",
+    "statusCode": 401,
+    "latencyMs": 118,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 52,
+    "intent": "create_delegation_policy",
+    "phrasing": "nueva política: empleado puede hacer descuentos hasta 5%",
+    "statusCode": 401,
+    "latencyMs": 117,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 53,
+    "intent": "update_delegation_policy",
+    "phrasing": "modificá la política de devolución a $1000",
+    "statusCode": 401,
+    "latencyMs": 123,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 54,
+    "intent": "update_delegation_policy",
+    "phrasing": "actualizá el límite de descuento al 10%",
+    "statusCode": 401,
+    "latencyMs": 119,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 55,
+    "intent": "delete_delegation_policy",
+    "phrasing": "eliminá la política de devolución de empleados",
+    "statusCode": 401,
+    "latencyMs": 117,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 56,
+    "intent": "delete_delegation_policy",
+    "phrasing": "borrá la política de descuentos",
+    "statusCode": 401,
+    "latencyMs": 123,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 57,
+    "intent": "broadcast_employees",
+    "phrasing": "mandale mensaje a todos los empleados: hay reunión mañana",
+    "statusCode": 401,
+    "latencyMs": 117,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 58,
+    "intent": "broadcast_employees",
+    "phrasing": "notificá a los empleados que el local abre tarde hoy",
+    "statusCode": 401,
+    "latencyMs": 125,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 59,
+    "intent": "call_contador_agent",
+    "phrasing": "consultá al agente contador sobre las ventas del mes",
+    "statusCode": 401,
+    "latencyMs": 115,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 60,
+    "intent": "call_contador_agent",
+    "phrasing": "llamá al contador para el balance mensual",
+    "statusCode": 401,
+    "latencyMs": 116,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 61,
+    "intent": "call_ventas_agent",
+    "phrasing": "consultá al agente de ventas sobre los mejores productos",
+    "statusCode": 401,
+    "latencyMs": 123,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 62,
+    "intent": "call_ventas_agent",
+    "phrasing": "pedile al agente de ventas el ranking del trimestre",
+    "statusCode": 401,
+    "latencyMs": 113,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 63,
+    "intent": "call_logistica_agent",
+    "phrasing": "consultá al agente de logística sobre el stock crítico",
+    "statusCode": 401,
+    "latencyMs": 121,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 64,
+    "intent": "call_logistica_agent",
+    "phrasing": "llamá al agente logística para planificar reposición",
+    "statusCode": 401,
+    "latencyMs": 114,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 65,
+    "intent": "call_marketplace_agent",
+    "phrasing": "consultá al agente de marketplace sobre publicaciones activas",
+    "statusCode": 401,
+    "latencyMs": 122,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 66,
+    "intent": "call_marketplace_agent",
+    "phrasing": "pedile al agente marketplace el estado de las ventas online",
+    "statusCode": 401,
+    "latencyMs": 115,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 67,
+    "intent": "update_business_setup",
+    "phrasing": "actualizá el nombre del negocio a Velora Store",
+    "statusCode": 401,
+    "latencyMs": 119,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "owner",
+    "seq": 68,
+    "intent": "update_business_setup",
+    "phrasing": "cambiá la moneda del negocio a USD",
+    "statusCode": 401,
+    "latencyMs": 112,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "nlu",
+    "seq": 69,
+    "intent": "sale_send (NLU fast-path)",
+    "phrasing": "cobrale 3 alfajores a Juan",
+    "statusCode": 401,
+    "latencyMs": 119,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "nlu",
+    "seq": 70,
+    "intent": "sale_send (NLU fast-path)",
+    "phrasing": "vendele 2 cocas a Carlos y mandá comprobante",
+    "statusCode": 401,
+    "latencyMs": 134,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "nlu",
+    "seq": 71,
+    "intent": "cobro_qr",
+    "phrasing": "cobrale $1500 a Carlos por QR",
+    "statusCode": 401,
+    "latencyMs": 120,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "nlu",
+    "seq": 72,
+    "intent": "cobro_qr",
+    "phrasing": "generá QR de pago por $2000",
+    "statusCode": 401,
+    "latencyMs": 119,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "nlu",
+    "seq": 73,
+    "intent": "payment_link",
+    "phrasing": "mandale link de pago a Juan por $3000 por wpp",
+    "statusCode": 401,
+    "latencyMs": 116,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "nlu",
+    "seq": 74,
+    "intent": "payment_link",
+    "phrasing": "generá link de pago para Carlos de $1800",
+    "statusCode": 401,
+    "latencyMs": 122,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "nlu",
+    "seq": 75,
+    "intent": "forgot_customer (NLU)",
+    "phrasing": "me olvidé de anotar a quién le vendí",
+    "statusCode": 401,
+    "latencyMs": 122,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "nlu",
+    "seq": 76,
+    "intent": "forgot_customer (NLU)",
+    "phrasing": "la última venta no tiene cliente asignado",
+    "statusCode": 401,
+    "latencyMs": 120,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "nlu",
+    "seq": 77,
+    "intent": "multi_price_edit (NLU)",
+    "phrasing": "Coca $1600, alfajor $350, agua $800",
+    "statusCode": 401,
+    "latencyMs": 119,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "nlu",
+    "seq": 78,
+    "intent": "multi_price_edit (NLU)",
+    "phrasing": "actualizá: gaseosa $1700, pan $900",
+    "statusCode": 401,
+    "latencyMs": 120,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "nlu",
+    "seq": 79,
+    "intent": "owner_only_blocked (NLU)",
+    "phrasing": "ajustar el stock como empleado",
+    "statusCode": 401,
+    "latencyMs": 122,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "nlu",
+    "seq": 80,
+    "intent": "owner_only_blocked (NLU)",
+    "phrasing": "crear producto siendo empleado",
+    "statusCode": 401,
+    "latencyMs": 115,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "nlu",
+    "seq": 81,
+    "intent": "stock_load_fast_path (NLU)",
+    "phrasing": "llegaron 100 cocas y 50 alfajores del proveedor hoy",
+    "statusCode": 401,
+    "latencyMs": 117,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "nlu",
+    "seq": 82,
+    "intent": "stock_load_fast_path (NLU)",
+    "phrasing": "cargá reposición: 80 unidades de Sprite",
+    "statusCode": 401,
+    "latencyMs": 113,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "nlu",
+    "seq": 83,
+    "intent": "andreani_fast_path (NLU)",
+    "phrasing": "necesito un envío por Andreani para Carlos",
+    "statusCode": 401,
+    "latencyMs": 122,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "nlu",
+    "seq": 84,
+    "intent": "andreani_fast_path (NLU)",
+    "phrasing": "mandá el pedido de Juan por Andreani a Córdoba",
+    "statusCode": 401,
+    "latencyMs": 115,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "nlu",
+    "seq": 85,
+    "intent": "mercadolibre_fast_path (NLU)",
+    "phrasing": "publicá la Coca Cola en MercadoLibre a $1600",
+    "statusCode": 401,
+    "latencyMs": 123,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  },
+  {
+    "section": "nlu",
+    "seq": 86,
+    "intent": "mercadolibre_fast_path (NLU)",
+    "phrasing": "¿cuántas ventas tengo en MercadoLibre hoy?",
+    "statusCode": 401,
+    "latencyMs": 112,
+    "answer": "No autorizado.",
+    "chips": [],
+    "actions": [],
+    "confirm": null,
+    "raw": {
+      "error": "No autorizado."
+    },
+    "verdictStr": "🔴(auth)",
+    "excerptStr": "No autorizado."
+  }
+]

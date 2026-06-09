@@ -1,0 +1,423 @@
+{
+  "eval_set_id": "velora-owner-intents-v1",
+  "name": "Owner (Supervisor) intent comprehension — AR Spanish",
+  "description": "Covers product load, stock query, sale-send, and typo-tolerance patterns exercised by the Velora owner chat path (Gemini 2.5 Pro Supervisor). Expected final_response fields are reference strings — evaluation uses response_match_score (semantic), not exact string match.",
+  "eval_cases": [
+    {
+      "eval_id": "owner-load-product-basic",
+      "conversation": [
+        {
+          "invocation_id": "e-aa000001-0000-0000-0000-000000000001",
+          "user_content": {
+            "parts": [{ "text": "cargar producto alfajor triple 48 unidades 1500 pesos" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Listo, agregué alfajor triple con 48 unidades a $1.500." }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-load-product-001",
+                "name": "create_or_update_product",
+                "args": {
+                  "name": "alfajor triple",
+                  "stock": 48,
+                  "price": 1500
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "owner-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "owner-load-product-with-precio-keyword",
+      "conversation": [
+        {
+          "invocation_id": "e-aa000002-0000-0000-0000-000000000002",
+          "user_content": {
+            "parts": [{ "text": "agregar producto mate cocido 100 unidades precio 800" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Agregué mate cocido: 100 unidades a $800 cada uno." }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-load-product-002",
+                "name": "create_or_update_product",
+                "args": {
+                  "name": "mate cocido",
+                  "stock": 100,
+                  "price": 800
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "owner-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "owner-load-product-typo-caragr",
+      "conversation": [
+        {
+          "invocation_id": "e-aa000003-0000-0000-0000-000000000003",
+          "user_content": {
+            "parts": [{ "text": "caragr prodcuto galletitas 60 unids 950 ps" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Entendido, cargué galletitas: 60 unidades a $950." }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-load-product-003",
+                "name": "create_or_update_product",
+                "args": {
+                  "name": "galletitas",
+                  "stock": 60,
+                  "price": 950
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "owner-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "owner-stock-query-basic",
+      "conversation": [
+        {
+          "invocation_id": "e-aa000004-0000-0000-0000-000000000004",
+          "user_content": {
+            "parts": [{ "text": "que stock tengo" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Hoy tenés en stock:" }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-stock-001",
+                "name": "get_stock_summary",
+                "args": {}
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "owner-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "owner-stock-query-variant",
+      "conversation": [
+        {
+          "invocation_id": "e-aa000005-0000-0000-0000-000000000005",
+          "user_content": {
+            "parts": [{ "text": "cuanto inventario me queda" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Hoy tenés en stock:" }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-stock-002",
+                "name": "get_stock_summary",
+                "args": {}
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "owner-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "owner-sale-send-whatsapp",
+      "conversation": [
+        {
+          "invocation_id": "e-aa000006-0000-0000-0000-000000000006",
+          "user_content": {
+            "parts": [{ "text": "venta 2 alfajores cliente Juan mandame comprobante por wpp" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Venta registrada. Comprobante enviado a Juan por WhatsApp." }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-sale-001",
+                "name": "create_sale",
+                "args": {
+                  "items": [{ "product": "alfajores", "quantity": 2 }],
+                  "customer": "Juan"
+                }
+              },
+              {
+                "id": "tool-wa-001",
+                "name": "send_whatsapp_receipt",
+                "args": {
+                  "customer": "Juan"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "owner-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "owner-sale-send-typo-venta",
+      "conversation": [
+        {
+          "invocation_id": "e-aa000007-0000-0000-0000-000000000007",
+          "user_content": {
+            "parts": [{ "text": "vetna 3 galletitas a Maria manda wpp" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Venta registrada. Comprobante enviado a María por WhatsApp." }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-sale-002",
+                "name": "create_sale",
+                "args": {
+                  "items": [{ "product": "galletitas", "quantity": 3 }],
+                  "customer": "Maria"
+                }
+              },
+              {
+                "id": "tool-wa-002",
+                "name": "send_whatsapp_receipt",
+                "args": {
+                  "customer": "Maria"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "owner-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "owner-multi-price-edit",
+      "conversation": [
+        {
+          "invocation_id": "e-aa000008-0000-0000-0000-000000000008",
+          "user_content": {
+            "parts": [{ "text": "subir precio alfajor a 1800 y galletitas a 1100" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Actualicé precios: alfajor $1.800, galletitas $1.100." }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-price-001",
+                "name": "update_product_price",
+                "args": { "product": "alfajor", "price": 1800 }
+              },
+              {
+                "id": "tool-price-002",
+                "name": "update_product_price",
+                "args": { "product": "galletitas", "price": 1100 }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "owner-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "owner-undo-last-sale",
+      "conversation": [
+        {
+          "invocation_id": "e-aa000009-0000-0000-0000-000000000009",
+          "user_content": {
+            "parts": [{ "text": "deshacer última venta" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "La última venta fue anulada y el stock repuesto." }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-undo-001",
+                "name": "undo_last_sale",
+                "args": {}
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "owner-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "owner-create-customer",
+      "conversation": [
+        {
+          "invocation_id": "e-aa000010-0000-0000-0000-000000000010",
+          "user_content": {
+            "parts": [{ "text": "crear cliente Pedro López teléfono 2614001122" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Cliente Pedro López creado con teléfono 2614001122." }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-customer-001",
+                "name": "create_customer",
+                "args": {
+                  "name": "Pedro López",
+                  "phone": "2614001122"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "owner-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "owner-owner-only-blocked-employee",
+      "conversation": [
+        {
+          "invocation_id": "e-aa000011-0000-0000-0000-000000000011",
+          "user_content": {
+            "parts": [{ "text": "quiero ver las ganancias del mes" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Las ganancias del mes son" }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-report-001",
+                "name": "get_monthly_revenue",
+                "args": {}
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "owner-test",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "owner-load-product-pesos-shorthand",
+      "conversation": [
+        {
+          "invocation_id": "e-aa000012-0000-0000-0000-000000000012",
+          "user_content": {
+            "parts": [{ "text": "cargame agua mineral 200 unids a $650" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Listo, agua mineral: 200 unidades a $650." }],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "tool-load-product-004",
+                "name": "create_or_update_product",
+                "args": {
+                  "name": "agua mineral",
+                  "stock": 200,
+                  "price": 650
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "velora",
+        "user_id": "owner-test",
+        "state": {}
+      }
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+-- Migration: add_customer_agent_session_state
+--
+-- Adds Customer.agentSessionState (Json?) to persist the Customer Agent's
+-- durable cart/session state across stateless Cloud Tasks worker invocations.
+--
+-- Why this column vs a new table:
+--   Customer is already the (businessId, phone) identity anchor for the
+--   Customer Agent. Piggybacking on the existing row avoids a JOIN and
+--   keeps the isolation guarantee (businessId + customerId) trivial.
+--
+-- What is persisted:
+--   order, shipping_cost           — the active cart (cleared on payment)
+--   user:customer_id               — resolved customer ID
+--   user:customer_name             — display name
+--   user:address_set               — delivery address confirmed flag
+--   user:last_catalog_view         — product names seen this session
+--
+-- What is NOT persisted (recomputed per-turn):
+--   app:mercadopago_connected      — capability flags from buildCapabilityStateDelta()
+--   app:andreani_connected
+--   (any other app:* prefix keys)
+--
+-- TTL: state is cleared by the Customer Agent after a successful payment
+-- (create_payment_link sets order to empty, shipping_cost to null). A
+-- 24-hour staleness guard is applied at load time in the application layer —
+-- state older than 24h is discarded and the customer starts fresh.
+--
+-- Nullable: pre-existing customers remain valid (null = no saved state = fresh start).
+
+ALTER TABLE "Customer" ADD COLUMN "agentSessionState" JSONB;

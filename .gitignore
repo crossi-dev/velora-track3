@@ -1,0 +1,126 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+/src/generated/prisma
+
+# local artifacts
+/dev.db
+/.claude/
+
+# prisma local dbs
+/prisma/*.db
+
+.vercel
+
+# local-only
+/tmp/
+*.log
+*.zip
+src/.claude/
+prisma/prisma/dev.db
+
+# Ad-hoc throwaway scripts and screenshots from debug sessions.
+scripts/.tmp-*
+
+# local-only
+*.zip
+.claude/
+.vercel/
+*.db
+tsconfig.tsbuildinfo
+.env
+.env.local
+
+# secret material (never commit)
+.cron-secret*.txt
+*-secret*.txt
+*.secret
+.env*.local
+scripts/.owner-cookie.txt
+
+# Codex MCP config carries a live API key — local only, never commit
+.codex/
+scripts/.owner-cookie-sv.txt
+*.cookie.txt
+.*-cookie.txt
+scripts/_temp-*
+scripts/_visual-capture.mjs
+scripts/_visual-shots/
+
+# Ad-hoc session scripts and temporary artifacts (never commit)
+.tmp/
+screenshots/
+!docs/screenshots/
+_diag-*.mjs
+_diag-*.json
+scripts/_diag-*.mjs
+scripts/_audit-*.mjs
+scripts/_smoke-*.mjs
+scripts/_hamburger-*.mjs
+scripts/_loop-*.mjs
+scripts/_guardian-*.mjs
+scripts/_verify-prod-*.mjs
+scripts/_agents-*.mjs
+scripts/_deploy_audit*.py
+
+# Python venvs (Agent Engine deploy uses ./agent-engine/.venv locally)
+**/.venv/
+**/__pycache__/
+*.pyc
+scripts/massive-examples.json
+scripts/e2e-journeys/last-run.json
+scripts/e2e-journeys/REPORT.md
+
+# Firebase config — do not commit; move to CI secrets post-contest.
+# The file is intentionally checked in for the current build (Cloud Build
+# needs it at gradle time and we don't have a secrets injection step yet).
+# Once CI injects it, remove the exception below and add the plain rule:
+#   android/app/google-services.json
+# !android/app/google-services.json
+.atl/
+gitleaks-*.json
+node_modules/
+.next/
+.env
+.env.*
+!.env.example

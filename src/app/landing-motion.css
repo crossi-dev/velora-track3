@@ -1,0 +1,99 @@
+/* Landing page — keyframes, scroll-driven animations, and motion preferences.
+   Tokens/layout → landing.css   |   Components → landing-components.css */
+
+/* ─── Keyframes ─── */
+@keyframes lpSpin { to { transform: rotate(360deg); } }
+@keyframes lpRise { to { opacity: 1; transform: none; } }
+@keyframes lpFadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes lpPulse {
+  0% { box-shadow: 0 0 0 0 rgba(127, 207, 163, 0.6); }
+  70% { box-shadow: 0 0 0 8px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@keyframes lpMicPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(138, 176, 240, 0.35); }
+  50% { box-shadow: 0 0 0 12px transparent; }
+}
+
+@keyframes lpWave {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+
+/* ─── Animated elements ─── */
+.lp-spinner { animation: lpSpin 0.75s linear infinite; }
+
+.lp-bubble {
+  animation: lpRise 500ms ease forwards;
+}
+
+/* C2 fix: stagger capped at 600ms — was 0/750/1600/2200ms, elements were invisible >2s on slow phones */
+.lp-bubble.b1 { animation-delay: 0ms; }
+.lp-bubble.b2 { animation-delay: 200ms; }
+.lp-bubble.b3 { animation-delay: 400ms; }
+.lp-bubble.b4 { animation-delay: 600ms; }
+
+.lp-pulse { animation: lpPulse 2s ease infinite; }
+.lp-mic { animation: lpMicPulse 2.2s ease infinite; }
+
+.lp-waveform span { animation: lpWave 1.2s ease-in-out infinite; }
+.lp-waveform span:nth-child(1) { animation-delay: 0s; }
+.lp-waveform span:nth-child(2) { animation-delay: 0.1s; }
+.lp-waveform span:nth-child(3) { animation-delay: 0.2s; }
+.lp-waveform span:nth-child(4) { animation-delay: 0.3s; }
+.lp-waveform span:nth-child(5) { animation-delay: 0.4s; }
+.lp-waveform span:nth-child(6) { animation-delay: 0.5s; }
+
+/* ─── Hover motion (no-preference only) ─── */
+@media (prefers-reduced-motion: no-preference) {
+  .lp-step:hover { transform: translateY(-2px); border-color: var(--lp-border-strong); }
+  .lp-feat:hover { transform: translateY(-3px); border-color: var(--lp-border-strong); }
+  .lp-btn-primary:hover,
+  .lp-btn-wa:hover { transform: translateY(-1px); }
+}
+
+/* ─── Scroll-driven entrance animation ─── */
+/* B3 fix: @supports test matches the actual property used inside (view(), not scroll()) */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .lp-step,
+    .lp-feat {
+      animation: lpFadeUp 0.5s ease both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 30%;
+    }
+  }
+}
+
+/* ─── Kill all motion for users who prefer it ─── */
+@media (prefers-reduced-motion: reduce) {
+  .lp-bubble,
+  .lp-pulse,
+  .lp-mic,
+  .lp-waveform span,
+  .lp-spinner,
+  .lp-step,
+  .lp-feat {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .lp-step:hover,
+  .lp-feat:hover,
+  .lp-btn-primary:hover,
+  .lp-btn-wa:hover { transform: none; }
+
+  /* Suppress CSS transitions on interactive landing elements */
+  .lp-btn,
+  .lp-nav-links a,
+  .lp-btn-wa,
+  .lp-role-card,
+  .lp-staff-input,
+  .lp-staff-back { transition: none; }
+}

@@ -1,0 +1,37 @@
+/* widget.css — Tailwind v4 theme for the payment-link wizard MCP App widget.
+ *
+ * Chameleon theming: every token maps to the host's MCP-App CSS variables
+ * (set by ext-apps useHostStyleVariables on documentElement — the SAME token
+ * contract apps-sdk-ui uses), with a sensible fallback so the widget is legible
+ * even without a host (local preview). `@theme inline` keeps the var reference
+ * live, so the host's value wins at runtime — Cowork looks like Cowork, ChatGPT
+ * like ChatGPT, no rebuild.
+ *
+ * Token source: @modelcontextprotocol/ext-apps app.js (--color-background-*,
+ * --color-text-*, --color-border-*, --border-radius-*). */
+
+/* source(none) disables Tailwind v4's automatic content detection — on this large
+ * repo the oxide scanner walks the whole tree and hangs. We scan ONLY this widget
+ * via the explicit @source below (verified 2026-06-07). */
+@import "tailwindcss" source(none);
+@source "./payment-link-wizard.tsx";
+@source "./customer-field.tsx";
+@source "./catalog-selector.tsx";
+@source "./pending-orders.tsx";
+@source "./cobro-status.tsx";
+@source "./delivery-receipt.tsx";
+@source "./onboarding.tsx";
+
+@theme inline {
+  --color-surface: var(--color-background-primary, light-dark(#ffffff, #1c1c1e));
+  --color-surface-2: var(--color-background-secondary, light-dark(#f6f6f6, #2c2c2e));
+  --color-ink: var(--color-text-primary, light-dark(#1a1a1a, #ededed));
+  --color-ink-soft: var(--color-text-secondary, light-dark(#6b6b6b, #a0a0a5));
+  --color-line: var(--color-border-primary, light-dark(#e4e4e4, #3a3a3c));
+  --color-accent: var(--color-background-inverse, light-dark(#1a1a1a, #ededed));
+  --color-on-accent: var(--color-text-inverse, light-dark(#ffffff, #1c1c1e));
+  --color-danger-surface: var(--color-background-danger, light-dark(#fdecef, #3a1a1f));
+  --color-danger-ink: var(--color-text-danger, light-dark(#b00020, #ff7a85));
+  --radius-card: var(--border-radius-lg, 0.75rem);
+  --radius-control: var(--border-radius-md, 0.5rem);
+}

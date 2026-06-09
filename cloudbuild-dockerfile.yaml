@@ -1,0 +1,225 @@
+# Cloud Build pipeline that uses the repo's Dockerfile + Artifact Registry
+# layer caching.
+#
+# Production standard (Google Cloud 2026): execute this file from a GitHub-
+# connected Cloud Build trigger so the build gets first-party Git metadata
+# (`$COMMIT_SHA`, `$SHORT_SHA`) from Cloud Build itself.
+#
+# Why: cloudbuild.yaml uses `gcloud run deploy --source=.` (Buildpacks) which
+# rebuilds node_modules and .next from scratch on every push (~7–8 minutes per
+# deploy). With Docker + --cache-from pointing at the previous :latest image,
+# small code diffs reuse the deps layer and finish in ~2–3 minutes.
+#
+# Cache strategy: pull the previous :latest as cache source. On first run the
+# pull fails harmlessly (|| exit 0) and the build runs cold. Subsequent builds
+# read the deps layer from registry — same wire as a normal Docker layer pull.
+#
+# Image registry: Artifact Registry (gcr.io is deprecated). The Velora repo
+# uses southamerica-east1 to keep image pulls in-region with Cloud Run.
+
+steps:
+  # ── 1. Pull previous :latest as cache source (best-effort). ────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'pull-cache'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker pull southamerica-east1-docker.pkg.dev/$PROJECT_ID/velora/velora:latest || exit 0
+
+  # ── 2. Build the image using the repo Dockerfile + cache-from. ────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build'
+    args:
+      - 'build'
+      - '--cache-from'
+      - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/velora/velora:latest'
+      - '-t'
+      - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/velora/velora:$SHORT_SHA'
+      - '-t'
+      - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/velora/velora:latest'
+      - '.'
+    waitFor: ['pull-cache']
+
+  # ── 3. Push both tags to Artifact Registry. ───────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-sha'
+    args:
+      - 'push'
+      - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/velora/velora:$SHORT_SHA'
+    waitFor: ['build']
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-latest'
+    args:
+      - 'push'
+      - 'southamerica-east1-docker.pkg.dev/$PROJECT_ID/velora/velora:latest'
+    waitFor: ['build']
+
+  # ── 4. Deploy the image to Cloud Run with the same env contract as today. ─
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy'
+    args:
+      - gcloud
+      - run
+      - deploy
+      - velora
+      - --image=southamerica-east1-docker.pkg.dev/$PROJECT_ID/velora/velora:$SHORT_SHA
+      - --region=southamerica-east1
+      - --platform=managed
+      - --allow-unauthenticated
+      - --memory=2Gi
+      - --cpu=2
+      # min-instances default 0 (scale-to-zero, no idle cost). For the judging
+      # window run `node scripts/demo-mode.mjs on` to keep one warm instance so
+      # judges never hit a cold start; `node scripts/demo-mode.mjs off` reverts to 0.
+      - --min-instances=0
+      - --max-instances=4
+      - --timeout=300s
+      - --concurrency=80
+      - --port=8080
+      - --project=my-gcp-project
+      # GEMINI_SUPERVISOR_MODEL + VERTEX_LOCATION_SUPERVISOR override the code
+      # default (gemini-3.1-pro-preview), which is GLOBAL-only — the regional
+      # endpoint southamerica-east1 uses cannot host it. Without these vars the
+      # supervisor returns empty payloads (Juan García audit 2026-05-24).
+      # GEMINI_SUB_AGENT_MODEL pinned to gemini-2.5-pro after the 2026-05-26 Path
+      # Juan debug. Flash (gemini-3.5-flash) was observed returning prose instead
+      # of calling the registered tool in the Payments agent, even with
+      # toolConfig.functionCallingConfig.mode="ANY" forced — confirmed via Google's
+      # public Gemini issue "Infinite tool call loop when setting
+      # function_calling_config to ANY mode" and Google ADK source. Pro reliably
+      # honors function calling for structured tools. The HIGH-COST-1 trade-off
+      # accepted: payment-link creation is low-volume, reliability beats cost here.
+      # STEP5_BRIDGE_BUSINESS_ID: single-business bridge for Twilio sandbox inbound.
+      # Twilio sandbox has no per-tenant phoneNumberId, so inbound messages route to
+      # this businessId until Meta Embedded Signup unlocks multi-tenant Meta routing.
+      - --set-env-vars=WHATSAPP_PROVIDER=meta,USE_OWNER_ASSISTANT=true,TWILIO_WHATSAPP_FROM=whatsapp:+10000000000,STEP5_BRIDGE_BUSINESS_ID=demo-business-id,DEMO_BUSINESS_IDS=demo-business-id,ANDREANI_MOCK_MODE=true,ANDREANI_ALLOW_MOCK_IN_PROD=true,GEMINI_SUPERVISOR_MODEL=gemini-2.5-pro,GEMINI_SUB_AGENT_MODEL=gemini-2.5-pro,GEMINI_MODEL=gemini-2.5-flash,VERTEX_LOCATION_SUPERVISOR=us-south1,TRANSFER_WA_TEMPLATE_ENABLED=false,USE_VERTEX_SEARCH=true,RATE_LIMIT_ENABLED=true,PAYMENTS_ADK_TIMEOUT_MS=60000,VENTAS_ADK_TIMEOUT_MS=30000,LOGISTICA_ADK_TIMEOUT_MS=35000,FISCAL_ADK_TIMEOUT_MS=40000,COMMUNICATIONS_ADK_TIMEOUT_MS=20000,EQUIPO_ADK_TIMEOUT_MS=28000,SUPERVISOR_ADK_TIMEOUT_MS=65000,CUSTOMER_AGENT_ADK_TIMEOUT_MS=90000,CUSTOMER_AGENT_DISPATCH_TIMEOUT_MS=100000,LLM_TIMEOUT_MS=80000,PAYMENT_LINK_FAST_PATH_TIMEOUT_MS=72000,PAYMENTS_AGENT_TIMEOUT_MS=72000,VENTAS_AGENT_TIMEOUT_MS=42000,LOGISTICA_AGENT_TIMEOUT_MS=47000,CONTADOR_AGENT_TIMEOUT_MS=52000,COMMUNICATIONS_AGENT_TIMEOUT_MS=32000,EQUIPO_AGENT_TIMEOUT_MS=40000,GOOGLE_CLOUD_PROJECT=my-gcp-project,CLOUD_TASKS_LOCATION=southamerica-east1,PAYMENT_CONFIRM_QUEUE=payment-confirm-queue,PAYMENT_CANCEL_QUEUE=payment-cancel-queue,WHATSAPP_INBOUND_QUEUE=whatsapp-inbound-queue,CLOUD_TASKS_SA_EMAIL=tasks-invoker-sa@my-gcp-project.iam.gserviceaccount.com,REPLY_POLISH_ENABLED=false,PROACTIVE_ONBOARDING_ENABLED=true,ONBOARDING_NUDGE_QUEUE=onboarding-nudge-queue,A2A_TRANSPORT=pubsub,GEMINI_CLASSIFY_MODEL=gemini-2.5-flash-lite,CLASSIFIER_LOCATION=us-central1,CLASSIFIER_TIMEOUT_MS=3000,GEMINI_SUPERVISOR_MAX_OUTPUT_TOKENS=3000,WORKOS_JWKS_URL=https://your-workos-tenant.authkit.app/oauth2/jwks,WORKOS_AS_ISSUER=https://your-workos-tenant.authkit.app,WORKOS_AS_METADATA_URL=https://your-workos-tenant.authkit.app/.well-known/oauth-authorization-server,MCP_RESOURCE_URI=https://tools.somosvelora.com/api/mcp,AGENT_FISCAL_BACKEND=velora,AGENT_LOGISTICA_BACKEND=velora
+      # Secret Manager bindings — kept separate from --set-env-vars per Cloud Run 2026
+      # convention. --update-secrets preserves existing bindings on partial deploys;
+      # listing every secret explicitly here ensures a full cloudbuild redeploy never
+      # silently drops them (Cloud Run reverts any flag not present in the deploy cmd).
+      - --update-secrets=A2A_API_KEY=A2A_API_KEY:latest,A2A_SECRET=A2A_SECRET:latest,AGENT_IDENTITY_KEY_ANDREANI=AGENT_IDENTITY_KEY_ANDREANI:latest,AGENT_IDENTITY_KEY_COMMUNICATIONS=AGENT_IDENTITY_KEY_COMMUNICATIONS:latest,AGENT_IDENTITY_KEY_CUSTOMER=AGENT_IDENTITY_KEY_CUSTOMER:latest,AGENT_IDENTITY_KEY_COMPANION=AGENT_IDENTITY_KEY_COMPANION:latest,AGENT_IDENTITY_KEY_DISTRIBUIDORA_MENDOZA=AGENT_IDENTITY_KEY_DISTRIBUIDORA_MENDOZA:latest,AGENT_IDENTITY_KEY_EQUIPO=AGENT_IDENTITY_KEY_EQUIPO:latest,AGENT_IDENTITY_KEY_FISCAL=AGENT_IDENTITY_KEY_FISCAL:latest,AGENT_IDENTITY_KEY_LOGISTICA=AGENT_IDENTITY_KEY_LOGISTICA:latest,AGENT_IDENTITY_KEY_MERCADOLIBRE=AGENT_IDENTITY_KEY_MERCADOLIBRE:latest,AGENT_IDENTITY_KEY_ONBOARDING=AGENT_IDENTITY_KEY_ONBOARDING:latest,AGENT_IDENTITY_KEY_PAYMENTS=AGENT_IDENTITY_KEY_PAYMENTS:latest,AGENT_IDENTITY_KEY_SUPERVISOR=AGENT_IDENTITY_KEY_SUPERVISOR:latest,AGENT_IDENTITY_KEY_VENTAS=AGENT_IDENTITY_KEY_VENTAS:latest,AGENT_IDENTITY_KEY_CAJA=AGENT_IDENTITY_KEY_CAJA:latest,AGENT_IDENTITY_KEY_INVENTARIO=AGENT_IDENTITY_KEY_INVENTARIO:latest,ANDREANI_WEBHOOK_SECRET=ANDREANI_WEBHOOK_SECRET:latest,AUTH_SECRET=AUTH_SECRET:latest,CRON_SECRET=CRON_SECRET:latest,DATABASE_URL=DATABASE_URL:latest,DIRECT_URL=DIRECT_URL:latest,GCS_PDF_BUCKET=GCS_PDF_BUCKET:latest,GOOGLE_APPLICATION_CREDENTIALS_JSON=GOOGLE_APPLICATION_CREDENTIALS_JSON:latest,GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest,GOOGLE_WEB_CLIENT_ID=GOOGLE_WEB_CLIENT_ID:latest,ML_CLIENT_ID=ML_CLIENT_ID:latest,ML_CLIENT_SECRET=ML_CLIENT_SECRET:latest,MODO_WEBHOOK_SECRET=MODO_WEBHOOK_SECRET:latest,MP_CLIENT_ID=MP_CLIENT_ID:latest,MP_CLIENT_SECRET=MP_CLIENT_SECRET:latest,MP_DIRECT_ACCESS_TOKEN=MP_DIRECT_ACCESS_TOKEN:latest,MP_EXTERNAL_POS_ID=MP_EXTERNAL_POS_ID:latest,MP_REDIRECT_URI=MP_REDIRECT_URI:latest,MP_TOKEN_ENCRYPTION_KEY=MP_TOKEN_ENCRYPTION_KEY:latest,MP_USER_ID=MP_USER_ID:latest,MP_WEBHOOK_SECRET=MP_WEBHOOK_SECRET:latest,NEXTAUTH_SECRET=NEXTAUTH_SECRET:latest,NEXTAUTH_URL=NEXTAUTH_URL:latest,TWILIO_ACCOUNT_SID=TWILIO_ACCOUNT_SID:latest,TWILIO_AUTH_TOKEN=TWILIO_AUTH_TOKEN:latest,VAPID_CONTACT_EMAIL=VAPID_CONTACT_EMAIL:latest,VAPID_PRIVATE_KEY=VAPID_PRIVATE_KEY:latest,VAPID_PUBLIC_KEY=VAPID_PUBLIC_KEY:latest,VELORA_APP_URL=VELORA_APP_URL:latest,WHATSAPP_PDF_TOKEN_SECRET=WHATSAPP_PDF_TOKEN_SECRET:latest,WHATSAPP_VERIFY_TOKEN=WHATSAPP_VERIFY_TOKEN:latest,WHATSAPP_APP_SECRET=WHATSAPP_APP_SECRET:latest,WORKOS_API_KEY=WORKOS_API_KEY:latest
+      - --quiet
+    waitFor: ['push-sha']
+
+  # ── 4b. Deploy the SAME image to velora-agents (agents.somosvelora.com). ────
+  #
+  # Phase A — agents.somosvelora.com separation (feat/agents-subdomain-p1).
+  # Same image as velora; only the service name, env vars, and secrets differ.
+  # This step deploys the velora-agents Cloud Run service from the identical
+  # image built in step 2 so that agents.somosvelora.com can serve agent
+  # JSON-RPC endpoints independently.
+  #
+  # Env vars: agent-relevant subset only (no frontend/auth OAuth/WebPush keys).
+  #   A2A_PUBLIC_BASE_URL tells the agent-cards to advertise the correct URL.
+  #   AGENTS_BASE_URL is intentionally NOT set here — the cutover (pointing
+  #   velora → velora-agents) is a separate manual step; today both services
+  #   self-route for backward compat.
+  #
+  # Secrets: DATABASE_URL (sessions), A2A_SECRET, all AGENT_IDENTITY_KEY_*,
+  #   integration credentials (Andreani, MP, ARCA/fiscal, WhatsApp/Twilio),
+  #   plus GOOGLE_APPLICATION_CREDENTIALS_JSON (Vertex AI / ADK).
+  #
+  # Cloud Run 2026 rule: every flag must be explicit or Cloud Run reverts it.
+  # Mirror the velora step exactly; only name + A2A_PUBLIC_BASE_URL differ.
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-agents'
+    args:
+      - gcloud
+      - run
+      - deploy
+      - velora-agents
+      - --image=southamerica-east1-docker.pkg.dev/$PROJECT_ID/velora/velora:$SHORT_SHA
+      - --region=southamerica-east1
+      - --platform=managed
+      - --allow-unauthenticated
+      - --memory=2Gi
+      - --cpu=2
+      # velora-agents is stateless (agents only); min=0 to avoid idle cost.
+      # Raise to 1 if latency SLA requires a warm agent instance.
+      - --min-instances=0
+      - --max-instances=4
+      - --timeout=300s
+      - --concurrency=80
+      - --port=8080
+      - --project=my-gcp-project
+      # Run as velora-runtime (same SA as the velora service) — it already holds
+      # secretAccessor on every secret below. A new service defaults to the compute
+      # SA which lacks those grants, so this MUST be explicit (velora preserves its
+      # SA across deploys because it pre-exists; velora-agents is brand-new).
+      - --service-account=runtime-sa@my-gcp-project.iam.gserviceaccount.com
+      # A2A_PUBLIC_BASE_URL: agents advertise their own subdomain in agent-cards.
+      # All other env vars mirror the velora step (agent-relevant subset).
+      - --set-env-vars=A2A_PUBLIC_BASE_URL=https://agents.somosvelora.com,WHATSAPP_PROVIDER=meta,USE_OWNER_ASSISTANT=true,TWILIO_WHATSAPP_FROM=whatsapp:+10000000000,STEP5_BRIDGE_BUSINESS_ID=demo-business-id,DEMO_BUSINESS_IDS=demo-business-id,ANDREANI_MOCK_MODE=true,ANDREANI_ALLOW_MOCK_IN_PROD=true,GEMINI_SUPERVISOR_MODEL=gemini-2.5-pro,GEMINI_SUB_AGENT_MODEL=gemini-2.5-pro,GEMINI_MODEL=gemini-2.5-flash,VERTEX_LOCATION_SUPERVISOR=us-south1,TRANSFER_WA_TEMPLATE_ENABLED=false,USE_VERTEX_SEARCH=true,RATE_LIMIT_ENABLED=false,PAYMENTS_ADK_TIMEOUT_MS=60000,VENTAS_ADK_TIMEOUT_MS=30000,LOGISTICA_ADK_TIMEOUT_MS=35000,FISCAL_ADK_TIMEOUT_MS=40000,COMMUNICATIONS_ADK_TIMEOUT_MS=20000,EQUIPO_ADK_TIMEOUT_MS=28000,SUPERVISOR_ADK_TIMEOUT_MS=65000,CUSTOMER_AGENT_ADK_TIMEOUT_MS=90000,CUSTOMER_AGENT_DISPATCH_TIMEOUT_MS=100000,LLM_TIMEOUT_MS=80000,PAYMENT_LINK_FAST_PATH_TIMEOUT_MS=72000,PAYMENTS_AGENT_TIMEOUT_MS=72000,VENTAS_AGENT_TIMEOUT_MS=42000,LOGISTICA_AGENT_TIMEOUT_MS=47000,CONTADOR_AGENT_TIMEOUT_MS=52000,COMMUNICATIONS_AGENT_TIMEOUT_MS=32000,EQUIPO_AGENT_TIMEOUT_MS=40000,GOOGLE_CLOUD_PROJECT=my-gcp-project,CLOUD_TASKS_LOCATION=southamerica-east1,PAYMENT_CONFIRM_QUEUE=payment-confirm-queue,PAYMENT_CANCEL_QUEUE=payment-cancel-queue,WHATSAPP_INBOUND_QUEUE=whatsapp-inbound-queue,CLOUD_TASKS_SA_EMAIL=tasks-invoker-sa@my-gcp-project.iam.gserviceaccount.com,REPLY_POLISH_ENABLED=false,PROACTIVE_ONBOARDING_ENABLED=true,ONBOARDING_NUDGE_QUEUE=onboarding-nudge-queue,A2A_TRANSPORT=pubsub,GEMINI_CLASSIFY_MODEL=gemini-2.5-flash-lite,CLASSIFIER_LOCATION=us-central1,CLASSIFIER_TIMEOUT_MS=3000,GEMINI_SUPERVISOR_MAX_OUTPUT_TOKENS=3000,WORKOS_JWKS_URL=https://your-workos-tenant.authkit.app/oauth2/jwks,WORKOS_AS_ISSUER=https://your-workos-tenant.authkit.app,WORKOS_AS_METADATA_URL=https://your-workos-tenant.authkit.app/.well-known/oauth-authorization-server,MCP_RESOURCE_URI=https://tools.somosvelora.com/api/mcp,AGENT_FISCAL_BACKEND=velora,AGENT_LOGISTICA_BACKEND=velora
+      # Secrets: agent subset + the startup-REQUIRED vars. The app's instrumentation
+      # hook (src/lib/env.ts) validates GOOGLE_CLIENT_ID/SECRET, GOOGLE_WEB_CLIENT_ID,
+      # CRON_SECRET as required at BOOT regardless of which routes run — without them
+      # the whole app fails to start (500 on every request). Only NEXTAUTH_SECRET +
+      # VAPID_* stay omitted (not in the required list; no /api/agents/* handler reads them).
+      - --update-secrets=GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest,GOOGLE_WEB_CLIENT_ID=GOOGLE_WEB_CLIENT_ID:latest,CRON_SECRET=CRON_SECRET:latest,A2A_API_KEY=A2A_API_KEY:latest,A2A_SECRET=A2A_SECRET:latest,AGENT_IDENTITY_KEY_ANDREANI=AGENT_IDENTITY_KEY_ANDREANI:latest,AGENT_IDENTITY_KEY_COMMUNICATIONS=AGENT_IDENTITY_KEY_COMMUNICATIONS:latest,AGENT_IDENTITY_KEY_CUSTOMER=AGENT_IDENTITY_KEY_CUSTOMER:latest,AGENT_IDENTITY_KEY_COMPANION=AGENT_IDENTITY_KEY_COMPANION:latest,AGENT_IDENTITY_KEY_DISTRIBUIDORA_MENDOZA=AGENT_IDENTITY_KEY_DISTRIBUIDORA_MENDOZA:latest,AGENT_IDENTITY_KEY_EQUIPO=AGENT_IDENTITY_KEY_EQUIPO:latest,AGENT_IDENTITY_KEY_FISCAL=AGENT_IDENTITY_KEY_FISCAL:latest,AGENT_IDENTITY_KEY_LOGISTICA=AGENT_IDENTITY_KEY_LOGISTICA:latest,AGENT_IDENTITY_KEY_MERCADOLIBRE=AGENT_IDENTITY_KEY_MERCADOLIBRE:latest,AGENT_IDENTITY_KEY_ONBOARDING=AGENT_IDENTITY_KEY_ONBOARDING:latest,AGENT_IDENTITY_KEY_PAYMENTS=AGENT_IDENTITY_KEY_PAYMENTS:latest,AGENT_IDENTITY_KEY_SUPERVISOR=AGENT_IDENTITY_KEY_SUPERVISOR:latest,AGENT_IDENTITY_KEY_VENTAS=AGENT_IDENTITY_KEY_VENTAS:latest,AGENT_IDENTITY_KEY_CAJA=AGENT_IDENTITY_KEY_CAJA:latest,AGENT_IDENTITY_KEY_INVENTARIO=AGENT_IDENTITY_KEY_INVENTARIO:latest,ANDREANI_WEBHOOK_SECRET=ANDREANI_WEBHOOK_SECRET:latest,AUTH_SECRET=AUTH_SECRET:latest,DATABASE_URL=DATABASE_URL:latest,DIRECT_URL=DIRECT_URL:latest,GCS_PDF_BUCKET=GCS_PDF_BUCKET:latest,GOOGLE_APPLICATION_CREDENTIALS_JSON=GOOGLE_APPLICATION_CREDENTIALS_JSON:latest,ML_CLIENT_ID=ML_CLIENT_ID:latest,ML_CLIENT_SECRET=ML_CLIENT_SECRET:latest,MODO_WEBHOOK_SECRET=MODO_WEBHOOK_SECRET:latest,MP_CLIENT_ID=MP_CLIENT_ID:latest,MP_CLIENT_SECRET=MP_CLIENT_SECRET:latest,MP_DIRECT_ACCESS_TOKEN=MP_DIRECT_ACCESS_TOKEN:latest,MP_EXTERNAL_POS_ID=MP_EXTERNAL_POS_ID:latest,MP_REDIRECT_URI=MP_REDIRECT_URI:latest,MP_TOKEN_ENCRYPTION_KEY=MP_TOKEN_ENCRYPTION_KEY:latest,MP_USER_ID=MP_USER_ID:latest,MP_WEBHOOK_SECRET=MP_WEBHOOK_SECRET:latest,TWILIO_ACCOUNT_SID=TWILIO_ACCOUNT_SID:latest,TWILIO_AUTH_TOKEN=TWILIO_AUTH_TOKEN:latest,VELORA_APP_URL=VELORA_APP_URL:latest,WHATSAPP_PDF_TOKEN_SECRET=WHATSAPP_PDF_TOKEN_SECRET:latest,WHATSAPP_VERIFY_TOKEN=WHATSAPP_VERIFY_TOKEN:latest,WHATSAPP_APP_SECRET=WHATSAPP_APP_SECRET:latest,WORKOS_API_KEY=WORKOS_API_KEY:latest
+      - --quiet
+    waitFor: ['push-sha']
+
+  # ── 5. Poll /api/health until 200. Same logic as cloudbuild.yaml. ──────────
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'wait-for-revision'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        for i in $(seq 1 60); do
+          status=$(curl -s -o /dev/null -w "%{http_code}" https://somosvelora.com/api/health || echo "000")
+          if [ "$status" = "200" ]; then
+            echo "Revision healthy after ${i} attempt(s)"
+            exit 0
+          fi
+          sleep 3
+        done
+        echo "Revision did not become healthy within 180s"
+        exit 1
+    # waitFor: ['deploy'] only — velora health gate must not be blocked by the
+    # brand-new velora-agents step (first-time IAM/quota failures would fail the
+    # whole pipeline even when velora itself deployed fine). deploy-agents still
+    # runs in parallel via its own waitFor: ['push-sha']. Deliberate decoupling.
+    waitFor: ['deploy']
+
+  # ── 6. Lightweight smoke endpoints. ───────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/curl'
+    id: 'health-verify'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -e
+        endpoints=(
+          "/"
+          "/api/auth/csrf"
+          "/.well-known/agent-card.json"
+          "/.well-known/agents.json"
+          "/.well-known/onboarding-agent-card.json"
+        )
+        for path in "${endpoints[@]}"; do
+          code=$(curl -s -o /dev/null -w "%{http_code}" "https://somosvelora.com${path}")
+          if [ "$code" != "200" ]; then
+            echo "FAIL: ${path} returned ${code}"
+            exit 1
+          fi
+          echo "OK: ${path} = 200"
+        done
+    waitFor: ['wait-for-revision']
+
+timeout: '1500s'
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
+
+# Trigger-first standard:
+# - Cloud Build triggers provide `$COMMIT_SHA` and `$SHORT_SHA` natively.
+# - This file intentionally uses `$SHORT_SHA` so the deployed image is tied to
+#   the Git-triggered revision without any custom substitution.
+#
+# Break-glass local run (non-canonical): Cloud Build documents that `gcloud
+# builds submit` may manually provide trigger-style substitutions. If you
+# absolutely must run this file outside a trigger, pass:
+#   gcloud builds submit --config cloudbuild-dockerfile.yaml \
+#     --substitutions=SHORT_SHA=$(git rev-parse --short HEAD),COMMIT_SHA=$(git rev-parse HEAD) .

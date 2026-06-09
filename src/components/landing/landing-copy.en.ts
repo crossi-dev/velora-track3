@@ -1,0 +1,193 @@
+/* English copy — US enterprise / B2B / investor register. Native copy, NOT a
+   translation of the Spanish. Hero stays an emotional hook; the body is technical. */
+import type { LandingCopy } from "./landing-copy";
+
+export const defaultCopyEn: LandingCopy = {
+  header: {
+    wordmark: "Velora",
+    nav: [
+      { label: "How it works", href: "#como-funciona" },
+      { label: "Where to use it", href: "#superficies" },
+      { label: "Integrations", href: "#integraciones" },
+      { label: "FAQ", href: "#preguntas" },
+    ],
+    switcher: { es: "ES", en: "EN", aria: "Switch language" },
+    cta: "Start free",
+  },
+  hero: {
+    wordmark: "VELORA",
+    verb: "Sell without being there.",
+    tagline:
+      "Run your business with AI. Sales, stock, payments — all from the chat. Your AI agent team works while you direct.",
+    taglineStrong: "From the Velora App, ChatGPT or Claude.",
+    ctaLabel: "Start free with Google",
+    ctaMicroTrust: "Free in beta · no card",
+  },
+  benefits: {
+    label: "Capabilities",
+    headline: "From first message to delivery, on its own.",
+    items: [
+      {
+        title: "Sell and charge",
+        body: "The agent handles WhatsApp, builds the order, generates the payment link and confirms collection — without you being there.",
+      },
+      {
+        title: "Invoice and ship",
+        body: "Issues the tax invoice and coordinates shipping with the carrier — agent to agent, no forms.",
+      },
+      {
+        title: "Operated from any AI",
+        body: "Use the Velora App, ChatGPT or Claude. Same business, run from whichever surface you already use.",
+      },
+    ],
+  },
+  steps: {
+    items: [
+      { n: "01", verb: "An order comes in on WhatsApp" },
+      { n: "02", verb: "The agent sells and charges" },
+      { n: "03", verb: "It invoices and ships on its own" },
+    ],
+  },
+  quiet: {
+    items: [
+      "Built on open standards — MCP + A2A.",
+      "Interoperable with Claude, ChatGPT and Gemini.",
+      "Cryptographic identity and traceability per agent.",
+    ],
+  },
+  surfaces: {
+    label: "Where to use it",
+    headline: "Use Velora where you already work.",
+    sub: "Three entry points, the same business. Pick the one that fits how you operate today — without losing anything.",
+    entries: [
+      {
+        name: "Velora App",
+        description:
+          "The native Velora app. Sign in with Google, configure your business in chat, and start operating in minutes. Built on Google infrastructure with cryptographic agent identity.",
+        badge: "Available now",
+        available: true,
+        ctaLabel: "Start with Google",
+        ctaHref: "#",
+      },
+      {
+        name: "ChatGPT",
+        description:
+          "Velora as a toolkit inside ChatGPT. Check catalog, log sales, and track stock without leaving the conversation. Connected via the open MCP standard.",
+        badge: "Coming soon to the directory",
+        available: false,
+      },
+      {
+        name: "Claude / Cowork",
+        description:
+          "Operate Velora from Claude. Ideal if you already use Cowork day-to-day: the same chat manages your business and your work tools. Connected via MCP.",
+        badge: "Coming soon to the directory",
+        available: false,
+      },
+    ],
+  },
+  widgets: {
+    label: "Experience",
+    headline: "Not plain text. Graphical widgets.",
+    sub: "Velora doesn't dump raw data into the chat. At every critical step, an interactive widget appears — review, confirm, and track status in real time.",
+    steps: [
+      {
+        n: "01",
+        title: "Payment wizard",
+        body: "When it's time to charge, Velora displays a wizard with the order details, amount and method. You confirm — the agent executes.",
+      },
+      {
+        n: "02",
+        title: "Live payment status",
+        body: "A status widget shows whether payment is pending, processing or confirmed. No refreshing, no asking the customer.",
+      },
+      {
+        n: "03",
+        title: "Receipt delivered",
+        body: "Payment confirmed. Velora generates the receipt and sends it via WhatsApp — the customer receives it before you close the chat.",
+      },
+    ],
+  },
+  integraciones: {
+    title: "Integrations",
+    headline: "Velora lives inside your AI.",
+    sub: "Claude, ChatGPT or Gemini operate Velora through the open MCP standard. The same business, run from any AI.",
+    endpoint: "Connect your agent to tools.somosvelora.com/api/mcp",
+    cards: [
+      {
+        name: "Claude",
+        imageAlt:
+          "Claude selling in Velora: finds the customer, checks stock and generates the MercadoPago payment link",
+        caption: "Sell and get paid: customer, stock and payment link in one message.",
+        imageSrc: "/integraciones/claude-3-vender.jpg",
+        hasScreenshot: true,
+      },
+      {
+        name: "ChatGPT",
+        imageAlt:
+          "ChatGPT querying Velora's catalog: product list with price and stock",
+        caption: "Check your whole catalog and stock in an instant.",
+        imageSrc: "/integraciones/chatgpt-catalogo.jpg",
+        hasScreenshot: true,
+      },
+      {
+        name: "Gemini",
+        imageAlt:
+          "Gemini Spark — soon you'll be able to run Velora with Google's personal agent",
+        caption: "Soon you'll be able to run Velora with Gemini Spark.",
+        imageSrc: "/integraciones/gemini-spark.jpg",
+        hasScreenshot: true,
+      },
+    ],
+  },
+  faq: {
+    title: ["Things people ", "actually", " want to know."],
+    subtitle: "Missing something? Write to owner@example.com.",
+    items: [
+      {
+        q: "What is Velora?",
+        a: "An agentic commerce platform: AI agents that sell, charge, invoice and ship end to end, interoperate agent-to-agent, and are operated from the Velora App, ChatGPT or Claude.",
+      },
+      {
+        q: "Where can I use Velora?",
+        a: "From three surfaces: the Velora App (available now, sign in with Google), or as a toolkit inside ChatGPT or Claude via the MCP standard (coming soon to each platform's directory). Same business from any of the three.",
+      },
+      {
+        q: "Are the chat widgets real?",
+        a: "Yes. When Velora needs you to confirm a charge, it shows a widget with the details — not just text. Payment status updates in the same chat without you having to ask.",
+      },
+      {
+        q: "Is it secure?",
+        a: "Yes. Velora runs on Google Vertex AI with the A2A protocol, cryptographic agent identity, and full auditability of every action taken on your behalf.",
+      },
+      {
+        q: "What if the agent makes a mistake?",
+        a: "You're in control. Every action is logged and you can review or undo it from the chat. Nothing happens behind your back.",
+      },
+      {
+        q: "Do I need to know technology?",
+        a: "No. If you can send a voice note or a WhatsApp message, you can operate Velora.",
+      },
+      {
+        q: "How much does it cost?",
+        a: "Currently in private beta at no cost. Write to us to coordinate early access.",
+      },
+      {
+        q: "How do I connect my providers?",
+        a: "Velora speaks A2A with Andreani, MercadoPago, ARCA, and other enterprise agents. If your provider doesn't expose an agent yet, we can connect via API in hours.",
+      },
+    ],
+  },
+  closing: {
+    headline: "Run your business with AI, from anywhere.",
+    ctaLabel: "Start free with Google",
+    microTrust: "Free in beta · no card",
+  },
+  footer: {
+    copyright: "© 2026 Velora",
+    links: [
+      { label: "Privacy", href: "/privacy" },
+      { label: "Terms", href: "/terms" },
+    ],
+    contactEmail: "owner@example.com",
+  },
+};

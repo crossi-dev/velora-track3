@@ -1,0 +1,591 @@
+{
+  "metadata": {
+    "agent": "supervisor",
+    "version": "1.0.0",
+    "createdAt": "2026-05-08",
+    "source": "few-shot examples extracted from supervisor-prompt.ts (vetted) + synthesized edge cases",
+    "totalCases": 40
+  },
+  "cases": [
+    {
+      "id": "sup-sale-001",
+      "agent": "supervisor",
+      "category": "register_sale",
+      "input": "vendí clavos a Martínez",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "register_sale",
+          "actions[0].data.productName": "clavos",
+          "actions[0].data.customerName": "Martínez",
+          "actions[0].data.autoSend": false
+        }
+      },
+      "notes": "owner classic — verbo + producto + a + cliente"
+    },
+    {
+      "id": "sup-sale-002",
+      "agent": "supervisor",
+      "category": "register_sale",
+      "input": "vendí yerba, sin cliente",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "register_sale",
+          "actions[0].data.productName": "yerba",
+          "actions[0].data.customerName": "Consumidor Final"
+        }
+      },
+      "notes": "sin cliente → Consumidor Final"
+    },
+    {
+      "id": "sup-sale-003",
+      "agent": "supervisor",
+      "category": "register_sale",
+      "input": "cobrále cervezas a García y mandáselo por WhatsApp",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "register_sale",
+          "actions[0].data.productName": "cerveza",
+          "actions[0].data.customerName": "García",
+          "actions[0].data.autoSend": true
+        }
+      },
+      "notes": "autoSend=true por mención WhatsApp"
+    },
+    {
+      "id": "sup-sale-004",
+      "agent": "supervisor",
+      "category": "return_sale",
+      "input": "devolvé la última venta",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "return_sale",
+          "actions[0].data.undoCount": 1
+        }
+      }
+    },
+    {
+      "id": "sup-sale-005",
+      "agent": "supervisor",
+      "category": "return_sale",
+      "input": "deshacé las últimas 3 ventas",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "return_sale",
+          "actions[0].data.undoCount": 3
+        }
+      }
+    },
+    {
+      "id": "sup-pricing-001",
+      "agent": "supervisor",
+      "category": "bulk_price_update",
+      "input": "subí 10% a todos los productos",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "bulk_price_update",
+          "actions[0].data.amount": 10,
+          "actions[0].data.mode": "percentage",
+          "actions[0].data.direction": "up",
+          "actions[0].data.target": "all"
+        }
+      }
+    },
+    {
+      "id": "sup-pricing-002",
+      "agent": "supervisor",
+      "category": "bulk_price_update",
+      "input": "bajá 5% los vinos",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "bulk_price_update",
+          "actions[0].data.amount": 5,
+          "actions[0].data.mode": "percentage",
+          "actions[0].data.direction": "down",
+          "actions[0].data.target": "vinos"
+        }
+      }
+    },
+    {
+      "id": "sup-pricing-003",
+      "agent": "supervisor",
+      "category": "bulk_price_update",
+      "input": "subí una luca a las papas",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "bulk_price_update",
+          "actions[0].data.amount": 1000,
+          "actions[0].data.mode": "absolute",
+          "actions[0].data.direction": "up",
+          "actions[0].data.target": "papas"
+        }
+      },
+      "notes": "argentinismo: luca = 1000"
+    },
+    {
+      "id": "sup-pricing-004",
+      "agent": "supervisor",
+      "category": "edit_product",
+      "input": "ponele 1500 a los clavos",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "edit_product",
+          "actions[0].data.productName": "clavos",
+          "actions[0].data.field": "price",
+          "actions[0].data.value": 1500
+        }
+      }
+    },
+    {
+      "id": "sup-pricing-005",
+      "agent": "supervisor",
+      "category": "edit_product",
+      "input": "el costo de los hierros es 800",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "edit_product",
+          "actions[0].data.productName": "hierros",
+          "actions[0].data.field": "costPrice",
+          "actions[0].data.value": 800
+        }
+      }
+    },
+    {
+      "id": "sup-pricing-006",
+      "agent": "supervisor",
+      "category": "create_product",
+      "input": "cargá tornillos al catálogo a $500",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "create_product",
+          "actions[0].data.name": "tornillos",
+          "actions[0].data.price": 500
+        }
+      }
+    },
+    {
+      "id": "sup-pricing-007",
+      "agent": "supervisor",
+      "category": "create_product",
+      "input": "agregá yerba mate a $1200 con 50 de stock",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "create_product",
+          "actions[0].data.price": 1200,
+          "actions[0].data.stock": 50
+        }
+      }
+    },
+    {
+      "id": "sup-pricing-008",
+      "agent": "supervisor",
+      "category": "delete_product",
+      "input": "borra los clavos del catálogo",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "delete_product",
+          "actions[0].data.productName": "clavos"
+        }
+      }
+    },
+    {
+      "id": "sup-stock-001",
+      "agent": "supervisor",
+      "category": "stock_load",
+      "input": "me llegaron 30 bolsas de cal a 200 cada una",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "stock_load",
+          "actions[0].data.itemName": "cal",
+          "actions[0].data.quantity": 30,
+          "actions[0].data.unitPrice": 200
+        }
+      }
+    },
+    {
+      "id": "sup-stock-002",
+      "agent": "supervisor",
+      "category": "stock_load",
+      "input": "cargá 50 tornillos del proveedor Ferretería Norte a 15 pesos",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "stock_load",
+          "actions[0].data.itemName": "tornillos",
+          "actions[0].data.quantity": 50,
+          "actions[0].data.unitPrice": 15,
+          "actions[0].data.supplierName": "Ferretería Norte"
+        }
+      }
+    },
+    {
+      "id": "sup-stock-003",
+      "agent": "supervisor",
+      "category": "adjust_stock",
+      "input": "descontá 5 arena gruesa",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "adjust_stock",
+          "actions[0].data.productName": "arena gruesa",
+          "actions[0].data.mode": "decrease",
+          "actions[0].data.quantity": 5
+        }
+      }
+    },
+    {
+      "id": "sup-stock-004",
+      "agent": "supervisor",
+      "category": "adjust_stock",
+      "input": "dejá el stock de cemento en 50",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "adjust_stock",
+          "actions[0].data.productName": "cemento",
+          "actions[0].data.mode": "set",
+          "actions[0].data.quantity": 50
+        }
+      }
+    },
+    {
+      "id": "sup-cash-001",
+      "agent": "supervisor",
+      "category": "register_movement",
+      "input": "pagué 5 lucas de luz",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "register_movement",
+          "actions[0].data.movementType": "purchase",
+          "actions[0].data.amount": 5000
+        }
+      }
+    },
+    {
+      "id": "sup-cash-002",
+      "agent": "supervisor",
+      "category": "register_movement",
+      "input": "cobré 10000 del alquiler",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "register_movement",
+          "actions[0].data.movementType": "income",
+          "actions[0].data.amount": 10000
+        }
+      }
+    },
+    {
+      "id": "sup-cash-003",
+      "agent": "supervisor",
+      "category": "register_movement",
+      "input": "sueldo de Juan 25000",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "register_movement",
+          "actions[0].data.movementType": "salary",
+          "actions[0].data.amount": 25000
+        }
+      }
+    },
+    {
+      "id": "sup-rule-001",
+      "agent": "supervisor",
+      "category": "create_business_rule",
+      "input": "Los empleados se lavan las manos cada 2 horas",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "create_business_rule",
+          "actions[0].data.kind": "time-based",
+          "actions[0].data.trigger": "0 */2 * * *"
+        }
+      }
+    },
+    {
+      "id": "sup-rule-002",
+      "agent": "supervisor",
+      "category": "create_business_rule",
+      "input": "a las 19:27 limpiar la vereda todos los días",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "create_business_rule",
+          "actions[0].data.kind": "time-based",
+          "actions[0].data.trigger": "27 19 * * *"
+        }
+      }
+    },
+    {
+      "id": "sup-rule-003",
+      "agent": "supervisor",
+      "category": "create_business_rule",
+      "input": "Cobrá siempre antes de entregar",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "create_business_rule",
+          "actions[0].data.kind": "behavior-based",
+          "actions[0].data.trigger": "credit_request"
+        }
+      }
+    },
+    {
+      "id": "sup-rule-004",
+      "agent": "supervisor",
+      "category": "create_business_rule",
+      "input": "Si el stock de vasos grandes baja de 50, decile a los empleados que ofrezcan solo los chicos",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "create_business_rule",
+          "actions[0].data.kind": "condition-based"
+        }
+      }
+    },
+    {
+      "id": "sup-rule-005",
+      "agent": "supervisor",
+      "category": "delete_business_rule",
+      "input": "Saca la regla de lavar manos",
+      "context": {
+        "activeRules": [{ "kind": "time-based", "trigger": "0 */2 * * *", "message": "Lavate las manos." }]
+      },
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "delete_business_rule",
+          "actions[0].data.ruleTrigger": "0 */2 * * *"
+        }
+      }
+    },
+    {
+      "id": "sup-rule-006",
+      "agent": "supervisor",
+      "category": "update_business_rule",
+      "input": "Cambiá la regla de lavar manos a cada 3 horas",
+      "context": {
+        "activeRules": [{ "kind": "time-based", "trigger": "0 */2 * * *", "message": "Lavate las manos." }]
+      },
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "update_business_rule",
+          "actions[0].data.trigger": "0 */3 * * *"
+        }
+      }
+    },
+    {
+      "id": "sup-customer-001",
+      "agent": "supervisor",
+      "category": "create_customer",
+      "input": "agregá a Martínez como cliente, tel 1134567890",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "create_customer",
+          "actions[0].data.name": "Martínez",
+          "actions[0].data.phone": "1134567890"
+        }
+      }
+    },
+    {
+      "id": "sup-supplier-001",
+      "agent": "supervisor",
+      "category": "create_supplier",
+      "input": "agregá a Molinos como proveedor, tel 1145678901",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "create_supplier",
+          "actions[0].data.name": "Molinos",
+          "actions[0].data.phone": "1145678901"
+        }
+      }
+    },
+    {
+      "id": "sup-purchase-001",
+      "agent": "supervisor",
+      "category": "create_purchase_request",
+      "input": "pedile 50 kilos de harina a Molinos a 180 el kilo",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "create_purchase_request",
+          "actions[0].data.supplierName": "Molinos",
+          "actions[0].data.quantity": 50,
+          "actions[0].data.unitPrice": 180
+        }
+      }
+    },
+    {
+      "id": "sup-budget-001",
+      "agent": "supervisor",
+      "category": "create_budget",
+      "input": "hacé un presupuesto para García de 3 mesas a 8000 y 4 sillas a 3000",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "create_budget",
+          "actions[0].data.customerName": "García"
+        }
+      }
+    },
+    {
+      "id": "sup-clarif-001",
+      "agent": "supervisor",
+      "category": "clarification",
+      "input": "subí todo",
+      "expected": {
+        "match": {
+          "kind": "clarification"
+        },
+        "absent": ["actions"]
+      },
+      "notes": "directiva difusa sin monto/porcentaje"
+    },
+    {
+      "id": "sup-clarif-002",
+      "agent": "supervisor",
+      "category": "clarification",
+      "input": "borrá los productos que ya no vendo",
+      "expected": {
+        "match": {
+          "kind": "clarification"
+        }
+      }
+    },
+    {
+      "id": "sup-clarif-003",
+      "agent": "supervisor",
+      "category": "clarification",
+      "input": "Los chicos son flojos",
+      "expected": {
+        "match": {
+          "kind": "clarification"
+        }
+      },
+      "notes": "directiva sin condición concreta — clarification obligatoria"
+    },
+    {
+      "id": "sup-delegation-001",
+      "agent": "supervisor",
+      "category": "create_delegation_policy",
+      "input": "Los empleados pueden cargar mercadería hasta 50000 pesos sin que yo lo apruebe",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "create_delegation_policy",
+          "actions[0].data.scope": "stock",
+          "actions[0].data.maxValue": 50000,
+          "actions[0].data.requiresOwner": false
+        }
+      }
+    },
+    {
+      "id": "sup-delegation-002",
+      "agent": "supervisor",
+      "category": "create_delegation_policy",
+      "input": "Que siempre me consulten antes de cargar stock",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "create_delegation_policy",
+          "actions[0].data.scope": "stock",
+          "actions[0].data.requiresOwner": true
+        }
+      }
+    },
+    {
+      "id": "sup-employee-001",
+      "agent": "supervisor",
+      "category": "create_employee",
+      "input": "Quiero crear un empleado, se llama Juan",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "create_employee",
+          "actions[0].data.name": "Juan"
+        }
+      }
+    },
+    {
+      "id": "sup-employee-002",
+      "agent": "supervisor",
+      "category": "broadcast_employees",
+      "input": "avisales que saquen la basura ahora",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "broadcast_employees"
+        }
+      }
+    },
+    {
+      "id": "sup-a2a-001",
+      "agent": "supervisor",
+      "category": "call_contador_agent",
+      "input": "validá el CUIT 20-12345678-9 de García",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "call_contador_agent"
+        }
+      }
+    },
+    {
+      "id": "sup-a2a-002",
+      "agent": "supervisor",
+      "category": "call_payments_agent",
+      "input": "generá un link de pago de $8000 para García",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "call_payments_agent"
+        }
+      }
+    },
+    {
+      "id": "sup-composite-001",
+      "agent": "supervisor",
+      "category": "composite_actions",
+      "input": "pagué la luz y bajá 10% a todo",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "register_movement",
+          "actions[1].intent": "bulk_price_update"
+        }
+      },
+      "notes": "2 acciones en el mismo turno"
+    },
+    {
+      "id": "sup-composite-002",
+      "agent": "supervisor",
+      "category": "composite_actions",
+      "input": "borrá los clavos y agregá tornillos a $500",
+      "expected": {
+        "match": {
+          "kind": "actions",
+          "actions[0].intent": "delete_product",
+          "actions[1].intent": "create_product"
+        }
+      }
+    }
+  ]
+}

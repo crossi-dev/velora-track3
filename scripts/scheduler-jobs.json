@@ -1,0 +1,104 @@
+[
+  {
+    "name": "velora-audit-cleanup",
+    "schedule": "0 4 * * *",
+    "path": "/api/scheduled/audit-cleanup",
+    "description": "Daily DB TTL cleanup — sessions, CriticalWriteEvent, ChatMessage, IdempotencyRecord, StockMovement, CashMovement, PushSubscription, PaymentIntent, RateLimitBucket, WebhookSecurityIncident (one sequential run)"
+  },
+  {
+    "name": "velora-rule-alerts",
+    "schedule": "*/5 * * * *",
+    "path": "/api/scheduled/rule-alerts",
+    "description": "Fires BusinessRule time-based triggers every 5 min (ART-anchored, 1h catch-up window, idempotent by ruleId+slot+empId)"
+  },
+  {
+    "name": "velora-daily-summary-push",
+    "schedule": "0 23 * * *",
+    "path": "/api/scheduled/daily-summary-push",
+    "description": "End-of-day owner push notification (20:00 ART = 23:00 UTC)"
+  },
+  {
+    "name": "velora-daily-summary-chat",
+    "schedule": "0 23 * * *",
+    "path": "/api/scheduled/daily-summary-chat",
+    "description": "End-of-day sales summary injected as a ChatMessage (20:00 ART = 23:00 UTC); dedup'd by clientMessageId"
+  },
+  {
+    "name": "velora-low-stock-alert",
+    "schedule": "0 12 * * *",
+    "path": "/api/scheduled/low-stock-alert",
+    "description": "Low-stock supervisor scan (09:00 ART = 12:00 UTC)"
+  },
+  {
+    "name": "velora-anomaly-scan",
+    "schedule": "0 */2 * * *",
+    "path": "/api/cron/anomaly-scan",
+    "description": "Stock velocity alert scan every 2 hours — flags fast-moving products below reorder threshold"
+  },
+  {
+    "name": "velora-week-patterns",
+    "schedule": "0 3 * * 0",
+    "path": "/api/scheduled/week-patterns",
+    "description": "Weekly day-of-week pattern analysis (Planner Level 2) — runs Sunday 00:00 ART = 03:00 UTC"
+  },
+  {
+    "name": "vertex-search-reindex",
+    "schedule": "0 3 * * *",
+    "path": "/api/scheduled/vertex-search-reindex",
+    "description": "Daily reindex of per-tenant product catalogs into Vertex AI Search"
+  },
+  {
+    "name": "customer-embedding-refresh",
+    "schedule": "30 4 * * *",
+    "path": "/api/scheduled/customer-embedding-refresh",
+    "description": "Daily pgvector embedding refresh for Customer table (semantic recall)"
+  },
+  {
+    "name": "velora-event-retry",
+    "schedule": "*/5 * * * *",
+    "path": "/api/scheduled/event-retry",
+    "httpMethod": "POST",
+    "description": "Retries stale AgentEventLog rows (pending >5 min or error past 10-min cooldown) — batch 50 per run; aligns with PENDING_STALE_MS=5min constant in event-retry-cron.ts"
+  },
+  {
+    "name": "velora-first-sale-nudge",
+    "schedule": "0 * * * *",
+    "path": "/api/cron/first-sale-nudge",
+    "description": "24h re-engagement nudge — if owner completed onboarding (firstSalePromptShown=true) but has no Sale ≥24h after T4, injects a warm nudge ChatMessage and sets firstSaleNudgeSent=true (once-only)"
+  },
+  {
+    "name": "velora-mp-health-check",
+    "schedule": "0 12 * * *",
+    "path": "/api/scheduled/mp-health-check",
+    "description": "Daily MP OAuth token health-check (09:00 ART = 12:00 UTC) — pings /users/me per active MpConnection; marks expired on 401 and notifies owner via WhatsApp"
+  },
+  {
+    "name": "velora-promesa-vencida",
+    "schedule": "0 9 * * *",
+    "timezone": "America/Argentina/Mendoza",
+    "uri": "https://somosvelora.com/api/scheduled/promesa-vencida",
+    "state": "ENABLED",
+    "description": "Daily check at 09:00 ART for PaymentIntents with metodo=promesa + estado=confirmed + promesaExpectedAt < now. Nudges owner per PI via ChatMessage (owner_only) + push. Idempotent: clientMessageId=promesa-vencida-{id}-{YYYYMMDD}.",
+    "httpMethod": "POST",
+    "headers": { "Authorization": "Bearer ${CRON_SECRET}" }
+  },
+  {
+    "name": "velora-push-cleanup",
+    "schedule": "0 7 1 * *",
+    "path": "/api/scheduled/push-cleanup",
+    "description": "Monthly push subscription tombstone GC — deletes expired=true rows with updatedAt older than 90 days (1st of month 04:00 ART = 07:00 UTC)"
+  },
+  {
+    "name": "velora-mp-payment-reconcile",
+    "schedule": "* * * * *",
+    "path": "/api/scheduled/mp-payment-reconcile",
+    "description": "Recovery cron — every 1 min (Stripe-canonical 2026 cadence). Polls MP for stale (>5min) or reconcileFastTrack=true intents and enqueues velora-payment-confirm Cloud Task. Worst-case recovery 6 min. Idempotent via mp-confirm-{piId} task name. Ref: docs.stripe.com/webhooks/process-undelivered-events"
+  },
+  {
+    "name": "velora-idempotency-prune",
+    "schedule": "*/5 * * * *",
+    "path": "/api/scheduled/idempotency-prune",
+    "httpMethod": "POST",
+    "description": "Frequent stuck-pending idempotency prune — every 5 min (ART-anchored). Fixes M-1: deletes IdempotencyRecord rows with status=pending and updatedAt older than 5 min so a stuck row blocks AFIP emit retries for at most ~5 min instead of ~24h. The daily audit-cleanup is unchanged (belt-and-suspenders fallback)."
+  }
+]
