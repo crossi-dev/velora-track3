@@ -84,7 +84,7 @@
     "clsx": "^2.1.1",
     "cron-parser": "^5.5.0",
     "exceljs": "^4.4.0",
-    "firebase-admin": "^13.10.0",
+    "firebase-admin": "^14.0.0",
     "google-auth-library": "^10.6.2",
     "jose": "^6.2.3",
     "libphonenumber-js": "^1.13.6",
