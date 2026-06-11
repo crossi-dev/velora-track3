@@ -202,7 +202,12 @@ async function dispatchMessages(
 }
 
 async function handleGet(req: NextRequest): Promise<NextResponse> {
-  const rateLimited = checkRateLimit(req);
+  // "wpp-webhook" scope isolates this bucket from the shared default bucket used
+  // by all dashboard/API routes. Without a scope, heavy dashboard usage from the
+  // same IP depletes the shared 120/min window and blocks legitimate inbound
+  // WhatsApp messages from the same IP (e.g., developer smoke tests). The webhook
+  // sees a dedicated 120/min bucket regardless of other API activity.
+  const rateLimited = checkRateLimit(req, "wpp-webhook");
   if (rateLimited) return rateLimited;
 
   const mode = req.nextUrl.searchParams.get("hub.mode");
@@ -231,7 +236,8 @@ async function handleGet(req: NextRequest): Promise<NextResponse> {
 }
 
 async function handlePost(req: NextRequest): Promise<NextResponse> {
-  const rateLimited = checkRateLimit(req);
+  // Same "wpp-webhook" scope as handleGet — isolated from the shared default bucket.
+  const rateLimited = checkRateLimit(req, "wpp-webhook");
   if (rateLimited) return rateLimited;
 
   try {
