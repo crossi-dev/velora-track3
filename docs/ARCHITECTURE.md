@@ -37,13 +37,13 @@ graph TB
             SUP_JWKS["/api/agents/supervisor/jwks<br/>Ed25519 public key"]
             subgraph RoleAgents["A2A Sub-Agent Tools (ADK FunctionTools)"]
                 RA_PAYMENTS["call_payments_agent"]
-                RA_FISCAL["call_fiscal_agent"]
+                RA_FISCAL["call_contador_agent"]
                 RA_LOGISTICA["call_logistica_agent"]
                 RA_VENTAS["call_ventas_agent"]
                 RA_CAJA["call_caja_agent"]
                 RA_INVENTARIO["call_inventario_agent"]
                 RA_COMMS["call_communications_agent"]
-                RA_EQUIPO["call_equipo_agent"]
+                RA_CUSTOMER["call_customer_agent"]
             end
         end
 
@@ -80,7 +80,7 @@ graph TB
             LOG_JWKS["/api/agents/logistica/jwks"]
         end
 
-        subgraph OtherAgents["Other Sub-Agents (Ventas · Caja · Inventario · Communications · Equipo)"]
+        subgraph OtherAgents["Other Sub-Agents (Ventas · Caja · Inventario · Communications)"]
             OA_RPC["JSON-RPC 2.0 handlers<br/>A2A v0.3.0 · Ed25519 identity"]
         end
 
@@ -95,7 +95,7 @@ graph TB
     subgraph VertexAI["Vertex AI — multi-region"]
         GEM_PRO["Gemini 2.5 Pro<br/>us-south1 (Supervisor)"]
         GEM_FLASH["Gemini 2.5 Flash<br/>southamerica-east1 (Companion · Customer)"]
-        VSEARCH_DS["Vertex AI Search<br/>Discovery Engine<br/>per-tenant datastores (enable: USE_VERTEX_SEARCH=true)"]
+        VSEARCH_DS["Vertex AI Search<br/>Discovery Engine<br/>per-tenant datastores (LIVE)"]
     end
 
     subgraph Storage["Storage & Secrets"]
@@ -132,13 +132,13 @@ graph TB
     RA_CAJA -->|A2A JSON-RPC| OtherAgents
     RA_INVENTARIO -->|A2A JSON-RPC| OtherAgents
     RA_COMMS -->|A2A JSON-RPC| OtherAgents
-    RA_EQUIPO -->|A2A JSON-RPC| OtherAgents
+    RA_CUSTOMER -->|A2A JSON-RPC · Ed25519 signed| CustomerAgent
 
     Supervisor -->|Gemini 2.5 Pro| GEM_PRO
     Companion -->|Gemini 2.5 Flash| GEM_FLASH
     CustomerAgent -->|Gemini 2.5 Flash| GEM_FLASH
 
-    SearchAgent -->|semantic catalog lookup — USE_VERTEX_SEARCH=true| VSEARCH_DS
+    SearchAgent -->|semantic catalog lookup — LIVE| VSEARCH_DS
     NLU -->|grounding| SearchAgent
 
     AE_PY -->|ADK MCPToolset| AE_MCP
@@ -175,13 +175,13 @@ The Supervisor is an ADK `Agent` running in a TypeScript `Runner` with Postgres-
 | A2A Tool | Sub-Agent Endpoint | Responsibility |
 |---|---|---|
 | `call_payments_agent` | `/api/agents/payments/jsonrpc` | MercadoPago QR + OAuth + payment lifecycle |
-| `call_fiscal_agent` | `/api/agents/fiscal/jsonrpc` | ARCA WSAA + WSFE SOAP — electronic invoicing |
+| `call_contador_agent` | `/api/agents/fiscal/jsonrpc` | ARCA WSAA + WSFE SOAP — electronic invoicing |
 | `call_logistica_agent` | `/api/agents/logistica/jsonrpc` | Andreani shipment quote / create / track |
 | `call_ventas_agent` | `/api/agents/ventas/jsonrpc` | Catalog queries, cross-sell |
 | `call_caja_agent` | `/api/agents/caja/jsonrpc` | Cash register open/close/movements |
 | `call_inventario_agent` | `/api/agents/inventario/jsonrpc` | Stock load, adjustments, movements |
 | `call_communications_agent` | `/api/agents/communications/jsonrpc` | WhatsApp send, template dispatch |
-| `call_equipo_agent` (shelved) | `/api/agents/equipo/jsonrpc` | Employee management, permissions — shelved; card present, tool inactive |
+| `call_customer_agent` | `/api/agents/customer/jsonrpc` | WhatsApp B2C — inbound customer checkout chain (`call_equipo_agent`: shelved) |
 
 Plus three additional agents not in the Supervisor's tool belt but running on Cloud Run:
 - **Companion Agent** (shelved) — Employee POS assistant (Gemini 2.5 Flash, internal module, no A2A hop)
@@ -190,13 +190,13 @@ Plus three additional agents not in the Supervisor's tool belt but running on Cl
 
 ### Runtime 2 — Vertex AI Agent Engine Python ADK (real commerce execution)
 
-The Python Supervisor (`agent-engine/main.py`) is deployed as a `vertexai.agent_engines` Reasoning Engine. It connects to Velora's live MCP server via `ADK MCPToolset + StreamableHTTPConnectionParams`, reusing the same 51 production tools instead of reimplementing them:
+The Python Supervisor (`agent-engine/main.py`) is deployed as a `vertexai.agent_engines` Reasoning Engine. It connects to Velora's live MCP server via `ADK MCPToolset + StreamableHTTPConnectionParams`. The Agent Engine loads a 5-tool commerce-demo subset out of the full 51-tool surface:
 
 - `query_catalog` → real catalog lookup (verified: returns live data)
 - `register_sale` → records a sale
 - `create_tracked_payment_link` → MercadoPago payment link
 - `emit_invoice` → ARCA electronic invoice
-- + 47 more tools from the MCP server
+- `connection_status` → integration health check
 
 The Agent Engine Python path uses Gemini 2.5 Pro and is the managed-runtime mandate satisfier for Track 3. The Python AdkApp deploys the root Supervisor (gemini-2.5-pro) with the Employee agent (gemini-2.5-flash) as ADK sub-agent.
 
@@ -204,9 +204,9 @@ The Agent Engine Python path uses Gemini 2.5 Pro and is the managed-runtime mand
 
 The MCP server (`tools.somosvelora.com/api/mcp`) exposes 51 tools across 14 packs over StreamableHTTP. Any MCP-compatible engine (Claude Code, Gemini, OpenAI, or any future engine) can call Velora's tools using the same HMAC auth — no per-engine rework. The Agent Engine Python runtime is the first non-TypeScript consumer.
 
-### Grounding — velora_search_agent
+### Grounding — velora_search_agent (LIVE)
 
-Vertex AI Search Discovery Engine datastores are provisioned per tenant (`velora-products-{tenant-id}`). The code is deployed and wired; enable with `USE_VERTEX_SEARCH=true`. When enabled, semantic catalog search resolves queries like "bolso para la espalda" → "Mochila"; "para tomar mate" → "Mate". The `velora_search_agent` wraps this grounding layer and is called by the NLU pipeline on catalog intents.
+Vertex AI Search Discovery Engine datastores are provisioned per tenant (`velora-products-{tenant-id}`). Semantic catalog search is live: queries like "bolso para la espalda" resolve to "Mochila"; "para tomar mate" resolves to "Mate". The `velora_search_agent` wraps this grounding layer and is called by the NLU pipeline on catalog intents.
 
 The `usedAdkDelegation` flag in the Supervisor runner result is set to `true` whenever any delegation tool fires. The orchestrator timeout is controlled by `SUPERVISOR_ADK_TIMEOUT_MS` (Cloud Run override). It falls back to the direct-Gemini path on `TimeoutError`.
 
@@ -311,17 +311,17 @@ sequenceDiagram
 │  /api/business-assistant                                             │
 │    ├─ resolveActor (Owner OAuth / Employee PIN)                      │
 │    ├─ NLU (Deterministic Fast Path → LLM Slow Path)                  │
-│    │    └─ velora_search_agent ──► Vertex AI Search (USE_VERTEX_SEARCH=true) │
+│    │    └─ velora_search_agent ──► Vertex AI Search [LIVE]           │
 │    ├─ Supervisor Agent (ADK TS Runner + Postgres sessions) ─ Gemini 2.5 Pro │
 │    │    └─ 8 A2A Sub-Agent FunctionTools                             │
 │    │         ├─ call_payments_agent   ──► Payments Agent             │
-│    │         ├─ call_fiscal_agent     ──► Fiscal Agent               │
+│    │         ├─ call_contador_agent   ──► Fiscal Agent               │
 │    │         ├─ call_logistica_agent  ──► Logística Agent            │
 │    │         ├─ call_ventas_agent     ──► Ventas Agent               │
 │    │         ├─ call_caja_agent       ──► Caja Agent                 │
 │    │         ├─ call_inventario_agent ──► Inventario Agent           │
 │    │         ├─ call_communications_agent ─► Communications Agent    │
-│    │         └─ call_equipo_agent     ──► Equipo Agent               │
+│    │         └─ call_customer_agent   ──► Customer Agent             │
 │    ├─ Companion Agent (shelved) ───────────── Gemini 2.5 Flash        │
 │    ├─ Customer Agent (WhatsApp B2C) ───────── Gemini 2.5 Flash       │
 │    └─ Onboarding Agent ────────────────────── Gemini 2.5 Flash       │
@@ -330,7 +330,7 @@ sequenceDiagram
 │    ├─ Payments    ──► MercadoPago QR + OAuth + Webhooks              │
 │    ├─ Fiscal      ──► ARCA WSAA + WSFE SOAP (sandbox)               │
 │    ├─ Logística   ──► Andreani API                                   │
-│    └─ Ventas · Caja · Inventario · Communications · Equipo           │
+│    └─ Ventas · Caja · Inventario · Communications · Customer         │
 │                                                                      │
 │  /api/scheduled/ (16 Cloud Scheduler jobs, CRON_SECRET bearer)       │
 │    ├─ rule-alerts (*/5 min)    ─ business rule triggers              │
@@ -340,9 +340,9 @@ sequenceDiagram
         ┌──────────────────┼──────────────────────┐
         ▼                  ▼                      ▼
 ┌───────────────┐  ┌────────────────────┐  ┌──────────────────────────┐
-│ Supabase      │  │ Vertex AI          │  │ MCP Server                    │
-│ Postgres      │  │ Gemini 2.5 Pro     │  │ tools.somosvelora.com/api/mcp │
-│ primary DB    │  │ Gemini 2.5 Flash   │  │ 51 tools · 14 packs           │
+│ Supabase      │  │ Vertex AI          │  │ MCP Server               │
+│ Postgres      │  │ Gemini 2.5 Pro     │  │tools.somosvelora.com/api/mcp │
+│ primary DB    │  │ Gemini 2.5 Flash   │  │ 51 tools · 14 packs      │
 │ RateLimitBkt  │  │ Agent Engine       │  │ engine-agnostic HMAC     │
 │ CronCheckpt   │  │  Python ADK        │  │   ▲                      │
 └───────────────┘  │  MCPToolset        │──┘   │ StreamableHTTP       │
@@ -369,7 +369,7 @@ sequenceDiagram
 | **Agent Runtime — primary** | Cloud Run TypeScript ADK (`@google/adk`) — interactive chat |
 | **Agent Runtime — managed** | Vertex AI Agent Engine Python ADK (`vertexai.agent_engines`) — real commerce via MCP |
 | **Tool layer** | MCP server (StreamableHTTP, 51 tools, 14 packs, HMAC auth) — engine-agnostic |
-| **Semantic Search / Grounding** | Vertex AI Search Discovery Engine — per-tenant datastores (deployed; enable with `USE_VERTEX_SEARCH=true`) |
+| **Semantic Search / Grounding** | Vertex AI Search Discovery Engine — per-tenant datastores (LIVE) |
 | **Agent Protocol** | A2A v0.3.0 — JSON-RPC 2.0 over HTTPS, Ed25519 JWKS identity |
 | **Multi-agent topology** | Supervisor + 8 A2A sub-agents + Companion (shelved) + Customer Agent + Onboarding + velora_search_agent |
 | **Database** | Supabase Postgres + Prisma v6 |

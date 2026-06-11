@@ -1,8 +1,8 @@
 // GeminiCliSection — "Try it with Gemini CLI" block for the Track 3 judge page.
 // Shows judges how to connect Gemini CLI to Velora's live MCP server.
 //
-// The .gemini/settings.json config file lives in the repo root with the demo
-// tenant key so judges can clone and run immediately.
+// The .gemini/settings.json config file lives in the repo root (both main and
+// snapshot) with the real demo tenant key so judges can clone and run immediately.
 
 const CODE_SETTINGS = `{
   "mcpServers": {
@@ -19,17 +19,24 @@ const CODE_SETTINGS = `{
 const CODE_QUICKSTART = `# Install Gemini CLI (requires Node 18+)
 npm install -g @google/gemini-cli
 
+# One-time auth — run this first and complete the Google login prompt:
+gemini
+# (or: export GEMINI_API_KEY=<your-key-from-aistudio.google.com>)
+
 # Clone the public repo (settings.json with demo key is included)
 git clone https://github.com/crossi-dev/velora-track3
 cd velora-track3
 
 # The .gemini/settings.json file already has the demo tenant key.
-# Start Gemini CLI — it auto-loads MCP from settings.json:
+# Run headless with auto-approve and Flash model:
+gemini --yolo -m gemini-2.5-flash -p "list the products in my catalog"
+
+# Or start interactive mode:
 gemini
 
-# Ask Gemini to use Velora:
+# Read-only queries to try:
 > list the products in my catalog
-> register a sale of 2 "Mochila Urbana" at $15000 each
+> find the customer Carla in Velora
 > what's the current cash balance?`;
 
 const CODE_ONELINER = `# Alternative: add the MCP server directly (no clone needed)
@@ -128,8 +135,11 @@ export function GeminiCliSection() {
       <div style={s.note}>
         <strong>Demo tenant scope:</strong> The{" "}
         <code>X-API-Key</code> in <code>.gemini/settings.json</code> is an HMAC-derived
-        key scoped to a single demo business. It can read catalog, register test sales,
-        and run fiscal/logistics queries — it cannot access other tenants.
+        key scoped to a single demo business — it cannot read or act on any other tenant.
+        Money-path tools (<code>register_sale</code>, <code>emit_invoice</code>) write to the live sandbox —
+        please keep it tidy for other judges.
+        Use <code>--yolo</code> to auto-approve tool calls and <code>-m gemini-2.5-flash</code> if
+        your default model 404s on Vertex.
         The live MCP endpoint is at{" "}
         <a
           href="https://tools.somosvelora.com/api/mcp"

@@ -140,9 +140,8 @@ export function JudgeQuerySection() {
         with Application Default Credentials (Cloud Run service account), sends a
         fixed catalog search query to{" "}
         <strong>Vertex AI Agent Engine</strong> reasoning engine{" "}
-        <code>projects/my-gcp-project/locations/us-central1/reasoningEngines/&lt;id&gt;</code>,
-        and returns the real response — including which MCP tool was called and what the
-        Agent Engine returned. Cold start can take ~10s.
+        <code>2019941948445425664</code>, and returns the real response — including which
+        MCP tool was called and what the Agent Engine returned. Cold start can take ~10s.
       </p>
 
       <button
@@ -216,9 +215,9 @@ export function JudgeQuerySection() {
         <p style={s.caption}>
           Full resource path:{" "}
           <code>
-            projects/my-gcp-project/locations/us-central1/reasoningEngines/&lt;id&gt;
+            projects/velora-490800/locations/us-central1/reasoningEngines/2019941948445425664
           </code>
-          {" — live id at somosvelora.com/track3 — "}
+          {" — "}
           <a
             href="https://github.com/crossi-dev/velora-track3/tree/main/agent-engine"
             style={{ color: "#1a73e8", fontSize: "0.8125rem" }}
@@ -227,6 +226,12 @@ export function JudgeQuerySection() {
           >
             agent-engine/ source
           </a>
+        </p>
+      )}
+
+      {result && (
+        <p style={s.caption}>
+          Note: the model shown is the last event author in the ADK multi-agent stream; the root Supervisor (gemini-2.5-pro) orchestrates and executes the tool call.
         </p>
       )}
     </section>

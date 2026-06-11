@@ -8,7 +8,7 @@
 
 Velora is a chat-first, multi-agent AI system that acts as the interoperability layer between a company and the counterparties it depends on. A company — a distributor above all — runs on constant coordination: with its downstream points of sale, with logistics carriers, with the tax authority, with payment rails, with online marketplaces, with other companies. Today that coordination is human and slow — sales reps, phone calls, emails, shared spreadsheets, a person in every loop. Velora turns it agent-to-agent: a company's Supervisor agent orchestrates a federation of specialist agents — each one a standards-compliant A2A translation of an external system — and discovers and calls external counterparty agents over the open A2A protocol. The owner directs the entire operation from one chat; end customers shop, pay, and receive invoices over WhatsApp — zero humans in the loop.
 
-Velora is built 100% on Google Cloud. All AI inference runs through Vertex AI (Gemini 2.5 Pro for the owner-facing Supervisor, Gemini 2.5 Flash for the Customer Agent and Companion). The agent orchestration layer uses the Google ADK across two runtimes: (1) a Cloud Run TypeScript ADK path where the Supervisor holds eight A2A FunctionTools delegating to specialist sub-agents (Payments, Fiscal, Logística, Ventas, Caja, Inventario, Communications, Customer Agent), and (2) a Vertex AI Agent Engine Python ADK runtime that connects to Velora's live MCP server via `ADK MCPToolset + StreamableHTTPConnectionParams`, executing real commerce operations (catalog lookup, sale registration, payment link creation, invoice emission) through the same live MCP server (loading a 5-tool commerce-demo subset — query_catalog, register_sale, create_tracked_payment_link, emit_invoice, connection_status — out of the full 51-tool surface) — verified to return live data. Vertex AI Search Discovery Engine datastores are provisioned per tenant and live in production (USE_VERTEX_SEARCH=true): semantic queries like "bolso para la espalda" resolve to the correct product.
+Velora's AI and agent infrastructure is built on Google Cloud. All AI inference runs through Vertex AI (Gemini 2.5 Pro for the owner-facing Supervisor, Gemini 2.5 Flash for the Customer Agent and Companion). The agent orchestration layer uses the Google ADK across two runtimes: (1) a Cloud Run TypeScript ADK path where the Supervisor holds eight A2A FunctionTools delegating to specialist sub-agents (Payments, Fiscal, Logística, Ventas, Caja, Inventario, Communications, Customer Agent), and (2) a Vertex AI Agent Engine Python ADK runtime that connects to Velora's live MCP server via `ADK MCPToolset + StreamableHTTPConnectionParams`, executing real commerce operations (catalog lookup, sale registration, payment link creation, invoice emission) through the same live MCP server (loading a 5-tool commerce-demo subset — query_catalog, register_sale, create_tracked_payment_link, emit_invoice, connection_status — out of the full 51-tool surface) — verified to return live data. Vertex AI Search Discovery Engine datastores are provisioned per tenant and live in production (USE_VERTEX_SEARCH=true): semantic queries like "bolso para la espalda" resolve to the correct product.
 
 The contest period work (Contest Period: April 22 – June 5, 2026; submission deadline extended to June 11, 2026 per organizer email) transformed Velora from a single-agent chat system into a production-grade multi-agent interoperability layer. That work includes: a full A2A protocol implementation with cryptographic agent identity (Ed25519 JWKS), Vertex AI Agent Engine deployment (Python ADK) executing real commerce via MCP, live Vertex AI Search grounding, distributed Postgres-backed rate limiting for multi-instance Cloud Run, dual-channel push notifications (FCM + Web Push), comprehensive security hardening (OWASP audit, PII redaction, tenant isolation), and 3,180+ non-merge commits of iterative hardening across the entire stack.
 
@@ -47,7 +47,7 @@ Today that function is salaried headcount: order-taking on WhatsApp and phone, p
 | Payback period | — | **<3 days** |
 | Franchise math (5 locations) | 5 FTE × USD 1,000 = USD 5,000/mo | USD 149/mo — **97% cost reduction on this function** |
 
-*Wage estimate: Argentine CCT full-time retail/admin rate, Ministerio de Trabajo 2025. Exchange rate: ARS 1,250/USD (June 2026 official BNA). Hours/week: model estimate from operator interviews.*
+*Wage estimate: Argentine CCT full-time retail/admin rate, Ministerio de Trabajo 2025. Hours/week: model estimate from operator interviews. Exchange rate: ARS 1,250/USD (June 2026 official BNA).*
 
 **Why Google Marketplace** (stats verified against [Google Cloud Blog, Jun 2025](https://cloud.google.com/blog/products/ai-machine-learning/partner-built-agents-available-in-gemini-enterprise)):
 - Marketplace vendors close deals **112% larger** than off-marketplace (Futurum whitepaper cited therein)
@@ -60,7 +60,7 @@ Latin America's retail e-commerce market reached **$191.25 billion in 2025** —
 
 The growth is real. The coordination infrastructure to support it is not. The SMB and distributor segment — the backbone of LATAM retail — still runs on phone calls, WhatsApp threads, and spreadsheets bridging incompatible systems. Every order taken by a sales rep involves a manual chain: check stock, confirm price, collect payment, generate an electronic invoice against ARCA, hand off to a logistics carrier, follow up on delivery. Each step is a potential failure point, and each failure costs staff time or customer trust.
 
-The concrete, validated pain is **employee turnover and training cost**. Based on Velora's experience in the LATAM frontline retail segment, turnover rates are persistently high — and replacing an employee can cost between one-half and two times their annual salary ([Gallup](https://www.gallup.com/workplace/247391/fixable-problem-costs-businesses-trillion.aspx)). Velora eliminates the training burden for routine operations — recording a sale, checking stock, issuing a payment link, quoting a shipment — because the Companion agent guides the employee through every step in plain language, with no system knowledge required.
+The concrete, validated pain is **employee turnover and training cost**. Based on Velora's experience in the LATAM frontline retail segment, turnover rates are persistently high — and replacing an employee can cost between one-half and two times their annual salary ([Gallup](https://www.gallup.com/workplace/247391/fixable-problem-costs-businesses-trillion.aspx)). Velora eliminates the training burden for routine operations — recording a sale, checking stock, issuing a payment link, quoting a shipment — because the Companion agent (shelved, architecture complete) guides the employee through every step in plain language, with no system knowledge required.
 
 #### The End-to-End Agentic Commerce Loop
 
@@ -125,7 +125,7 @@ Behind the Supervisor sits a federation of A2A agents — and the decisive move 
 
 A tiered NLU pipeline ensures <200ms responses on the most common intents. On the **employee path**, a three-tier pipeline applies: Deterministic Fast Path (regex + catalog lookup, no LLM) → Gemini Flash slow path → Supervisor escalation (code-present; Companion flow shelved — not active in production). On the **owner path**, a two-tier pipeline applies: Deterministic Fast Path → Gemini Pro (the Flash middle-tier was removed 2026-05-30). The Fast Path covers >20% of traffic without any LLM call — sale recording, stock queries, price lookups, customer management.
 
-Payment collection shows the pattern end-to-end: an employee triggers a MercadoPago charge from the chat, the customer pays via a real Checkout Pro payment link, and within seconds the owner receives a push notification confirming the payment, the invoice is recorded, and a WhatsApp receipt is sent to the customer — all without leaving Velora, and every step a coordinated call between the Supervisor and the Payments and Fiscal agents. (The in-store dynamic QR variant is implemented but flag-gated off in the current deployment; the live chargeable path is the payment link.)
+Payment collection shows the pattern end-to-end: the owner triggers a MercadoPago charge from the chat, the customer pays via a real Checkout Pro payment link, and within seconds the owner receives a push notification confirming the payment, the invoice is recorded, and a WhatsApp receipt is sent to the customer — all without leaving Velora, and every step a coordinated call between the Supervisor and the Payments and Fiscal agents. (The in-store dynamic QR variant is implemented but flag-gated off in the current deployment; the live chargeable path is the payment link.)
 
 ---
 
@@ -230,7 +230,7 @@ Velora is a business-to-business interoperability layer by construction. Its uni
 
 #### Cloud-Native Runtime
 
-The entire Velora stack runs on Google Cloud:
+Velora's compute and AI stack runs on Google Cloud (primary database: Supabase Postgres — see Tech Stack):
 - **Cloud Run** (`southamerica-east1`): Next.js App Router serving the chat pipeline, all agent endpoints, and API routes.
 - **Vertex AI Agent Engine**: Python ADK adapter (`agent-engine/main.py`) registered as a Reasoning Engine on Vertex AI's managed runtime, queried via the streamQuery REST surface.
 - **Cloud Scheduler**: 16 jobs managing business rule triggers (every 5 min), audit cleanup, and operational crons — all authenticated via `CRON_SECRET` bearer.
@@ -389,5 +389,5 @@ Contest period work is delineated in [docs/CONTEST_PERIOD_WORK.md](./CONTEST_PER
 
 **Submission**: The demo video will be submitted as a URL per contest instructions. See [docs/DEMO_VIDEO_SCRIPT.md](./DEMO_VIDEO_SCRIPT.md) for the full storyboard and script.
 
-**Duration**: ≈130 seconds (limit 180s)  
+**Duration**: ≈2:56 (176 seconds, within the 180s limit)  
 **Language**: English narration over the Spanish-language product UI

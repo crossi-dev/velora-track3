@@ -1,19 +1,21 @@
 """Velora multi-agent system — Vertex Agent Engine entry point.
 
-This module is deployed to Vertex AI Agent Engine via `deploy.py`, which calls
-`vertexai.agent_engines.create(AdkApp(...))` (the stable `agent_engines` API).
-It wraps the same Employee + Supervisor agents that run on Cloud Run (TypeScript),
-expressed in the ADK Python SDK so they can run in Agent Engine's managed runtime.
+Closes the "Agent Engine missing" gap from CONTEST_MANDATORY_TECH_AUDIT.md.
+This module is what `vertexai.preview.reasoning_engines.AdkApp.create()`
+deploys to Agent Engine. It wraps the same Employee + Supervisor agents
+that run on Cloud Run (TypeScript), expressed in the ADK Python SDK so
+they can be deployed to Agent Engine's managed runtime.
 
 Why a parallel Python implementation:
 - Cloud Run hosts the user-facing Velora app (Next.js TS) — that's where
-  the cashier types and the dashboard renders. It will not move.
+  the owner types and the dashboard renders. It will not move.
 - Vertex Agent Engine is the managed runtime for the *agent system*. We
   deploy the same multi-agent pattern (Employee + Supervisor + A2A) here
   so the contest mandate "Focus on the deployment of your multi-agent
   system on Agent Engine" is satisfied with a real, callable runtime.
-- The Python ADK SDK has first-class Agent Engine support via the stable
-  `vertexai.agent_engines` module; the TypeScript ADK SDK does not yet.
+- The Python ADK SDK has first-class Agent Engine support
+  (`vertexai.preview.reasoning_engines.AdkApp`); the TypeScript ADK SDK
+  does not yet.
 
 Behavior parity with TS:
 - Employee agent uses Gemini 2.5 Flash, warm voice, slot-filling.
@@ -31,14 +33,12 @@ from __future__ import annotations
 import os
 
 import vertexai
-# Use the stable agent_engines module (not vertexai.preview.reasoning_engines,
-# which is deprecated — agent_engines is the current API per Vertex AI SDK 1.94+).
-from vertexai.agent_engines import AdkApp
+from vertexai.preview.reasoning_engines import AdkApp
 
 from employee_agent import build_employee_agent
 from supervisor_agent import build_supervisor_agent
 
-PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "my-gcp-project")
+PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "velora-490800")
 LOCATION = os.environ.get("VERTEX_LOCATION", "us-central1")
 STAGING_BUCKET = os.environ.get("AGENT_ENGINE_STAGING_BUCKET", f"gs://{PROJECT_ID}-agent-engine")
 
@@ -58,7 +58,7 @@ def build_app() -> AdkApp:
     AdkApp accepts a single root agent. The Supervisor is root and the
     Employee is registered as a sub-agent on the Supervisor itself
     (ADK's native sub_agents pattern). The Supervisor can `transfer` to
-    the Employee for cashier-side intents and `transfer_to_parent` is
+    the Employee for operational intents (shelved Companion track) and `transfer_to_parent` is
     disabled on the Employee to keep the conversation flow predictable.
     """
     employee = build_employee_agent()

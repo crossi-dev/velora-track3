@@ -7,7 +7,7 @@
 // scope for Track 3, how to verify the architecture, and where to go
 // next (live demo, source code, docs).
 //
-// New sections (contest improvements):
+// New sections (contest improvements round 5+):
 //   GeminiCliSection — try Velora MCP with Gemini CLI
 //   BusinessMetricsSection — TAM/SAM/SOM + ROI table + Marketplace stats
 //   JudgeQuerySection — live Agent Engine query button (no auth)
@@ -35,7 +35,7 @@ const MANDATORY_TECH = [
   },
   {
     label: "Google ADK",
-    detail: "Both Employee and Supervisor wrapped as ADK Agent instances. TypeScript on Cloud Run, Python ADK on Vertex Agent Engine.",
+    detail: "Supervisor, Customer Agent, and Companion (shelved) wrapped as ADK Agent instances. TypeScript on Cloud Run, Python ADK on Vertex Agent Engine.",
     proof: `${REPO}/tree/main/src/lib/adk`,
   },
   {
@@ -45,7 +45,7 @@ const MANDATORY_TECH = [
   },
   {
     label: "Vertex AI Agent Engine",
-    detail: "ReasoningEngine deployed at projects/my-gcp-project/locations/us-central1/reasoningEngines/<live id shown at somosvelora.com/track3> (displayName: velora-supervisor-mcp). Connects to Velora's live MCP server via ADK MCPToolset + StreamableHTTPConnectionParams; verified to call query_catalog and return real catalog data. USE_AGENT_ENGINE gates routing live chat traffic through it (currently off to preserve interactive latency).",
+    detail: "ReasoningEngine deployed at projects/velora-490800/locations/us-central1/reasoningEngines/2019941948445425664 (displayName: velora-supervisor-mcp). Connects to Velora's live MCP server via ADK MCPToolset + StreamableHTTPConnectionParams; verified to call query_catalog and return real catalog data. USE_AGENT_ENGINE gates routing live chat traffic through it (currently off to preserve interactive latency).",
     proof: `${REPO}/tree/main/agent-engine`,
   },
   {
@@ -65,7 +65,7 @@ const MANDATORY_TECH = [
   },
   {
     label: "Multi-agent collaboration",
-    detail: "Sale → Pub/Sub LOW_STOCK event → Supervisor decision → Web push to owner. Single-agent cannot deliver this without 4-5s latency on every cashier turn.",
+    detail: "Sale → Pub/Sub LOW_STOCK event → Supervisor decision → Web push to owner. Single-agent cannot deliver this without 4-5s latency on every customer and owner turn.",
     proof: `${REPO}/blob/main/docs/SUBMISSION_DESCRIPTION.md#multi-agent-system`,
   },
 ];
@@ -74,7 +74,7 @@ const QUICK_LINKS = [
   {
     label: "Live demo",
     href: "https://somosvelora.com",
-    note: "The cashier-facing application. Spanish-first by design (Argentine SMB target market).",
+    note: "The owner-facing application. Spanish-first by design (Argentine SMB target market). Customer-facing channel is WhatsApp.",
   },
   {
     label: "Public agent card",
@@ -237,11 +237,10 @@ export default function Track3SubmissionPage() {
           <span style={styles.badge}>Track 3 · Google for Startups AI Agents Challenge</span>
           <h1 style={styles.h1}>Velora — A2A interoperability layer for multi-agent enterprise coordination.</h1>
           <p style={styles.lede}>
-            Cashiers in Argentina type <em>&ldquo;vendí 2 cubiertas Firestone&rdquo;</em> into a chat and Velora&apos;s
-            Employee Agent (Gemini 2.5 Flash via Vertex AI) registers the sale, infers the rest, and
-            confirms in under 1.8 seconds. Behind the scenes, a Supervisor Agent (Gemini 2.5 Pro)
-            watches every event through an A2A bus and notifies the owner only when something
-            matters. Supervisor · Customer Agent · 8 A2A specialist sub-agents · Onboarding — separated by a latency contract.
+            A customer messages the business on WhatsApp. Velora&apos;s Customer Agent (Gemini 2.5 Flash
+            via Vertex AI) sells, charges, invoices and ships — zero humans in the loop. The owner
+            directs everything from one chat; a Supervisor Agent (Gemini 2.5 Pro) watches every event
+            through an A2A bus and notifies the owner only when something matters. Supervisor · Customer Agent · 8 A2A specialist sub-agents · Onboarding — separated by a latency contract.
           </p>
           <Link href="https://somosvelora.com" style={styles.cta}>
             Open the live demo →
@@ -302,8 +301,8 @@ export default function Track3SubmissionPage() {
                 somosvelora.com
               </a>
               . The landing page is in Spanish (the product&apos;s target market). The language
-              switcher on the landing page toggles between Spanish and English. The cashier UI
-              requires authentication — contact owner@example.com for access credentials.
+              switcher on the landing page toggles between Spanish and English. The owner dashboard
+              requires authentication — contact gestiones@somosvelora.com for access credentials.
             </li>
             <li>
               Hit{" "}
@@ -346,8 +345,8 @@ export default function Track3SubmissionPage() {
         <footer style={styles.footer}>
           <p>
             Submitted by Carlos Rossi · entrant ·{" "}
-            <a href="mailto:owner@example.com" style={styles.link}>
-              owner@example.com
+            <a href="mailto:gestiones@somosvelora.com" style={styles.link}>
+              gestiones@somosvelora.com
             </a>
           </p>
           <p>
@@ -355,7 +354,7 @@ export default function Track3SubmissionPage() {
             <a href={`${REPO}/blob/main/docs/SUBMISSION_DESCRIPTION.md`} style={styles.link}>
               docs/SUBMISSION_DESCRIPTION.md
             </a>{" "}
-            (recording pending).
+            (v2 final, 2:56 — dual adversarial review APPROVED June 11).
           </p>
         </footer>
       </div>

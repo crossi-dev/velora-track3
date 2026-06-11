@@ -30,9 +30,9 @@ The contest period work ensures **both personas** can orchestrate agents:
 ### Cloud-Native Runtime
 Entire backend runs on **Google Cloud Run** (`southamerica-east1`):
 - Next.js App Router route handlers deployed as Cloud Run services.
-- **Agent Engine** (Vertex AI ADK runner) executes Python agents for asynchronous workflows (inventory planning, reconciliation, fiscal compliance).
+- **Agent Engine** (Vertex AI ADK runner) connects to Velora's live MCP server via ADK MCPToolset and executes real commerce operations (catalog lookup, sale, payment link, invoice) — see the Vertex-Powered Intelligence section.
 - All observability via **Cloud Logging** (replaced console.warn during contest period).
-- Migrations applied manually against Supabase Postgres via `npx prisma db execute` (standard Prisma migration workflow).
+- Migrations applied manually against Supabase Postgres via `npx prisma db execute` (see CLAUDE.md — migration workflow).
 
 ### Vertex-Powered Intelligence
 - **100% Google Cloud AI**: Gemini 2.5 Pro (Supervisor) + Gemini 2.5 Flash (Companion (shelved), Customer Agent, Onboarding).
@@ -628,10 +628,10 @@ The following documents form the complete Track 3 submission package:
 | Architecture Diagram | [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) | Mermaid multi-agent architecture diagram, two sequence diagrams (QR payment flow, A2A external discovery), ASCII fallback, tech stack table |
 | Submission Description | [`docs/SUBMISSION_DESCRIPTION.md`](./SUBMISSION_DESCRIPTION.md) | Full English-language project description for judges — problem, solution, agent breakdown, Track 3 mandate compliance evidence, technologies, findings |
 | Demo Video Script | [`docs/DEMO_VIDEO_SCRIPT.md`](./DEMO_VIDEO_SCRIPT.md) | 7-frame storyboard + voiceover script (es-AR + English subtitles), production notes, timing breakdown for 90–120s video |
-| Demo Video | [`docs/DEMO_VIDEO_SCRIPT.md`](./DEMO_VIDEO_SCRIPT.md) | Video pending recording — storyboard and script in DEMO_VIDEO_SCRIPT.md |
+| Demo Video | [`docs/DEMO_VIDEO_SCRIPT.md`](./DEMO_VIDEO_SCRIPT.md) | Video: v2 final (2:56), dual adversarial review APPROVED June 11. |
 
 **Repository**: github.com/crossi-dev/velora-track3 (public snapshot for the judging period)  
-**Live demo**: somosvelora.com · demo access: soporte@somosvelora.com  
+**Live demo**: somosvelora.com · demo access: gestiones@somosvelora.com  
 **Submission email**: Per Option A approval — submit repo URL + this document set
 
 ---
@@ -647,4 +647,4 @@ The following documents form the complete Track 3 submission package:
 ---
 
 **Last updated**: 2026-06-09 (verified achievements added: Agent Engine MCP integration live, Vertex AI Search live, full 8-sub-agent A2A topology, Customer Agent, velora_search_agent)  
-**Status**: Submission package complete — all 4 Track 3 mandates met and verified. Video recording pending.
+**Status**: Submission package complete — all 4 Track 3 mandates met and verified. Video: v2 final (2:56), dual adversarial review APPROVED June 11.

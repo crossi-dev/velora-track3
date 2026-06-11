@@ -131,14 +131,14 @@ export function BusinessMetricsSection() {
 
       {/* ROI card */}
       <div style={s.card}>
-        <p style={s.cardTitle}>Cost of manual coordination — before Velora</p>
+        <p style={s.cardTitle}>Cost of manual customer-service — before Velora</p>
         <p style={s.p}>
-          A typical Argentine SMB retail or wholesale operation spends an estimated
-          6–10 hours/week on manual coordination: WhatsApp follow-ups with suppliers,
-          manual stock checks, paper sales entry, and end-of-day payment reconciliation.
-          At the official Argentine retail minimum wage (~USD 8/h, model estimate based
-          on Ministerio de Trabajo 2025 minimum wage schedule), that is{" "}
-          <strong>USD 192–320/month</strong> in direct labor before accounting for errors.
+          An Argentine PyME or franchise with a dedicated customer-service/sales function
+          today employs headcount for WhatsApp order-taking, payment chasing, manual sales
+          entry, and invoicing. At the Argentine CCT (Convenio Colectivo de Trabajo) full-time
+          retail/admin rate, that function costs <strong>USD 900–1,100/month per employee</strong>{" "}
+          (ARS 1,100,000–1,400,000 at ~ARS 1,250/USD, June 2026 official BNA rate).
+          Velora&apos;s Customer Agent absorbs the majority of that function.
         </p>
         <table style={s.table}>
           <thead>
@@ -150,36 +150,41 @@ export function BusinessMetricsSection() {
           </thead>
           <tbody>
             <tr>
-              <td style={s.td}>Coordination hours/week</td>
-              <td style={s.td}>6–10 h (model estimate)</td>
-              <td style={s.tdHighlight}>&lt;1 h</td>
+              <td style={s.td}>Dedicated sales/service staff</td>
+              <td style={s.td}>1 FTE at USD 900–1,100/mo</td>
+              <td style={s.tdHighlight}>Oversight only</td>
             </tr>
             <tr>
-              <td style={s.td}>Monthly labor cost (USD 8/h)</td>
-              <td style={s.td}>USD 192–320</td>
-              <td style={s.tdHighlight}>USD 25 (oversight)</td>
+              <td style={s.td}>WhatsApp order-taking &amp; payment chasing</td>
+              <td style={s.td}>15–25 h/week (model estimate)</td>
+              <td style={s.tdHighlight}>&lt;2 h/week</td>
             </tr>
             <tr>
               <td style={s.td}>SaaS cost</td>
               <td style={s.td}>—</td>
-              <td style={s.td}>USD 39–79/month</td>
+              <td style={s.td}>USD 79–149/month</td>
             </tr>
             <tr>
-              <td style={s.td}>Net monthly saving</td>
+              <td style={s.td}>Net monthly saving per location</td>
               <td style={s.td}>—</td>
-              <td style={s.tdHighlight}>USD 128–256</td>
+              <td style={s.tdHighlight}>USD 700–900</td>
             </tr>
             <tr>
               <td style={s.td}>Payback period</td>
               <td style={s.td}>—</td>
-              <td style={s.tdHighlight}>3–10 days</td>
+              <td style={s.tdHighlight}>&lt;3 days</td>
+            </tr>
+            <tr>
+              <td style={s.td}>Franchise math (5 locations)</td>
+              <td style={s.td}>5 FTE × USD 1,000 = USD 5,000/mo</td>
+              <td style={s.tdHighlight}>USD 149/mo — 97% reduction</td>
             </tr>
           </tbody>
         </table>
         <p style={s.cite}>
-          Wage estimate: model estimate based on Ministerio de Trabajo Argentina 2025
-          minimum wage schedule. Hours/week: model estimate from SMB operator interviews.
-          Payback = plan cost ÷ monthly saving.
+          Wage estimate: Argentine CCT full-time retail/admin rate, Ministerio de Trabajo 2025.
+          Exchange rate: ARS 1,250/USD (June 2026 official BNA). Hours/week: model estimate from
+          SMB operator interviews. Payback = plan cost ÷ monthly saving.
         </p>
       </div>
 
@@ -194,7 +199,7 @@ export function BusinessMetricsSection() {
             SAM — Argentine SMB retail &amp; wholesale: ~515,000 businesses × USD 39–79/mo ≈ USD 240M–490M ARR addressable
           </div>
           <div style={s.funnelBand("30%", "#fbbc04")}>
-            SOM Y1 — Mendoza pilot: 50 businesses × USD 59 avg → USD 35,400 ARR
+            SOM Y1 — Mendoza pilot: 50 PyMEs/franchises × USD 79 (Negocio plan) → USD 47,400 ARR
           </div>
         </div>
         <p style={s.p}>
@@ -223,6 +228,20 @@ export function BusinessMetricsSection() {
           >
             INDEC GDP/commerce 2025 data
           </a>
+        </p>
+      </div>
+
+      {/* Google in the equation */}
+      <div style={s.card}>
+        <p style={s.cardTitle}>Google always in the equation</p>
+        <p style={s.p}>
+          Whichever door the customer enters through — the Velora App, ChatGPT, Claude, or
+          Gemini — every action executes on Google Cloud: Gemini inference on Vertex AI, compute
+          on Cloud Run, distribution through Google Cloud Marketplace. Velora&apos;s
+          competitors&apos; AI surfaces become acquisition channels for Google compute. Every sale
+          registered via an external MCP client, every invoice emitted through a third-party
+          agent, every customer WhatsApp order — all routed through Vertex AI inference and
+          Cloud Run.
         </p>
       </div>
 
