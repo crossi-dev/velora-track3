@@ -43,16 +43,21 @@ The fastest way for a judge to run a live Velora tool call:
 # Install Gemini CLI (requires Node 18+)
 npm install -g @google/gemini-cli
 
+# One-time auth — run this first and complete the Google login prompt:
+gemini
+# (or: export GEMINI_API_KEY=<your-key-from-aistudio.google.com>)
+
 # Clone this repo — .gemini/settings.json with demo key is included
 git clone https://github.com/crossi-dev/velora-track3
 cd velora-track3
 
-# Start Gemini CLI — auto-loads MCP from settings.json
-gemini
+# Run headless with auto-approve and Flash model (fastest path):
+gemini --yolo -m gemini-2.5-flash -p "list the products in my catalog"
 
-# Try these queries:
+# Or start interactive mode and try read-only queries:
+gemini
 # > list the products in my catalog
-# > register a sale of 2 "Mochila Urbana" at $15000 each
+# > find the customer Carla in Velora
 # > what's the current cash balance?
 ```
 
@@ -67,6 +72,8 @@ gemini mcp add velora \
 ```
 
 The `.gemini/settings.json` file at the repo root contains the demo tenant HMAC key (scoped to a single demo business) and the live MCP endpoint. The key authenticates against `tools.somosvelora.com/api/mcp` (51 tools, 14 packs — source: `src/lib/mcp/server.ts`). This key is HMAC-scoped to the public demo tenant only — it cannot read or act on any other business.
+
+Money-path tools (`register_sale`, `emit_invoice`) write to the live sandbox — please keep it tidy for other judges. Use `--yolo` to auto-approve tool calls and `-m gemini-2.5-flash` if your default model 404s on Vertex.
 
 ## Track 3 mandatory technologies
 
