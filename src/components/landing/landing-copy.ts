@@ -97,14 +97,14 @@ export const defaultCopy: LandingCopy = {
         name: "ChatGPT",
         description:
           "Velora como toolkit dentro de ChatGPT. Consultá el catálogo, registrá ventas y seguí el stock sin salir de la conversación. Conectado vía el estándar abierto MCP.",
-        badge: "Próximamente en el directorio",
+        badge: "Disponible vía MCP · directorio próximamente",
         available: false,
       },
       {
         name: "Claude / Cowork",
         description:
           "Operá Velora desde Claude. Ideal si ya usás Cowork para tu día a día: el mismo chat gestiona el negocio y tus herramientas de trabajo. Conectado vía MCP.",
-        badge: "Próximamente en el directorio",
+        badge: "Disponible vía MCP · directorio próximamente",
         available: false,
       },
     ],
@@ -174,7 +174,7 @@ export const defaultCopy: LandingCopy = {
       },
       {
         q: "¿Desde dónde puedo usar Velora?",
-        a: "Desde tres superficies: la Velora App (disponible ahora, entrás con Google), o como toolkit dentro de ChatGPT o Claude vía el estándar MCP (próximamente en el directorio de cada plataforma). Gemini ya se conecta hoy directamente al endpoint MCP — sin necesidad de directorio. El mismo negocio desde cualquiera de las tres.",
+        a: "Desde tres superficies: la Velora App (disponible ahora, entrás con Google), o como toolkit dentro de ChatGPT o Claude vía el estándar MCP — conectalos hoy con el endpoint público; los listados en los directorios oficiales están en camino. Gemini ya se conecta hoy directamente al endpoint MCP — sin necesidad de directorio. El mismo negocio desde cualquiera de las tres.",
       },
       {
         q: "¿Los widgets del chat son reales?",
