@@ -371,7 +371,7 @@ See [docs/DEMO_VIDEO_SCRIPT.md](./DEMO_VIDEO_SCRIPT.md) for the full storyboard.
 
 The landing page is publicly accessible. For full owner demo access (live QR payment flow, multi-agent orchestration, Customer Agent WhatsApp loop), contact: **soporte@somosvelora.com**
 
-Demo environment uses MercadoPago sandbox credentials. The fiscal agent operates against ARCA sandbox (no real invoices issued during judging).
+Payment links are real MercadoPago Checkout Pro (live OAuth — real money). The fiscal agent operates against the ARCA sandbox path and the demo tenant uses demo carrier rates (no real invoices or shipments issued during judging).
 
 ---
 
