@@ -123,7 +123,7 @@ The system operates on two faces. The **owner track** (Supervisor, Gemini 2.5 Pr
 
 Behind the Supervisor sits a federation of A2A agents — and the decisive move is that **each specialist agent is a standards-compliant A2A translation of an external system.** The Fiscal Agent wraps ARCA's legacy SOAP interface (WSAA + WSFE) and exposes it as a clean A2A agent. The Payments Agent wraps the MercadoPago API. The Andreani Agent wraps the logistics carrier API. The Supervisor orchestrates them over signed JSON-RPC 2.0, and discovers and calls external counterparty agents via `/.well-known/agent-card.json` lookup. Whatever protocol a counterparty speaks — modern REST, decades-old SOAP, or A2A itself — Velora makes it one orchestratable agent network.
 
-A tiered NLU pipeline ensures <200ms responses on the most common intents. On the **employee path**, a three-tier pipeline applies: Deterministic Fast Path (regex + catalog lookup, no LLM) → Gemini Flash slow path → Supervisor escalation. On the **owner path**, a two-tier pipeline applies: Deterministic Fast Path → Gemini Pro (the Flash middle-tier was removed 2026-05-30). The Fast Path covers >20% of traffic without any LLM call — sale recording, stock queries, price lookups, customer management.
+A tiered NLU pipeline ensures <200ms responses on the most common intents. On the **employee path**, a three-tier pipeline applies: Deterministic Fast Path (regex + catalog lookup, no LLM) → Gemini Flash slow path → Supervisor escalation (code-present; Companion flow shelved — not active in production). On the **owner path**, a two-tier pipeline applies: Deterministic Fast Path → Gemini Pro (the Flash middle-tier was removed 2026-05-30). The Fast Path covers >20% of traffic without any LLM call — sale recording, stock queries, price lookups, customer management.
 
 Payment collection shows the pattern end-to-end: an employee triggers a MercadoPago charge from the chat, the customer pays via a real Checkout Pro payment link, and within seconds the owner receives a push notification confirming the payment, the invoice is recorded, and a WhatsApp receipt is sent to the customer — all without leaving Velora, and every step a coordinated call between the Supervisor and the Payments and Fiscal agents. (The in-store dynamic QR variant is implemented but flag-gated off in the current deployment; the live chargeable path is the payment link.)
 
@@ -176,7 +176,7 @@ For the full architecture diagram (Mermaid + ASCII), see [docs/ARCHITECTURE.md](
 - **Role**: Operations assistant for employees. Guides daily operations (sales, stock, customer lookup) with permission-gated escalations to the Supervisor (B1: employee requests supervisor action; B2: supervisor proactively alerts on anomaly).
 - **Skills**: `sale.create`, `stock.query`, `customer.lookup`, `escalation.request`, `onboarding.guide`
 - **Design decision**: Internal module within `business-assistant`, not a separate A2A endpoint — avoids a network hop on every cashier turn.
-- **NLU**: Two-tier pipeline for the owner path (Deterministic Fast Path → Gemini Pro); three-tier for the employee path (Deterministic Fast Path → Gemini Flash → Supervisor escalation).
+- **NLU**: Two-tier pipeline for the owner path (Deterministic Fast Path → Gemini Pro); three-tier for the employee path (Deterministic Fast Path → Gemini Flash → Supervisor escalation) (code-present; Companion flow shelved — not active in production).
 
 #### Customer Agent (WhatsApp B2C)
 
@@ -252,7 +252,7 @@ The entire Velora stack runs on Google Cloud:
 
 #### A2A Interoperability
 
-Velora implements A2A v0.3.0 across 12 agents (Supervisor + 8 specialist sub-agents + Companion (shelved) + Customer Agent + Onboarding):
+Velora implements A2A v0.3.0 across 12 agent-card endpoints — 10 active (Supervisor + 8 specialist sub-agents + Customer Agent + Onboarding) + Companion (shelved) + Equipo (shelved):
 
 - **Discovery**: Each A2A agent exposes `/.well-known/agent-card.json` (or `/agent-card`) with capability advertisement, skill definitions, authentication requirements, and JWKS URL.
 - **Cryptographic identity**: Ed25519 key pairs per agent (12 key pairs provisioned in Secret Manager). Outbound messages signed; inbound messages verified. HMAC-bound per-tenant keys (derived from `A2A_SECRET`) prevent cross-tenant message leakage.
@@ -294,7 +294,7 @@ Velora implements A2A v0.3.0 across 12 agents (Supervisor + 8 specialist sub-age
 
 ### Findings & Learnings
 
-Building a multi-agent interoperability layer in production for LATAM companies surfaced several non-obvious constraints. The most significant is latency tolerance: a frontline employee at a busy counter has roughly 3 seconds of patience before abandoning a chat interaction. This forced a hard architectural decision — the Deterministic Fast Path (regex + catalog lookup, no LLM) must handle the most frequent intents. The tiered NLU pipeline emerged from this constraint, not from a theoretical design: three tiers for the employee path (Deterministic → Flash → Pro escalation); two tiers for the owner path (Deterministic → Pro, after removing the Flash middle tier in 2026-05-30). Every LLM call is a gamble on latency; the Fast Path covers >20% of traffic and reduces p50 latency from ~2s to <200ms on those intents.
+Building a multi-agent interoperability layer in production for LATAM companies surfaced several non-obvious constraints. The most significant is latency tolerance: a frontline employee at a busy counter has roughly 3 seconds of patience before abandoning a chat interaction. This forced a hard architectural decision — the Deterministic Fast Path (regex + catalog lookup, no LLM) must handle the most frequent intents. The tiered NLU pipeline emerged from this constraint, not from a theoretical design: three tiers for the employee path (Deterministic → Flash → Pro escalation) (code-present; Companion flow shelved — not active in production); two tiers for the owner path (Deterministic → Pro, after removing the Flash middle tier in 2026-05-30). Every LLM call is a gamble on latency; the Fast Path covers >20% of traffic and reduces p50 latency from ~2s to <200ms on those intents.
 
 The A2A protocol is powerful but adds operational surface area. Cryptographic identity (Ed25519 JWKS) per agent is correct for production but requires careful key rotation, HMAC-bound per-tenant derivation, and dead-letter handling for message replay attacks. We learned that in-process function calls (the initial implementation) mask transport failures that only surface under load — replacing them with real HTTP A2A round-trips revealed several missing error paths and forced better timeout handling throughout the payment flow.
 
@@ -330,7 +330,7 @@ Velora implements every mandatory Track 3 technology in verified, running produc
 | Vertex AI Gemini exclusive | LIVE | `src/lib/gemini-models.ts`, `src/lib/adk/gemini-config.ts` |
 | ADK orchestration (two runtimes) | LIVE | `src/lib/adk/supervisor-agent.ts` (TS) + `agent-engine/main.py` (Python) |
 | Cloud Run runtime | LIVE | `cloudbuild-dockerfile.yaml`, Cloud Run `southamerica-east1` |
-| Multi-agent A2A design | LIVE | 12 agents, 8 A2A sub-agent tools, Ed25519 per-agent identity |
+| Multi-agent A2A design | LIVE | 12 agent-card endpoints (10 active + 2 shelved), 8 A2A sub-agent tools, Ed25519 per-agent identity |
 | Vertex AI Agent Engine | Deployed · verified (routing flag-gated) | `vertexai.agent_engines` — calls live MCP tools, verified; `USE_AGENT_ENGINE` gates interactive chat routing |
 | Vertex AI Search grounding | LIVE | Per-tenant Discovery Engine datastores, semantic queries verified |
 | A2A v0.3.0 protocol | LIVE | `src/app/api/a2a/`, `src/lib/a2a-client.ts`, `src/app/api/agents/*/agent-card/` |

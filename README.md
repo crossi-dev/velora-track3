@@ -121,7 +121,7 @@ Mermaid version: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 | Layer | Technology |
 |-------|-----------|
-| **Intelligence** | **Gemini 2.5 Pro** (Supervisor, `us-south1`) + **Gemini 2.5 Flash** (Companion (shelved) / Customer Agent, `southamerica-east1`) via Vertex AI (`@google-cloud/vertexai`) |
+| **Intelligence** | **Gemini 2.5 Pro** (Supervisor + the 8 A2A specialist sub-agents in production, `us-south1`) + **Gemini 2.5 Flash** (Customer Agent; Onboarding; Companion shelved, `southamerica-east1`) + **Flash-Lite** (classifier) via Vertex AI (`@google-cloud/vertexai`) |
 | **Orchestration — primary** | **Google ADK** for TypeScript (`@google/adk`) on Cloud Run — interactive chat |
 | **Orchestration — managed** | **Vertex AI Agent Engine** Python ADK (`google-adk`) — executes real commerce via MCP tools |
 | **Tool layer** | MCP server (StreamableHTTP, 51 tools, 14 packs, HMAC auth) — engine-agnostic |
@@ -140,7 +140,7 @@ Mermaid version: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ## A2A protocol (Agent-to-Agent v0.3.0)
 
-Velora implements A2A v0.3.0 across 12 agents (Supervisor + 8 specialist sub-agents + Companion (shelved) + Customer Agent + Onboarding). Any A2A-compatible client — Salesforce, SAP, AWS Bedrock AgentCore, Microsoft Agent Framework, Google's own ADK — can discover and call Velora's Supervisor without a custom integration. The 12 agents that expose `/.well-known/agent-card.json` and Ed25519 JWKS identity are: Supervisor, Companion (shelved), Payments, Fiscal, Logística, Ventas, Caja, Inventario, Communications, Customer, Onboarding, and Equipo (shelved; card present). `velora_search_agent` is an internal grounding sub-agent and does not expose its own agent card.
+Velora implements A2A v0.3.0 across 12 agent-card endpoints — 10 active (Supervisor + 8 specialist sub-agents + Customer Agent + Onboarding) + Companion (shelved) + Equipo (shelved). Any A2A-compatible client — Salesforce, SAP, AWS Bedrock AgentCore, Microsoft Agent Framework, Google's own ADK — can discover and call Velora's Supervisor without a custom integration. The 12 endpoints that expose `/.well-known/agent-card.json` and Ed25519 JWKS identity are: Supervisor, Payments, Fiscal, Logística, Ventas, Caja, Inventario, Communications, Customer, Onboarding (10 active) + Companion (shelved) + Equipo (shelved; card present). `velora_search_agent` is an internal grounding sub-agent and does not expose its own agent card.
 
 ```bash
 # Discovery (no auth)

@@ -170,7 +170,7 @@ Velora runs a three-runtime multi-agent system on Google Cloud.
 
 ### Runtime 1 — Cloud Run TypeScript ADK (interactive, primary)
 
-The Supervisor is an ADK `Agent` running in a TypeScript `InMemoryRunner`. It holds eight active **A2A sub-agent FunctionTools** that issue real A2A HTTP JSON-RPC calls to specialist agents:
+The Supervisor is an ADK `Agent` running in a TypeScript `Runner` with Postgres-backed sessions (`getCachedSessionService`). It holds eight active **A2A sub-agent FunctionTools** that issue real A2A HTTP JSON-RPC calls to specialist agents:
 
 | A2A Tool | Sub-Agent Endpoint | Responsibility |
 |---|---|---|
@@ -212,7 +212,7 @@ The `usedAdkDelegation` flag in the Supervisor runner result is set to `true` wh
 
 ## Agent Identity Model
 
-Each of the 12 agent-card endpoints (Supervisor, Companion*, Customer, Payments, Fiscal, Logística, Ventas, Caja, Inventario, Communications, Onboarding, Equipo†) exposes three endpoints:
+Each of the 12 agent-card endpoints — 10 active (Supervisor, Customer, Payments, Fiscal, Logística, Ventas, Caja, Inventario, Communications, Onboarding) + Companion* (shelved) + Equipo† (shelved) — exposes three endpoints:
 
 > *Companion is a shelved legacy module (inoperative); its card remains for endpoint-count fidelity.  
 > †Equipo is shelved; the agent card is present but the tool is inactive.
@@ -312,7 +312,7 @@ sequenceDiagram
 │    ├─ resolveActor (Owner OAuth / Employee PIN)                      │
 │    ├─ NLU (Deterministic Fast Path → LLM Slow Path)                  │
 │    │    └─ velora_search_agent ──► Vertex AI Search (USE_VERTEX_SEARCH=true) │
-│    ├─ Supervisor Agent (ADK TS InMemoryRunner) ── Gemini 2.5 Pro     │
+│    ├─ Supervisor Agent (ADK TS Runner + Postgres sessions) ─ Gemini 2.5 Pro │
 │    │    └─ 8 A2A Sub-Agent FunctionTools                             │
 │    │         ├─ call_payments_agent   ──► Payments Agent             │
 │    │         ├─ call_fiscal_agent     ──► Fiscal Agent               │

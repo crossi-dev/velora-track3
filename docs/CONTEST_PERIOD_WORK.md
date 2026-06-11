@@ -45,7 +45,7 @@ Entire backend runs on **Google Cloud Run** (`southamerica-east1`):
 
 ### A2A Interoperability
 - **Supervisor + 8 active A2A sub-agents (+ the async Customer Agent)** communicate over the **A2A (Agent-to-Agent) bus**:
-  1. **Supervisor** (Owner-facing, Gemini 2.5 Pro, ADK TS InMemoryRunner): Orchestrates all sub-agents via eight active A2A FunctionTools, validates rule policies, escalates employee requests.
+  1. **Supervisor** (Owner-facing, Gemini 2.5 Pro, ADK TS `Runner` with Postgres-backed sessions (`getCachedSessionService`)): Orchestrates all sub-agents via eight active A2A FunctionTools, validates rule policies, escalates employee requests.
   2. **Payments Sub-Agent**: Processes QR payments, validates MercadoPago transactions; wraps MercadoPago API.
   3. **Fiscal Sub-Agent**: ARCA-compliant invoice generation, tax calculations; wraps ARCA WSAA + WSFE SOAP.
   4. **Logística Sub-Agent**: Shipment quote, create, and track; wraps Andreani REST API.
@@ -160,7 +160,7 @@ Entire backend runs on **Google Cloud Run** (`southamerica-east1`):
 - **`src/app/api/business-assistant/_lib/onboarding-polish.ts`** — Polish seed messages
 
 ### Supervisor & Companion Orchestration
-- **`src/lib/adk/supervisor-agent.ts`** — ADK `Agent` + `InMemoryRunner` wrapper; `SUPERVISOR_ADK_TIMEOUT_MS` (25s code default / 65s Cloud Run override), `usedAdkDelegation` flag, graceful fallback to direct-Gemini on `TimeoutError`
+- **`src/lib/adk/supervisor-agent.ts`** — ADK `Agent` + `Runner` with Postgres-backed sessions (`getCachedSessionService`); `SUPERVISOR_ADK_TIMEOUT_MS` (25s code default / 65s Cloud Run override), `usedAdkDelegation` flag, graceful fallback to direct-Gemini on `TimeoutError`
 - **`src/lib/adk/tools/index.ts`** — FunctionTool registry (check-stock, business-query, + 3 active role-agent delegation tools)
 - **`src/app/api/business-assistant/_lib/owner-handler.stages.ts`** — Owner intent routing
 - **`src/app/api/business-assistant/_lib/employee-handler.stages-b-execute.ts`** — Employee execute stage
@@ -564,7 +564,7 @@ Key commits:
 ## Architectural Decisions & Track 3 Alignment
 
 ### Multi-Agent Orchestration (Supervisor → 8 A2A Sub-Agents)
-- **Owner** (Supervisor, Gemini 2.5 Pro, ADK TS InMemoryRunner): Orchestrates payment + fiscal + logistics + catalog + caja + inventario + communications + customer workflows via eight A2A FunctionTools. (`call_equipo_agent` is implemented but shelved.)
+- **Owner** (Supervisor, Gemini 2.5 Pro, ADK TS `Runner` with Postgres-backed sessions (`getCachedSessionService`)): Orchestrates payment + fiscal + logistics + catalog + caja + inventario + communications + customer workflows via eight A2A FunctionTools. (`call_equipo_agent` is implemented but shelved.)
 - **Employee** (Companion (shelved), Gemini 2.5 Flash): Operates daily POS tasks with permission-gated escalations.
 - **Customer** (Customer Agent, Gemini 2.5 Flash): Handles WhatsApp B2C inbound — resolves orders, quotes shipping, generates payment links, sends receipts. Async via Cloud Tasks + OIDC.
 - **Payments Sub-Agent**: QR checkout + MercadoPago reconciliation; wraps MercadoPago API.

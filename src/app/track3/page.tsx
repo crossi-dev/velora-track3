@@ -30,7 +30,7 @@ const REPO = "https://github.com/crossi-dev/velora-track3";
 const MANDATORY_TECH = [
   {
     label: "Vertex AI Gemini",
-    detail: "Gemini 2.5 Flash (Companion / Employee) + Gemini 2.5 Pro (Supervisor). Exclusive — no direct OpenAI/Anthropic in the request path. Cloud Run env overrides code defaults; Cloud Run is source of truth.",
+    detail: "Gemini 2.5 Pro (Supervisor + the 8 A2A specialist sub-agents in production) · Gemini 2.5 Flash (Customer Agent; Onboarding; Companion — shelved) · Flash-Lite (classifier). Exclusive — no OpenAI/Anthropic in Velora's inference. Cloud Run env is the source of truth.",
     proof: `${REPO}/blob/main/src/lib/adk/gemini-config.ts`,
   },
   {
@@ -241,7 +241,7 @@ export default function Track3SubmissionPage() {
             Employee Agent (Gemini 2.5 Flash via Vertex AI) registers the sale, infers the rest, and
             confirms in under 1.8 seconds. Behind the scenes, a Supervisor Agent (Gemini 2.5 Pro)
             watches every event through an A2A bus and notifies the owner only when something
-            matters. Two agents, distinct voices, separated by latency contract.
+            matters. Supervisor · Customer Agent · 8 A2A specialist sub-agents · Onboarding — separated by a latency contract.
           </p>
           <Link href="https://somosvelora.com" style={styles.cta}>
             Open the live demo →
