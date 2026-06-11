@@ -19,9 +19,10 @@ export const defaultCopyEn: LandingCopy = {
     verb: "Sell without being there.",
     tagline:
       "Run your business with AI. Sales, stock, payments — all from the chat. Your AI agent team works while you direct.",
-    taglineStrong: "From the Velora App, ChatGPT or Claude.",
+    taglineStrong: "From the Velora App, ChatGPT, Claude or Gemini.",
     ctaLabel: "Start free with Google",
     ctaMicroTrust: "Free in beta · no card",
+    imageAlt: "Velora in use: the owner asks about a product and sees the catalog in the chat",
   },
   benefits: {
     label: "Capabilities",
@@ -58,7 +59,7 @@ export const defaultCopyEn: LandingCopy = {
   surfaces: {
     label: "Where to use it",
     headline: "Use Velora where you already work.",
-    sub: "Three entry points, the same business. Pick the one that fits how you operate today — without losing anything.",
+    sub: "Three entry points, the same business. Pick the one that fits how you operate today — without losing anything. Gemini already operates Velora directly via MCP — see Integrations.",
     entries: [
       {
         name: "Velora App",
@@ -110,7 +111,7 @@ export const defaultCopyEn: LandingCopy = {
   integraciones: {
     title: "Integrations",
     headline: "Velora lives inside your AI.",
-    sub: "Claude, ChatGPT or Gemini operate Velora through the open MCP standard. The same business, run from any AI.",
+    sub: "Claude, ChatGPT or Gemini operate Velora through the open MCP standard. The same business, run from any AI. Screenshots are from the live product running in Argentina (Spanish-language UI).",
     endpoint: "Connect your agent to tools.somosvelora.com/api/mcp",
     cards: [
       {
@@ -149,7 +150,7 @@ export const defaultCopyEn: LandingCopy = {
       },
       {
         q: "Where can I use Velora?",
-        a: "From three surfaces: the Velora App (available now, sign in with Google), or as a toolkit inside ChatGPT or Claude via the MCP standard (coming soon to each platform's directory). Same business from any of the three.",
+        a: "From three surfaces: the Velora App (available now, sign in with Google), or as a toolkit inside ChatGPT or Claude via the MCP standard (coming soon to each platform's directory). Gemini connects today directly via the MCP endpoint — no directory needed. Same business from any of the three.",
       },
       {
         q: "Are the chat widgets real?",

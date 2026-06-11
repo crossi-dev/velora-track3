@@ -1,6 +1,7 @@
 import Header from "./Header";
 import Hero from "./Hero";
 import Benefits from "./Benefits";
+import Steps from "./Steps";
 import Surfaces from "./Surfaces";
 import Widgets from "./Widgets";
 import QuietRow from "./QuietRow";
@@ -40,8 +41,9 @@ export default function LandingPage({
       <Header copy={copy.header} locale={locale} onSignIn={onSignIn} />
       <main id="main-content">
         <Hero copy={copy.hero} onSignIn={onSignIn} />
+        <Steps copy={copy.steps} />
         <Benefits copy={copy.benefits} />
-        <Surfaces copy={copy.surfaces} />
+        <Surfaces copy={copy.surfaces} onSignIn={onSignIn} />
         <Widgets copy={copy.widgets} />
         <Integraciones copy={copy.integraciones} />
         <FAQ copy={copy.faq} />

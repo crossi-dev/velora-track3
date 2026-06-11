@@ -43,7 +43,7 @@ export const defaultCopy: LandingCopy = {
     verb: "Vendé sin estar.",
     tagline:
       "Manejá tu negocio con IA. Ventas, stock, cobros — todo desde el chat. Tu equipo de agentes de IA trabaja mientras vos dirigís.",
-    taglineStrong: "Desde la Velora App, ChatGPT o Claude.",
+    taglineStrong: "Desde la Velora App, ChatGPT, Claude o Gemini.",
     ctaLabel: "Empezá con Google",
     ctaMicroTrust: "Gratis en beta · sin tarjeta",
   },
@@ -82,7 +82,7 @@ export const defaultCopy: LandingCopy = {
   surfaces: {
     label: "Dónde usarlo",
     headline: "Usá Velora donde ya trabajás.",
-    sub: "Tres puntos de entrada, el mismo negocio. Elegís el que se ajusta a cómo operás hoy — sin perder nada.",
+    sub: "Tres puntos de entrada, el mismo negocio. Elegís el que se ajusta a cómo operás hoy — sin perder nada. Gemini ya opera Velora directo vía MCP — miralo en Integraciones.",
     entries: [
       {
         name: "Velora App",
@@ -174,7 +174,7 @@ export const defaultCopy: LandingCopy = {
       },
       {
         q: "¿Desde dónde puedo usar Velora?",
-        a: "Desde tres superficies: la Velora App (disponible ahora, entrás con Google), o como toolkit dentro de ChatGPT o Claude vía el estándar MCP (próximamente en el directorio de cada plataforma). El mismo negocio desde cualquiera de las tres.",
+        a: "Desde tres superficies: la Velora App (disponible ahora, entrás con Google), o como toolkit dentro de ChatGPT o Claude vía el estándar MCP (próximamente en el directorio de cada plataforma). Gemini ya se conecta hoy directamente al endpoint MCP — sin necesidad de directorio. El mismo negocio desde cualquiera de las tres.",
       },
       {
         q: "¿Los widgets del chat son reales?",

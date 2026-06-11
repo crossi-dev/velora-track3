@@ -7,9 +7,12 @@ export type SurfaceEntry = {
   badge: string;
   /** Whether the badge signals availability (true) or coming-soon (false) */
   available: boolean;
-  /** Optional CTA label. When absent, no link is rendered. */
+  /** Optional CTA label. When absent, no button is rendered. */
   ctaLabel?: string;
-  /** Optional href. Required when ctaLabel is set. */
+  /**
+   * Optional href (legacy, ignored when onSignIn is provided).
+   * Keep for backward compat with copy objects that still set ctaHref: "#".
+   */
   ctaHref?: string;
 };
 
@@ -28,8 +31,17 @@ export type SurfacesCopy = {
  * "3 surfaces" section — Standalone app, ChatGPT connector, Claude / Cowork
  * connector. Equal visual weight for each; no hierarchy between them.
  * Status badge ("Disponible" / "Próximamente") is the only differentiator.
+ *
+ * onSignIn is threaded in so the Velora App card CTA triggers Google sign-in
+ * instead of the dead "#" href.
  */
-export default function Surfaces({ copy }: { copy: SurfacesCopy }) {
+export default function Surfaces({
+  copy,
+  onSignIn,
+}: {
+  copy: SurfacesCopy;
+  onSignIn?: () => void | Promise<void>;
+}) {
   return (
     <section
       id="superficies"
@@ -66,7 +78,7 @@ export default function Surfaces({ copy }: { copy: SurfacesCopy }) {
         {/* 3 equal cards */}
         <div role="list" className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {copy.entries.map((entry) => (
-            <SurfaceCard key={entry.name} entry={entry} />
+            <SurfaceCard key={entry.name} entry={entry} onSignIn={onSignIn} />
           ))}
         </div>
       </div>
@@ -74,7 +86,13 @@ export default function Surfaces({ copy }: { copy: SurfacesCopy }) {
   );
 }
 
-function SurfaceCard({ entry }: { entry: SurfaceEntry }) {
+function SurfaceCard({
+  entry,
+  onSignIn,
+}: {
+  entry: SurfaceEntry;
+  onSignIn?: () => void | Promise<void>;
+}) {
   return (
     <article
       role="listitem"
@@ -88,7 +106,7 @@ function SurfaceCard({ entry }: { entry: SurfaceEntry }) {
             ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
             : "bg-[color:var(--color-tint)] text-[color:var(--color-ink-60)] border border-[color:var(--color-line)]",
         ].join(" ")}
-        style={{ fontSize: "0.8125rem" }}
+        style={{ fontSize: "0.875rem" }}
       >
         {entry.badge}
       </span>
@@ -109,8 +127,33 @@ function SurfaceCard({ entry }: { entry: SurfaceEntry }) {
         </p>
       </div>
 
-      {/* Optional CTA link */}
-      {entry.ctaLabel && entry.ctaHref && (
+      {/* CTA — button (triggers sign-in) when available + onSignIn provided; plain link otherwise */}
+      {entry.ctaLabel && entry.available && onSignIn ? (
+        <button
+          type="button"
+          onClick={() => onSignIn()}
+          className="inline-flex items-center gap-1.5 self-start font-medium text-[color:var(--color-ink)] underline underline-offset-4 decoration-[color:var(--color-ink-40)] transition-[text-decoration-color] duration-200 hover:decoration-[color:var(--color-ink)]"
+          style={{ fontSize: "0.9375rem" }}
+        >
+          {entry.ctaLabel}
+          <svg
+            aria-hidden
+            width="14"
+            height="14"
+            viewBox="0 0 14 14"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M3 7h8M7 3l4 4-4 4"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      ) : entry.ctaLabel && entry.ctaHref && entry.ctaHref !== "#" ? (
         <a
           href={entry.ctaHref}
           className="inline-flex items-center gap-1.5 self-start font-medium text-[color:var(--color-ink)] underline underline-offset-4 decoration-[color:var(--color-ink-40)] transition-[text-decoration-color] duration-200 hover:decoration-[color:var(--color-ink)]"
@@ -135,7 +178,7 @@ function SurfaceCard({ entry }: { entry: SurfaceEntry }) {
             />
           </svg>
         </a>
-      )}
+      ) : null}
     </article>
   );
 }

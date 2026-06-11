@@ -71,9 +71,7 @@ export default function Header({
             ))}
           </nav>
           {copy.switcher && locale && (
-            <div className="hidden md:block">
-              <LanguageSwitcher currentLocale={locale} labels={copy.switcher} />
-            </div>
+            <LanguageSwitcher currentLocale={locale} labels={copy.switcher} />
           )}
           {copy.cta && onSignIn && (
             <button

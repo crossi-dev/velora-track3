@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
+import { cookies } from "next/headers";
 import "./globals.css";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 import { CapacitorAppLinkHandler } from "@/components/CapacitorAppLinkHandler";
@@ -8,6 +9,7 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 import { NativeAuthBootstrap } from "@/app/_native-bootstrap";
 import { Toaster } from "@/components/ui/sonner";
+import { LOCALE_COOKIE } from "@/app/_landing/i18n";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -87,17 +89,20 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Derive html[lang] from the NEXT_LOCALE cookie so screen readers and
+  // browser translation get the correct language signal.
+  // Default: es-AR (Argentine target market). Cookie=en → lang="en".
+  const cookieJar = await cookies();
+  const localeCookie = cookieJar.get(LOCALE_COOKIE)?.value ?? null;
+  const htmlLang = localeCookie === "en" ? "en" : "es-AR";
+
   return (
-    // lang="es-AR" is the primary locale. The site also serves English at the same URL
-    // (single-URL bilingual). Changing to a dynamic per-request lang would require
-    // i18n routing — deferred. The hreflang alternates in metadata.alternates.languages
-    // already tell crawlers about the en variant.
-    <html lang="es-AR" suppressHydrationWarning className={`${fraunces.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}>
+    <html lang={htmlLang} suppressHydrationWarning className={`${fraunces.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}>
       <head>
         {/* Sets data-theme="dark" on <html> before first paint — no FOUC.
             Mirrors src/lib/theme.ts logic; keep them in sync. */}

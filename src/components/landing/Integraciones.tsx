@@ -78,8 +78,8 @@ export default function Integraciones({ copy }: { copy: IntegracionesCopy }) {
 
         {/* Integration cards */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {copy.cards.map((card) => (
-            <IntegrationTile key={card.imageSrc} card={card} />
+          {copy.cards.map((card, i) => (
+            <IntegrationTile key={card.imageSrc} card={card} priority={i === 0} />
           ))}
         </div>
 
@@ -108,7 +108,7 @@ export default function Integraciones({ copy }: { copy: IntegracionesCopy }) {
   );
 }
 
-function IntegrationTile({ card }: { card: IntegrationCard }) {
+function IntegrationTile({ card, priority = false }: { card: IntegrationCard; priority?: boolean }) {
   return (
     <article className="group overflow-hidden rounded-2xl border border-[color:var(--color-line)] bg-[color:var(--color-tint)] transition-shadow duration-300 hover:shadow-[0_8px_32px_-8px_rgba(27,58,107,.18)]">
       {/* Screenshot area — matches the source JPG ratio (1080x2098) so the WHOLE
@@ -126,6 +126,8 @@ function IntegrationTile({ card }: { card: IntegrationCard }) {
             alt={card.imageAlt}
             fill
             sizes="(max-width: 768px) 100vw, 33vw"
+            // priority on the first card: above-the-fold on mobile, prevents white-box flash.
+            priority={priority}
             // object-top: anchor the (tall portrait) screenshot to its TOP so the
             // start of the chat is visible, not a center crop that cuts the top off.
             className="object-cover object-top"

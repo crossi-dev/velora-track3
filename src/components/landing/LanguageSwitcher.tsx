@@ -44,7 +44,7 @@ export default function LanguageSwitcher({
       {SUPPORTED.map((locale, i) => (
         <span key={locale} className="flex items-center">
           {i > 0 && (
-            <span aria-hidden className="mx-1 text-[color:var(--color-ink-40)] text-xs select-none">
+            <span aria-hidden className="mx-1 text-[color:var(--color-ink-40)] select-none" style={{ fontSize: "0.875rem" }}>
               /
             </span>
           )}
@@ -53,11 +53,12 @@ export default function LanguageSwitcher({
             onClick={() => switchTo(locale)}
             aria-current={locale === currentLocale ? "true" : undefined}
             className={[
-              "text-[0.8125rem] transition-colors duration-200",
+              "transition-colors duration-200",
               locale === currentLocale
                 ? "font-semibold text-[color:var(--color-ink)] cursor-default"
                 : "text-[color:var(--color-ink-60)] hover:text-[color:var(--color-ink)]",
             ].join(" ")}
+            style={{ fontSize: "0.875rem" }}
           >
             {locale === "es-AR" ? labels.es : labels.en}
           </button>
