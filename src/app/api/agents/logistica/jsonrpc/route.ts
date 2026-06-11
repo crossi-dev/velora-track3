@@ -23,6 +23,12 @@ export const POST = createAgentRpcRoute({
   //   - Supervisor (iss=supervisor)   — shipment.create post-confirm + chat-driven calls
   //   - Customer Agent (iss=customer) — quote_shipping for B2C self-service checkout
   callerIdentity: ["payments", "supervisor", "customer"],
-  rateLimit: { bucket: "logistica-a2a", max: 60, windowSec: 60 },
+  // 600/min: internal Cloud Run self-calls from Customer Agent and Payments
+  // share one Cloud Run instance's in-memory window. The old 60/min triggered
+  // false-positive denials when that window accumulated across concurrent turns
+  // on a long-lived instance (smoke harness + prod traffic on the same instance).
+  // 600/min = 10/s burst ceiling, still well below any abuse threshold given
+  // that auth (HMAC + Ed25519 JWT) gates every request.
+  rateLimit: { bucket: "logistica-a2a", max: 600, windowSec: 60 },
   handle: (body, ctx) => handleLogisticaRpc(body, ctx),
 });

@@ -27,6 +27,10 @@ export const POST = createAgentRpcRoute({
   //   - Customer Agent (iss=customer) — B2C self-service checkout (inbound wpp
   //     worker → Customer Agent → create_payment_link)
   callerIdentity: ["supervisor", "customer"],
-  rateLimit: { bucket: "payments-a2a", max: 20, windowSec: 60 },
+  // 200/min: internal Cloud Run self-calls from the Customer Agent share the same
+  // in-memory window as concurrent traffic. The old 20/min was too tight for
+  // sustained smoke/integration test runs on a long-lived instance. 200/min
+  // = ~3/s burst ceiling. Auth (HMAC + Ed25519 JWT) is the real security gate.
+  rateLimit: { bucket: "payments-a2a", max: 200, windowSec: 60 },
   handle: (body, ctx) => handlePaymentsRpcAsync(body, ctx),
 });
