@@ -54,6 +54,20 @@ interface SlimResult {
   resourcePath: string;
 }
 
+// ADK Agent Engine :streamQuery response shape (NDJSON, one JSON object per line):
+//   { model_version?, content: { parts: [{text?} | {function_call?} | {function_response?}], role }, author, ... }
+
+type AdkPart =
+  | { text: string }
+  | { function_call: { name: string; args?: unknown }; thought_signature?: string }
+  | { function_response: { name: string; response?: unknown } };
+
+interface AdkEvent {
+  model_version?: string;
+  content?: { parts?: AdkPart[]; role?: string };
+  author?: string;
+}
+
 /** Parse NDJSON stream from Agent Engine :streamQuery into slim JSON. */
 async function parseStream(body: ReadableStream<Uint8Array>): Promise<SlimResult> {
   const reader = body.getReader();
@@ -74,25 +88,22 @@ async function parseStream(body: ReadableStream<Uint8Array>): Promise<SlimResult
         if (!trimmed || trimmed === "[" || trimmed === "]") continue;
         const jsonStr = trimmed.replace(/^,/, "");
         try {
-          const obj = JSON.parse(jsonStr) as Record<string, unknown>;
-          const candidates = obj.candidates as Array<{
-            content?: { parts?: Array<{ text?: string; functionCall?: { name?: string; args?: unknown }; functionResponse?: { response?: unknown } }> };
-          }> | undefined;
-          if (candidates?.[0]?.content?.parts) {
-            for (const part of candidates[0].content.parts) {
-              if (part.text) {
-                result.answer = (result.answer ?? "") + part.text;
-              }
-              if (part.functionCall?.name) {
-                result.toolCall = `${part.functionCall.name}(${JSON.stringify(part.functionCall.args ?? {}).slice(0, 200)})`;
-              }
-              if (part.functionResponse?.response) {
-                result.toolResponse = JSON.stringify(part.functionResponse.response).slice(0, 400);
+          const obj = JSON.parse(jsonStr) as AdkEvent;
+          if (!result.model && obj.model_version) {
+            result.model = obj.model_version;
+          }
+          if (obj.content?.parts) {
+            for (const part of obj.content.parts) {
+              if ("text" in part && part.text) {
+                if (obj.content.role === "model" || !obj.content.role) {
+                  result.answer = (result.answer ?? "") + part.text;
+                }
+              } else if ("function_call" in part && part.function_call?.name) {
+                result.toolCall = `${part.function_call.name}(${JSON.stringify(part.function_call.args ?? {}).slice(0, 200)})`;
+              } else if ("function_response" in part && part.function_response) {
+                result.toolResponse = JSON.stringify(part.function_response.response).slice(0, 400);
               }
             }
-          }
-          if (!result.answer && typeof obj.text === "string") {
-            result.answer = obj.text;
           }
         } catch {
           // Non-JSON line — skip silently
