@@ -18,7 +18,8 @@
 // which is the separate customer-side conversation. The owner assistant chat
 // (WHERE customerId IS NULL) is unchanged and unaffected.
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { CustomerConversationsThread } from "./CustomerConversationsThread";
 import { SharedEmptyState } from "./SharedEmptyState";
 import { ChatsCircle } from "@phosphor-icons/react";
@@ -29,12 +30,6 @@ interface ConversationSummary {
   customerPhone: string | null;
   lastMessage: string;
   lastActivityAt: string | null;
-}
-
-interface ListState {
-  conversations: ConversationSummary[];
-  loading: boolean;
-  error: boolean;
 }
 
 function fmtRelative(iso: string | null): string {
@@ -54,19 +49,25 @@ function initials(name: string): string {
   return name.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
 }
 
-export function CustomerConversationsTab() {
-  const [listState, setListState] = useState<ListState>({ conversations: [], loading: true, error: false });
-  const [selected, setSelected] = useState<ConversationSummary | null>(null);
+// TanStack Query key for customer conversations list.
+// staleTime 30s — conversations list is fresh for 30s; revisiting the tab
+// within that window uses the cache instead of re-fetching.
+const CONVERSATIONS_QUERY_KEY = ["customer-conversations"] as const;
 
-  useEffect(() => {
-    let cancelled = false;
-    setListState({ conversations: [], loading: true, error: false });
-    fetch("/api/customer-conversations")
-      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() as Promise<{ conversations: ConversationSummary[] }>; })
-      .then((d) => { if (!cancelled) setListState({ conversations: d.conversations, loading: false, error: false }); })
-      .catch(() => { if (!cancelled) setListState({ conversations: [], loading: false, error: true }); });
-    return () => { cancelled = true; };
-  }, []);
+async function fetchConversations(): Promise<ConversationSummary[]> {
+  const r = await fetch("/api/customer-conversations");
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const d = (await r.json()) as { conversations: ConversationSummary[] };
+  return d.conversations;
+}
+
+export function CustomerConversationsTab() {
+  const [selected, setSelected] = useState<ConversationSummary | null>(null);
+  const { data: conversations = [], isLoading: loading, isError: error } = useQuery({
+    queryKey: CONVERSATIONS_QUERY_KEY,
+    queryFn: fetchConversations,
+    staleTime: 30_000,
+  });
 
   // Thread view
   if (selected) {
@@ -94,17 +95,17 @@ export function CustomerConversationsTab() {
       </div>
 
       {/* States */}
-      {listState.loading && (
+      {loading && (
         <div style={{ padding: "2rem 1rem", textAlign: "center" }}>
           <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: "1rem", color: "var(--tone-muted)" }}>Loading…</p>
         </div>
       )}
-      {listState.error && (
+      {error && (
         <div style={{ padding: "2rem 1rem", textAlign: "center" }}>
           <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: "1rem", color: "var(--error)" }}>Failed to load conversations.</p>
         </div>
       )}
-      {!listState.loading && !listState.error && listState.conversations.length === 0 && (
+      {!loading && !error && conversations.length === 0 && (
         <SharedEmptyState
           illustration={<ChatsCircle size={40} weight="duotone" aria-hidden />}
           title="No conversations yet"
@@ -113,9 +114,9 @@ export function CustomerConversationsTab() {
       )}
 
       {/* Conversation rows */}
-      {!listState.loading && !listState.error && listState.conversations.length > 0 && (
+      {!loading && !error && conversations.length > 0 && (
         <div className="scrollbar-none" style={{ flex: 1, overflowY: "auto" }}>
-          {listState.conversations.map((conv) => (
+          {conversations.map((conv) => (
             <button
               key={conv.customerId}
               type="button"

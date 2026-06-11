@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowsClockwise } from "@phosphor-icons/react";
 import { SectionMarker } from "./v2/SectionMarker";
 import { ErrorBanner, type RuleRow } from "./BusinessRulesTab.shared";
@@ -8,41 +9,43 @@ import { CreateForm } from "./BusinessRulesCreateForm";
 import { RulesList } from "./BusinessRulesList";
 import { BusinessRulesImportButton } from "./BusinessRulesImportButton";
 
+// TanStack Query source: https://tanstack.com/query/latest/docs/framework/react/overview
+// staleTime 30s so revisiting the tab within 30s uses the cache instead of refetching.
+// Was using raw fetch + useEffect (no-store) — refetched on EVERY tab visit.
+const RULES_QUERY_KEY = ["business-rules"] as const;
+
+async function fetchBusinessRules(): Promise<RuleRow[]> {
+  const res = await fetch("/api/business/business-rules");
+  if (!res.ok) {
+    const friendly =
+      res.status === 429
+        ? "Demasiadas solicitudes. Esperá unos segundos y volvé a intentarlo."
+        : res.status >= 500
+          ? "El servidor no está respondiendo. Intentá de nuevo en unos momentos."
+          : "No se pudo conectar con el servidor.";
+    throw new Error(friendly);
+  }
+  const data = (await res.json()) as { rules: RuleRow[] };
+  return data.rules;
+}
+
 interface BusinessRulesTabProps {
   t: (en: string, es: string) => string;
 }
 
 export function BusinessRulesTab({ t }: BusinessRulesTabProps) {
-  const [rules, setRules] = useState<RuleRow[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { data: rules = [], isLoading: loading, error: queryError } = useQuery({
+    queryKey: RULES_QUERY_KEY,
+    queryFn: fetchBusinessRules,
+    staleTime: 30_000,
+  });
 
-  const reload = useCallback(async () => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const res = await fetch("/api/business/business-rules", { cache: "no-store" });
-      if (!res.ok) {
-        const friendly =
-          res.status === 429
-            ? "Demasiadas solicitudes. Esperá unos segundos y volvé a intentarlo."
-            : res.status >= 500
-              ? "El servidor no está respondiendo. Intentá de nuevo en unos momentos."
-              : "No se pudo conectar con el servidor.";
-        throw new Error(friendly);
-      }
-      const data = (await res.json()) as { rules: RuleRow[] };
-      setRules(data.rules);
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const loadError = queryError instanceof Error ? queryError.message : null;
 
-  useEffect(() => {
-    void reload();
-  }, [reload]);
+  const reload = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: RULES_QUERY_KEY });
+  }, [queryClient]);
 
   return (
     <div
