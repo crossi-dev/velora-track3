@@ -20,11 +20,11 @@ This document delineates the work authored during the official Contest Period as
 ## Track 3 Mandate Compliance
 
 ### B2B Focus
-Velora is architected for **B2B enterprise**: Owner (Supervisor role, runs Gemini 2.5 Pro) manages the business and receives AI-driven insights; Employees (Companion role, runs Gemini 2.5 Flash) operate the POS chat as a guided, multi-turn assistant.
+Velora is architected for **B2B enterprise**: Owner (Supervisor role, runs Gemini 2.5 Pro) manages the business and receives AI-driven insights; Employees (Companion role, shelved, runs Gemini 2.5 Flash) operate the POS chat as a guided, multi-turn assistant.
 
 The contest period work ensures **both personas** can orchestrate agents:
 - **Owner** invokes Supervisor via chat + A2A for advanced business logic (rules, forecasting, fiscal compliance).
-- **Employee** invokes Companion via chat with permission-gated escalations to Supervisor.
+- **Employee** invokes Companion (shelved) via chat with permission-gated escalations to Supervisor.
 - **Payments Agent** and **Fiscal Agent** operate autonomously over the A2A bus (Velora Supervisor coordinates multi-agent flows).
 
 ### Cloud-Native Runtime
@@ -35,8 +35,8 @@ Entire backend runs on **Google Cloud Run** (`southamerica-east1`):
 - Migrations applied manually against Supabase Postgres via `npx prisma db execute` (standard Prisma migration workflow).
 
 ### Vertex-Powered Intelligence
-- **100% Google Cloud AI**: Gemini 2.5 Pro (Supervisor) + Gemini 2.5 Flash (Companion, Customer Agent, Onboarding).
-- All AI inference via `@google-cloud/vertexai` (Model Garden: Supervisor/Pro → `us-south1`; Companion/Flash → `southamerica-east1`).
+- **100% Google Cloud AI**: Gemini 2.5 Pro (Supervisor) + Gemini 2.5 Flash (Companion (shelved), Customer Agent, Onboarding).
+- All AI inference via `@google-cloud/vertexai` (Model Garden: Supervisor/Pro → `us-south1`; Companion (shelved)/Flash → `southamerica-east1`).
 - **ADK integration — two runtimes**:
   - TypeScript ADK on Cloud Run (interactive chat, primary path).
   - Python ADK on Vertex AI Agent Engine — deployed as a `vertexai.agent_engines` Reasoning Engine. `agent-engine/main.py` is the `AdkApp` entry point; the MCP connection is defined in `agent-engine/supervisor_agent.py` (`_build_mcp_toolset()`). Connects to Velora's live MCP server via `ADK MCPToolset + StreamableHTTPConnectionParams`, loading a 5-tool commerce-demo subset (query_catalog, register_sale, create_tracked_payment_link, emit_invoice, connection_status) out of the full 51-tool surface (14 packs). Verified to call `query_catalog` via MCP and return real catalog data. This is the engine-agnostic tool layer in action.
@@ -565,7 +565,7 @@ Key commits:
 
 ### Multi-Agent Orchestration (Supervisor → 8 A2A Sub-Agents)
 - **Owner** (Supervisor, Gemini 2.5 Pro, ADK TS InMemoryRunner): Orchestrates payment + fiscal + logistics + catalog + caja + inventario + communications + customer workflows via eight A2A FunctionTools. (`call_equipo_agent` is implemented but shelved.)
-- **Employee** (Companion, Gemini 2.5 Flash): Operates daily POS tasks with permission-gated escalations.
+- **Employee** (Companion (shelved), Gemini 2.5 Flash): Operates daily POS tasks with permission-gated escalations.
 - **Customer** (Customer Agent, Gemini 2.5 Flash): Handles WhatsApp B2C inbound — resolves orders, quotes shipping, generates payment links, sends receipts. Async via Cloud Tasks + OIDC.
 - **Payments Sub-Agent**: QR checkout + MercadoPago reconciliation; wraps MercadoPago API.
 - **Fiscal Sub-Agent**: ARCA-compliant invoice generation (sandbox mode; real endpoint flag-gated via `ARCA_REAL_MODE`).
@@ -578,7 +578,7 @@ The MCP server is the engine-agnostic tool layer consumed by both the TypeScript
 ### ADK & Vertex AI Integration
 - Python agents at `agent-engine/` use `google-adk` package (`requirements.txt`).
 - All LLM inference routed through `@google-cloud/vertexai` to Model Garden (Gemini 2.5 Pro/Flash).
-- Regions optimized for latency (Supervisor/Pro → `us-south1`; Companion/Flash → `southamerica-east1`; Flash-Lite classifier → `us-central1`).
+- Regions optimized for latency (Supervisor/Pro → `us-south1`; Companion (shelved)/Flash → `southamerica-east1`; Flash-Lite classifier → `us-central1`).
 
 ### A2A Protocol (v0.3.0)
 - Agent Card v0.3.0 with `.well-known/agent-card.json` discovery.

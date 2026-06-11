@@ -184,7 +184,7 @@ The Supervisor is an ADK `Agent` running in a TypeScript `InMemoryRunner`. It ho
 | `call_equipo_agent` (shelved) | `/api/agents/equipo/jsonrpc` | Employee management, permissions — shelved; card present, tool inactive |
 
 Plus three additional agents not in the Supervisor's tool belt but running on Cloud Run:
-- **Companion Agent** — Employee POS assistant (Gemini 2.5 Flash, internal module, no A2A hop)
+- **Companion Agent** (shelved) — Employee POS assistant (Gemini 2.5 Flash, internal module, no A2A hop)
 - **Customer Agent** — WhatsApp B2C chat; async via Cloud Tasks + OIDC worker
 - **Onboarding Agent** — Guided first-time business setup
 
@@ -214,7 +214,7 @@ The `usedAdkDelegation` flag in the Supervisor runner result is set to `true` wh
 
 Each of the 12 agent-card endpoints (Supervisor, Companion*, Customer, Payments, Fiscal, Logística, Ventas, Caja, Inventario, Communications, Onboarding, Equipo†) exposes three endpoints:
 
-> *Companion primarily runs as an internal module; its card enables federation.  
+> *Companion is a shelved legacy module (inoperative); its card remains for endpoint-count fidelity.  
 > †Equipo is shelved; the agent card is present but the tool is inactive.
 
 | Endpoint | Purpose |
@@ -322,7 +322,7 @@ sequenceDiagram
 │    │         ├─ call_inventario_agent ──► Inventario Agent           │
 │    │         ├─ call_communications_agent ─► Communications Agent    │
 │    │         └─ call_equipo_agent     ──► Equipo Agent               │
-│    ├─ Companion Agent ────────────────────── Gemini 2.5 Flash        │
+│    ├─ Companion Agent (shelved) ───────────── Gemini 2.5 Flash        │
 │    ├─ Customer Agent (WhatsApp B2C) ───────── Gemini 2.5 Flash       │
 │    └─ Onboarding Agent ────────────────────── Gemini 2.5 Flash       │
 │                                                                      │
@@ -371,7 +371,7 @@ sequenceDiagram
 | **Tool layer** | MCP server (StreamableHTTP, 51 tools, 14 packs, HMAC auth) — engine-agnostic |
 | **Semantic Search / Grounding** | Vertex AI Search Discovery Engine — per-tenant datastores (deployed; enable with `USE_VERTEX_SEARCH=true`) |
 | **Agent Protocol** | A2A v0.3.0 — JSON-RPC 2.0 over HTTPS, Ed25519 JWKS identity |
-| **Multi-agent topology** | Supervisor + 8 A2A sub-agents + Companion + Customer Agent + Onboarding + velora_search_agent |
+| **Multi-agent topology** | Supervisor + 8 A2A sub-agents + Companion (shelved) + Customer Agent + Onboarding + velora_search_agent |
 | **Database** | Supabase Postgres + Prisma v6 |
 | **Auth** | NextAuth v5 (Google OAuth owner) + PIN+cookie (employee) |
 | **Payments** | MercadoPago QR + OAuth + Webhooks (`mp-token-cipher` AES-256) |

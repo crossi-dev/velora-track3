@@ -1,7 +1,7 @@
 # Velora — A2A Interoperability Layer for Multi-Agent Enterprise Coordination (LATAM)
 
 > **Google for Startups AI Agents Challenge — Track 3 submission.**
-> Cashiers in Argentina type one sentence. Two Gemini agents do the work in under 1.8 seconds. Owner gets pushed only when something matters.
+> A customer messages the business on WhatsApp. AI agents sell, charge, invoice and ship — zero humans in the loop. The owner directs everything from one chat.
 
 
 | Track 3 entry points |  |
@@ -18,7 +18,7 @@
 
 ## What it is
 
-Velora is a B2B AI-native operating system for Argentine SMB retail (kioscos, ferreterías, almacenes, verdulerías). The cashier types `vendí 2 cubiertas Firestone` and a multi-agent system fully orchestrated on Google Cloud registers the sale in under 1.8 seconds. A Supervisor agent (Gemini 2.5 Pro) orchestrates 8 A2A sub-agents and notifies the owner only when something matters.
+Velora is a B2B AI-native operating system for Argentine SMBs and franchise networks. The owner types `vendí 2 cubiertas Firestone` into a chat — or a customer sends a WhatsApp message — and a multi-agent system fully orchestrated on Google Cloud registers the sale, charges the customer, emits the invoice, and dispatches the shipment in one continuous autonomous loop. A Supervisor agent (Gemini 2.5 Pro) orchestrates 8 A2A sub-agents and notifies the owner only when something matters.
 
 | | |
 |---|---|
@@ -27,10 +27,11 @@ Velora is a B2B AI-native operating system for Argentine SMB retail (kioscos, fe
 
 ## Why multi-agent over single-agent
 
-A single Gemini call carrying both Employee + Supervisor system prompts runs 4-5s per turn — the cashier feels the lag and routes around the tool. The contract-based separation lets:
+A single Gemini call carrying all agent contexts runs 4-5s per turn — perceptible lag that stalls the customer interaction. The contract-based separation lets:
 
-- **Employee Agent** (Gemini 2.5 Flash via Vertex AI) — warm "shift partner" voice. Sub-1.8s p99 by design. The only number the cashier feels.
-- **Supervisor Agent** (Gemini 2.5 Pro via Vertex AI) — analytical "Operations Manager" voice. On the owner path the Supervisor handles every turn; the ~5% figure is a design target from intent-classification testing — the employee→Supervisor escalation rate (employee turns that exit the Companion and are promoted to Supervisor review). Decides notification severity (`now` / `daily` / `drop`). Routing all turns through Pro would 20× cost without 20× value.
+- **Customer Agent** (Gemini 2.5 Flash via Vertex AI) — sub-2s p99 on the customer-facing WhatsApp path. Sells, quotes shipping, collects payment, confirms asynchronously. The only latency the end customer feels.
+- **Supervisor Agent** (Gemini 2.5 Pro via Vertex AI) — analytical "Operations Manager" voice on the owner-facing chat path. Orchestrates all 8 specialist sub-agents, validates business rules, decides notification severity (`now` / `daily` / `drop`). Routing all turns through Pro would 20× cost without 20× value.
+- **Companion Agent** (shelved) (Gemini 2.5 Flash via Vertex AI) — internal module handling employee-facing operations (sales recording, stock queries, escalation to Supervisor). Architecture component; not the primary user story.
 
 The Supervisor and its 8 sub-agents communicate over the **A2A protocol v0.3.0** with signed JSON-RPC 2.0 calls and Ed25519 agent identity. The Supervisor runs on **Cloud Run** as a TypeScript ADK wrapper (interactive path) AND on **Vertex AI Agent Engine** as a Python AdkApp (`projects/<project>/locations/us-central1/reasoningEngines/<id>`, live id at somosvelora.com/track3) — the Agent Engine path connects to Velora's live MCP server via `ADK MCPToolset + StreamableHTTPConnectionParams` (defined in `agent-engine/supervisor_agent.py`, `_build_mcp_toolset()`; `agent-engine/main.py` is the `AdkApp` entry point) and executes real commerce operations (catalog lookup, sale registration, payment links, invoices) through the same 51 production tools.
 
@@ -74,7 +75,7 @@ The `.gemini/settings.json` file at the repo root contains the demo tenant HMAC 
 | 1 | Vertex AI Gemini exclusive | Flash + Pro via `@google-cloud/vertexai`. No OpenAI/Anthropic in the request path. Velora's own inference is 100% Gemini; the MCP tool layer is engine-agnostic by design — external MCP clients (Claude Code, ChatGPT) can call Velora's tools, which never routes Velora's inference through those vendors. | LIVE |
 | 2 | ADK orchestration | TypeScript ADK on Cloud Run (interactive) + Python ADK on Agent Engine (executes commerce via MCP) | LIVE |
 | 3 | Cloud Run runtime | `southamerica-east1`, scale-to-zero by default; a min-instance can be warmed for the judging window via Cloud Run update (operational scripts live in the full development repo) | LIVE |
-| 4 | Multi-agent design | Supervisor + 8 A2A sub-agents + Companion + Customer Agent + Onboarding + velora_search_agent | LIVE |
+| 4 | Multi-agent design | Supervisor + 8 A2A sub-agents + Companion (shelved) + Customer Agent + Onboarding + velora_search_agent | LIVE |
 | 5 | Vertex Agent Engine | Reasoning Engine deployed via Python ADK SDK — calls live MCP tools (verified: `query_catalog` returns real data) | Deployed · verified (routing flag-gated) |
 | 6 | Grounding (Vertex AI Search) | Per-tenant Discovery Engine datastores — "bolso para la espalda" → Mochila; "para tomar mate" → Mate | LIVE |
 | 7 | RAG (pgvector) | Vertex `text-embedding-004` (768-dim) on Supabase Postgres for customer semantic recall — strict per-tenant isolation | Flag-gated (`USE_EMBEDDINGS`) |
@@ -95,7 +96,7 @@ The `.gemini/settings.json` file at the repo root contains the demo tenant HMAC 
 │    │    └─ 8 A2A FunctionTools → Payments · Fiscal · Logística          │
 │    │                             Ventas · Caja · Inventario             │
 │    │                             Communications · Customer Agent        │
-│    ├─ Companion Agent (Gemini 2.5 Flash · employee POS)                 │
+│    ├─ Companion Agent (shelved · Gemini 2.5 Flash · employee POS)       │
 │    ├─ Customer Agent (Gemini 2.5 Flash · WhatsApp B2C)                  │
 │    └─ Onboarding Agent                                                  │
 │                                                                          │
@@ -120,12 +121,12 @@ Mermaid version: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 | Layer | Technology |
 |-------|-----------|
-| **Intelligence** | **Gemini 2.5 Pro** (Supervisor, `us-south1`) + **Gemini 2.5 Flash** (Companion / Customer Agent, `southamerica-east1`) via Vertex AI (`@google-cloud/vertexai`) |
+| **Intelligence** | **Gemini 2.5 Pro** (Supervisor, `us-south1`) + **Gemini 2.5 Flash** (Companion (shelved) / Customer Agent, `southamerica-east1`) via Vertex AI (`@google-cloud/vertexai`) |
 | **Orchestration — primary** | **Google ADK** for TypeScript (`@google/adk`) on Cloud Run — interactive chat |
 | **Orchestration — managed** | **Vertex AI Agent Engine** Python ADK (`google-adk`) — executes real commerce via MCP tools |
 | **Tool layer** | MCP server (StreamableHTTP, 51 tools, 14 packs, HMAC auth) — engine-agnostic |
 | **A2A** | `@a2a-js/sdk` v0.3.0 — JSON-RPC 2.0 over HTTPS, Ed25519 JWKS per-agent identity |
-| **Multi-agent topology** | Supervisor + 8 A2A sub-agents + Companion + Customer Agent + Onboarding + velora_search_agent |
+| **Multi-agent topology** | Supervisor + 8 A2A sub-agents + Companion (shelved) + Customer Agent + Onboarding + velora_search_agent |
 | **Grounding** | Vertex AI Search Discovery Engine — per-tenant datastores (LIVE) |
 | **RAG** | pgvector + Vertex `text-embedding-004` on Supabase Postgres (flag-gated) |
 | **Agent runtime** | Cloud Run (`southamerica-east1`) + Vertex Agent Engine (`us-central1`) |
@@ -139,7 +140,7 @@ Mermaid version: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ## A2A protocol (Agent-to-Agent v0.3.0)
 
-Velora implements A2A v0.3.0 across 12 agents (Supervisor + 8 specialist sub-agents + Companion + Customer Agent + Onboarding). Any A2A-compatible client — Salesforce, SAP, AWS Bedrock AgentCore, Microsoft Agent Framework, Google's own ADK — can discover and call Velora's Supervisor without a custom integration. The 12 agents that expose `/.well-known/agent-card.json` and Ed25519 JWKS identity are: Supervisor, Companion, Payments, Fiscal, Logística, Ventas, Caja, Inventario, Communications, Customer, Onboarding, and Equipo (shelved; card present). `velora_search_agent` is an internal grounding sub-agent and does not expose its own agent card.
+Velora implements A2A v0.3.0 across 12 agents (Supervisor + 8 specialist sub-agents + Companion (shelved) + Customer Agent + Onboarding). Any A2A-compatible client — Salesforce, SAP, AWS Bedrock AgentCore, Microsoft Agent Framework, Google's own ADK — can discover and call Velora's Supervisor without a custom integration. The 12 agents that expose `/.well-known/agent-card.json` and Ed25519 JWKS identity are: Supervisor, Companion (shelved), Payments, Fiscal, Logística, Ventas, Caja, Inventario, Communications, Customer, Onboarding, and Equipo (shelved; card present). `velora_search_agent` is an internal grounding sub-agent and does not expose its own agent card.
 
 ```bash
 # Discovery (no auth)
