@@ -202,12 +202,18 @@ async function dispatchMessages(
 }
 
 async function handleGet(req: NextRequest): Promise<NextResponse> {
-  // "wpp-webhook" scope isolates this bucket from the shared default bucket used
-  // by all dashboard/API routes. Without a scope, heavy dashboard usage from the
-  // same IP depletes the shared 120/min window and blocks legitimate inbound
-  // WhatsApp messages from the same IP (e.g., developer smoke tests). The webhook
-  // sees a dedicated 120/min bucket regardless of other API activity.
-  const rateLimited = checkRateLimit(req, "wpp-webhook");
+  // "wpp-webhook" scope with actorKey="global" and 1000/min:
+  //   1. Scope isolates the webhook bucket from the shared default bucket.
+  //   2. actorKey="global" avoids keying on the Cloud Run server IP — when
+  //      GCLB terminates TLS, getClientIp() returns the Cloud Run egress IP
+  //      (34.54.0.223) as the LAST X-Forwarded-For entry for all inbound webhook
+  //      calls (Meta, Twilio, smoke harness). Without actorKey, all callers share
+  //      one tiny per-IP bucket and Meta's retry storms deplete it.
+  //   3. 1000/min is safe because this route is already protected by HMAC signature
+  //      verification (verifyMetaWebhookSignature / verifyTwilioSignature) — only
+  //      Meta or Twilio can produce a valid signature. The rate limit here is purely
+  //      a DDoS backstop for the pre-signature path.
+  const rateLimited = checkRateLimit(req, "wpp-webhook", 1000, 60, { actorKey: "global" });
   if (rateLimited) return rateLimited;
 
   const mode = req.nextUrl.searchParams.get("hub.mode");
@@ -236,8 +242,8 @@ async function handleGet(req: NextRequest): Promise<NextResponse> {
 }
 
 async function handlePost(req: NextRequest): Promise<NextResponse> {
-  // Same "wpp-webhook" scope as handleGet — isolated from the shared default bucket.
-  const rateLimited = checkRateLimit(req, "wpp-webhook");
+  // Same "wpp-webhook" scope + actorKey="global" + 1000/min as handleGet — see comment above.
+  const rateLimited = checkRateLimit(req, "wpp-webhook", 1000, 60, { actorKey: "global" });
   if (rateLimited) return rateLimited;
 
   try {
