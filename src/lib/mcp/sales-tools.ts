@@ -83,7 +83,7 @@ const REGISTER_PROMESA_SCHEMA = {
 const CONFIRM_PROMESA_SCHEMA = {
   paymentIntentId: z.string().min(1).describe("PaymentIntent ID to mark as promesa (must belong to this business)."),
   expectedAt: z.string().describe("Date when cash is expected (YYYY-MM-DD or any JS-Date-parseable string). Default to 30 days from today."),
-  reason: z.string().optional().describe("Optional free-text note (e.g. 'Juan prometió pagar el mes que viene')."),
+  reason: z.string().optional().describe("Optional free-text note (e.g. 'Darío prometió pagar el mes que viene')."),
 };
 
 const SETTLE_PROMESA_SCHEMA = {
@@ -91,7 +91,7 @@ const SETTLE_PROMESA_SCHEMA = {
   paymentMethod: z.enum(["transferencia", "efectivo", "mp"]).describe("How the cash arrived: bank transfer, cash, or MercadoPago."),
   amount: z.number().positive().optional()
     .describe("Amount in ARS. OPTIONAL — omit to use the original promesa amount from the DB (recommended). Supply only for partial/adjusted payments. Hard ceiling: 2x the original; amounts >5% over log a warning but are accepted."),
-  reason: z.string().optional().describe("Optional note (e.g. 'Juan transfirió el 26/06')."),
+  reason: z.string().optional().describe("Optional note (e.g. 'Darío transfirió el 26/06')."),
 };
 
 // ── Registration helper ───────────────────────────────────────────────────────
@@ -150,7 +150,28 @@ export function registerSalesTools(server: McpServer, businessId: string, backen
       // destructiveHint: true — creates an irreversible CashMovement record (real money mutation).
       annotations: { readOnlyHint: false, idempotentHint: true, destructiveHint: true, openWorldHint: false },
     },
-    (args) => backend.registerMovement({ businessId, ...args }),
+    (args) => {
+      // Runtime guard: 'sale' is reserved for CashMovements auto-created by register_sale.
+      // The enum keeps 'sale' so existing schema consumers don't break, but callers must
+      // never supply it directly — doing so would create a ghost ledger entry outside the
+      // canonical sale cascade (inventory + invoice + sale record).
+      if (args.type === "sale") {
+        return Promise.resolve({
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              code: "RESERVED_TYPE",
+              message:
+                "Type 'sale' is reserved for CashMovements created automatically by register_sale. " +
+                "Use 'income' for ad-hoc income, 'purchase' for supplier payments, " +
+                "'salary' for payroll, 'tax' for taxes, or 'adjustment' for corrections.",
+            }),
+          }],
+          isError: true,
+        });
+      }
+      return backend.registerMovement({ businessId, ...args });
+    },
   );
 
   server.registerTool(
@@ -219,10 +240,13 @@ export function registerSalesTools(server: McpServer, businessId: string, backen
         "Reverses the N most-recent sales within a time window for the authenticated business. " +
         "Restores inventory, removes CashMovement, SaleItem, Invoice, and Sale records. " +
         "Blocked when any targeted sale has an invoice already sent or paid (returns INVOICE_LOCKED). " +
-        "MONEY/INVENTORY: this is a destructive, irreversible operation — confirm intent before calling. " +
+        "MONEY/INVENTORY: this is a destructive, irreversible operation. " +
+        "REQUIRED: you MUST pass confirm: true to execute the reversal — calling without it (or with confirm: false) returns a validation error and no sale is reversed. " +
         "Returns { returned, summary } on success. Idempotent: same (count, cutoffHours) within the " +
         "same hour deduplicates.",
       inputSchema: {
+        confirm: z.literal(true)
+          .describe("Must be explicitly true to confirm reversing sales — this is destructive."),
         count: z.number().int().positive().max(10).default(1)
           .describe("Number of recent sales to reverse (max 10, default 1)."),
         cutoffHours: z.number().positive().max(48).default(24)
@@ -231,6 +255,6 @@ export function registerSalesTools(server: McpServer, businessId: string, backen
       // Spec ToolAnnotations: https://modelcontextprotocol.io/specification/2025-06-18/schema
       annotations: { readOnlyHint: false, idempotentHint: true, destructiveHint: true, openWorldHint: false },
     },
-    (args) => backend.returnSale({ businessId, ...args }),
+    (args) => backend.returnSale({ businessId, count: args.count, cutoffHours: args.cutoffHours }),
   );
 }

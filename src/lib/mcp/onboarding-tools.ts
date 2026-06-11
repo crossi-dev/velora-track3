@@ -2,9 +2,11 @@
 //
 // Registers 5 tenant-scoped onboarding tools (BYOA — "secret never through chat"):
 //   connect_mercadopago — OAuth-redirect (primary) or APP_USR- token fallback.
+//                         Handler extracted to _lib/mp-connect-onboarding.ts (size limit).
 //   connect_pedidosya   — secure-form link (primary) or apiToken fallback.
 //   connect_whatsapp    — Meta Embedded Signup link (primary) + optional phone pre-step.
-//   connect_tiendanube  — OAuth-redirect (primary). Handler: _lib/tiendanube-connect-byoa.ts.
+//   connect_tiendanube  — OAuth-redirect (primary). Gated on TIENDANUBE_* env vars.
+//                         Handler: _lib/tiendanube-connect-byoa.ts.
 //   upload_catalog      — bulk-create up to 50 products.
 //
 // businessId from server closure only. Handler logic in _lib/onboarding-mutations.ts.
@@ -14,29 +16,39 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { buildMpAuthorizationUrl, getMpConfig } from "@/app/api/integrations/mp/_lib/config";
-import { createOAuthState } from "@/app/api/integrations/mp/_lib/oauth-state";
-import { connectMercadoPago } from "@/app/api/integrations/mp/connect-token/_lib/mp-connect-core";
 import {
-  errResponse,
   connectPedidosYaByoaHandler,
   connectWhatsappByoaHandler,
   uploadCatalogHandler,
   UPLOAD_CATALOG_MAX,
 } from "./_lib/onboarding-mutations";
 import { connectTiendanubeByoaHandler } from "./_lib/tiendanube-connect-byoa";
-import { MCP_ACTOR_USER_ID } from "./_lib/catalog-mutations";
+import { connectMercadoPagoHandler } from "./_lib/mp-connect-onboarding";
 
 // ── Registration ──────────────────────────────────────────────────────────────
 
+/** Options for onboarding tool registration. */
+export interface OnboardingToolOptions {
+  /**
+   * When true, connect_tiendanube is registered. When false (default), it is
+   * skipped — used to gate the tool on TIENDANUBE_CLIENT_ID / TIENDANUBE_CLIENT_SECRET
+   * being configured in the environment. Mirrors the MP_NOT_CONFIGURED pattern.
+   */
+  includeTiendanube?: boolean;
+}
+
 /**
- * Registers the 4 conversational onboarding tools on the given MCP server.
+ * Registers the conversational onboarding tools on the given MCP server.
  * Called only when a verified businessId is available from the auth gate.
  * businessId comes from the closure — NEVER from tool input (tenant isolation).
+ *
+ * connect_tiendanube is only registered when options.includeTiendanube is true
+ * (TIENDANUBE_CLIENT_ID and TIENDANUBE_CLIENT_SECRET must be configured).
  */
 export function registerOnboardingTools(
   server: McpServer,
   businessId: string,
+  options: OnboardingToolOptions = {},
 ): void {
 
   // ── Tool: connect_mercadopago ──────────────────────────────────────────────
@@ -85,63 +97,7 @@ export function registerOnboardingTools(
         openWorldHint: true,   // OAuth URL build or MP API validation
       },
     },
-    async (args) => {
-      const { accessToken } = args;
-
-      // ── Token fallback path (optional APP_USR- token supplied) ──────────────
-      if (accessToken !== undefined) {
-        const result = await connectMercadoPago({
-          businessId,
-          actorUserId: MCP_ACTOR_USER_ID,
-          accessToken,
-        });
-        if (!result.ok) return errResponse(result.code, result.message);
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify({ ok: true, mpUserId: result.mpUserId }) }],
-        };
-      }
-
-      // ── Primary OAuth-redirect path ──────────────────────────────────────────
-      // MCP 2025-11-25 third-party authorization: return the authorization URL
-      // so the owner authorizes on the official MercadoPago site. Velora's
-      // /api/integrations/mp/callback completes the exchange server-side.
-      const cfg = getMpConfig();
-      if (!cfg.isConfigured) {
-        return errResponse(
-          "MP_NOT_CONFIGURED",
-          "MercadoPago OAuth no está configurado todavía. " +
-          "El administrador de Velora necesita configurar MP_CLIENT_ID, MP_CLIENT_SECRET y MP_REDIRECT_URI.",
-        );
-      }
-
-      try {
-        const state = await createOAuthState(businessId);
-        const authorizationUrl = buildMpAuthorizationUrl({
-          clientId: cfg.clientId,
-          redirectUri: cfg.redirectUri,
-          state,
-        });
-        return {
-          content: [{
-            type: "text" as const,
-            text: JSON.stringify({
-              ok: true,
-              action: "authorize",
-              authorizationUrl,
-              instructions:
-                "Abrí este link para conectar tu cuenta de MercadoPago de forma segura. " +
-                "Vas a autorizar en el sitio oficial de MercadoPago; " +
-                "Velora nunca ve tu contraseña ni tu token.",
-            }),
-          }],
-        };
-      } catch {
-        return errResponse(
-          "UPSERT_FAILED",
-          "No se pudo generar el link de autorización. Reintentá en unos segundos.",
-        );
-      }
-    },
+    async (args) => connectMercadoPagoHandler(businessId, args.accessToken),
   );
 
   // ── Tool: connect_pedidosya ────────────────────────────────────────────────
@@ -232,31 +188,38 @@ export function registerOnboardingTools(
   // Credential stored as BusinessChannelCredential (provider "tiendanube"):
   //   { accessToken, storeId } — exact shape loadTiendanubeCredentials reads.
   // Source: tiendanube.github.io/api-documentation/authentication
-  server.registerTool(
-    "connect_tiendanube",
-    {
-      title: "Connect Tienda Nube",
-      description:
-        "Connects Tienda Nube (Nuvemshop) for this business using the BYOA OAuth-redirect model " +
-        "(MCP 2025-11-25 third-party authorization standard). " +
-        "Call with no arguments — returns a secure Tienda Nube authorization URL. " +
-        "The owner opens that URL, authorizes on the official Tienda Nube site, and Velora " +
-        "completes the connection server-side via the OAuth callback. " +
-        "No token ever passes through chat. " +
-        "Returns { ok: true, action: 'authorize', authorizationUrl, instructions }. " +
-        "On failure returns isError:true with code: " +
-        "TN_NOT_CONFIGURED (env vars missing), UPSERT_FAILED (DB error generating state token). " +
-        "This is a credential write — confirm intent with the owner before executing.",
-      inputSchema: {},
-      annotations: {
-        readOnlyHint: false,
-        idempotentHint: true,
-        destructiveHint: true,
-        openWorldHint: true,
+  //
+  // Gated on options.includeTiendanube — only registered when TIENDANUBE_CLIENT_ID
+  // and TIENDANUBE_CLIENT_SECRET are configured. When absent, the tool is skipped
+  // entirely (live tool count = 50 instead of 51) rather than registered and
+  // returning TN_NOT_CONFIGURED on every call.
+  if (options.includeTiendanube) {
+    server.registerTool(
+      "connect_tiendanube",
+      {
+        title: "Connect Tienda Nube",
+        description:
+          "Connects Tienda Nube (Nuvemshop) for this business using the BYOA OAuth-redirect model " +
+          "(MCP 2025-11-25 third-party authorization standard). " +
+          "Call with no arguments — returns a secure Tienda Nube authorization URL. " +
+          "The owner opens that URL, authorizes on the official Tienda Nube site, and Velora " +
+          "completes the connection server-side via the OAuth callback. " +
+          "No token ever passes through chat. " +
+          "Returns { ok: true, action: 'authorize', authorizationUrl, instructions }. " +
+          "On failure returns isError:true with code: " +
+          "TN_NOT_CONFIGURED (env vars missing), UPSERT_FAILED (DB error generating state token). " +
+          "This is a credential write — confirm intent with the owner before executing.",
+        inputSchema: {},
+        annotations: {
+          readOnlyHint: false,
+          idempotentHint: true,
+          destructiveHint: true,
+          openWorldHint: true,
+        },
       },
-    },
-    async () => connectTiendanubeByoaHandler(businessId),
-  );
+      async () => connectTiendanubeByoaHandler(businessId),
+    );
+  }
 
   // ── Tool: upload_catalog ──────────────────────────────────────────────────
   // Bulk-creates up to 50 products. Handler: uploadCatalogHandler (onboarding-mutations.ts).

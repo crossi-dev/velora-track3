@@ -157,6 +157,15 @@ export function registerCustomerTools(
       annotations: { readOnlyHint: false, idempotentHint: true, destructiveHint: true, openWorldHint: false },
     },
     async (args) => {
+      // Guard: on the CREATE path (no customerId), at least one of name/phone/email
+      // must be present. Without any identifier the backend falls back to "Cliente"
+      // which creates an anonymous record indistinguishable from others.
+      if (!args.customerId && !args.name?.trim() && !args.phone?.trim() && !args.email?.trim()) {
+        return errResponse(
+          "MISSING_IDENTITY",
+          "At least one of name, phone, or email is required to create a customer.",
+        );
+      }
       try {
         const customer = await backend.upsertCustomer({
           tenantId: businessId,

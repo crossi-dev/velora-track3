@@ -43,21 +43,16 @@ The fastest way for a judge to run a live Velora tool call:
 # Install Gemini CLI (requires Node 18+)
 npm install -g @google/gemini-cli
 
-# One-time auth — run this first and complete the Google login prompt:
-gemini
-# (or: export GEMINI_API_KEY=<your-key-from-aistudio.google.com>)
-
 # Clone this repo — .gemini/settings.json with demo key is included
 git clone https://github.com/crossi-dev/velora-track3
 cd velora-track3
 
-# Run headless with auto-approve and Flash model (fastest path):
-gemini --yolo -m gemini-2.5-flash -p "list the products in my catalog"
-
-# Or start interactive mode and try read-only queries:
+# Start Gemini CLI — auto-loads MCP from settings.json
 gemini
+
+# Try these queries:
 # > list the products in my catalog
-# > find the customer Carla in Velora
+# > register a sale of 2 "Mochila Urbana" at $15000 each
 # > what's the current cash balance?
 ```
 
@@ -71,9 +66,7 @@ gemini mcp add velora \
   --header "X-Business-Id: cmpow3rq70009s601j07xgmf0"
 ```
 
-The `.gemini/settings.json` file at the repo root contains the demo tenant HMAC key (scoped to a single demo business) and the live MCP endpoint. The key authenticates against `tools.somosvelora.com/api/mcp` (51 tools, 14 packs — source: `src/lib/mcp/server.ts`). This key is HMAC-scoped to the public demo tenant only — it cannot read or act on any other business.
-
-Money-path tools (`register_sale`, `emit_invoice`) write to the live sandbox — please keep it tidy for other judges. Use `--yolo` to auto-approve tool calls and `-m gemini-2.5-flash` if your default model 404s on Vertex.
+The `.gemini/settings.json` file at the repo root contains the demo tenant HMAC key (scoped to a single demo business) and the live MCP endpoint. The key authenticates against `tools.somosvelora.com/api/mcp` (51 tools across 14 packs — 50 exposed in production; `connect_tiendanube` is hidden until `TIENDANUBE_CLIENT_ID`/`TIENDANUBE_CLIENT_SECRET` env vars are configured — source: `src/lib/mcp/server.ts`). This key is HMAC-scoped to the public demo tenant only — it cannot read or act on any other business.
 
 ## Track 3 mandatory technologies
 
@@ -213,7 +206,7 @@ gcloud builds submit --config cloudbuild-dockerfile.yaml \
   .
 ```
 
-The Vertex AI Agent Engine is registered as a Reasoning Engine at `projects/<project>/locations/us-central1/reasoningEngines/<id>` (live id at somosvelora.com/track3). The Agent Engine connects to Velora's live MCP server via `ADK MCPToolset` in `agent-engine/supervisor_agent.py` (`_build_mcp_toolset()`); `agent-engine/main.py` is the `AdkApp` entry point that wraps it for the Reasoning Engine runtime.
+The Vertex AI Agent Engine is registered as a Reasoning Engine at `projects/<project>/locations/us-central1/reasoningEngines/<id>` (live id shown on somosvelora.com/track3). The Agent Engine connects to Velora's live MCP server via `ADK MCPToolset` in `agent-engine/supervisor_agent.py` (`_build_mcp_toolset()`); `agent-engine/main.py` is the `AdkApp` entry point that wraps it for the Reasoning Engine runtime.
 
 ## Testing
 
@@ -224,6 +217,7 @@ npm run test:vitest   # 119 vitest files
 npm run test:e2e      # e2e journeys (Playwright + contract tests against deployed URL)
 npm run lint          # ESLint
 npx tsc --noEmit      # TypeScript strict check
+npm run check:guardrails  # contract verification scripts
 ```
 
 ## Project origin & Contest Period scope

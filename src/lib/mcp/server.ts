@@ -1,6 +1,8 @@
 // src/lib/mcp/server.ts — Velora MCP server factory.
 //
-// Exposes 14 tool packs (51 tools) over the Model Context Protocol:
+// Exposes 14 tool packs (51 tools, 50 live in prod — connect_tiendanube hidden until
+// TIENDANUBE_CLIENT_ID and TIENDANUBE_CLIENT_SECRET env vars are configured) over the
+// Model Context Protocol:
 //   Pure (always-on):
 //   - validate_cuit        : CUIT/CUIL validation (no I/O)
 //   Stateful (require verified businessId):
@@ -24,7 +26,8 @@
 //   - reportes pack        : query_sales
 //   - connection pack      : connection_status, open_onboarding
 //   - onboarding pack      : connect_mercadopago, connect_pedidosya,
-//                            connect_whatsapp, connect_tiendanube, upload_catalog
+//                            connect_whatsapp, connect_tiendanube (hidden when TIENDANUBE_* absent),
+//                            upload_catalog
 //
 // Transport: WebStandardStreamableHTTPServerTransport (stateless mode) — no
 // sessionIdGenerator means no session state is kept in memory. Correct for
@@ -99,7 +102,8 @@ const VELORA_MCP_INSTRUCTIONS =
   "courier the business has connected, behind the scenes.\n\n" +
   "Safety: money and legal operations (register_sale, emit_invoice, caja " +
   "mutations) are real and irreversible — confirm intent with the owner before executing.\n\n" +
-  "Communicate with the business owner in their language; default to Rioplatense Spanish (es-AR, voseo) only when they write in Spanish.";
+  "Communicate with the business owner in their language; default to Rioplatense Spanish (es-AR, voseo) only when they write in Spanish.\n\n" +
+  "Rate limit: this MCP server enforces a limit of 60 calls per minute per tenant — pace tool discovery and bulk operations accordingly.";
 
 export async function buildVeloraMcpServer(businessId?: string, packs?: string[]): Promise<McpServer> {
   // Toolset selection (GitHub/Stripe MCP pattern): when `packs` is provided, only the
@@ -185,8 +189,14 @@ export async function buildVeloraMcpServer(businessId?: string, packs?: string[]
     }
     // Onboarding write tools (connect_* + upload_catalog) — take raw credentials;
     // excluded from v1 connector pack-set per OpenAI connector policy.
+    // connect_tiendanube is only registered when TIENDANUBE_CLIENT_ID and
+    // TIENDANUBE_CLIENT_SECRET are configured — mirrors how other capability-gated
+    // tools are handled (e.g. MP_NOT_CONFIGURED path in connect_mercadopago).
+    // When the env vars are absent the live tool count is 50 instead of 51.
     if (wants("onboarding")) {
-      registerOnboardingTools(server, businessId);
+      const tiendanubeConfigured =
+        !!process.env.TIENDANUBE_CLIENT_ID && !!process.env.TIENDANUBE_CLIENT_SECRET;
+      registerOnboardingTools(server, businessId, { includeTiendanube: tiendanubeConfigured });
     }
   }
 
