@@ -12,7 +12,7 @@
 // but is NEVER used in execute() — the closure value is always authoritative.
 //
 // HISTORICAL TRACKING: provider accepts any registered courier slug (not just active ones)
-// so owners can track pre-encajonado OCA/Correo shipments. Runtime validation via
+// so owners can track pre-shelved OCA/Correo shipments. Runtime validation via
 // getCourierEntry rejects truly unknown slugs with a structured error.
 //
 // Backend routing (AGENT_LOGISTICA_BACKEND, separate from LOGISTICA_BACKEND MCP flag):

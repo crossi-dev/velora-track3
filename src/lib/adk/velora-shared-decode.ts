@@ -1,6 +1,6 @@
 // Shared decode block — Argentinismos + speech-to-text errors + decode entre líneas.
 // Single source of truth. The supervisor (router) and every operational sub-agent
-// (Ventas, Equipo when un-encajonado, etc.) import this constant so changes to
+// (Ventas, Equipo when un-shelved, etc.) import this constant so changes to
 // the dueño's slang/voice transcripts propagate uniformly.
 //
 // Why this lives here (and not inline per agent): without a shared module the

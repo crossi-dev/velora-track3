@@ -76,8 +76,8 @@ export interface PaymentProviderAdapter {
  *  Every operation returns { error: "payment_provider_not_connected" } so the
  *  Payments agent can surface "connect MP" guidance to the owner.
  *
- *  ENCAJONAMIENTO 2026-05-25: alias/CBU auto-fallback removed.
- *  To un-encajonar: restore the auto-fallback branch in getPaymentProvider
+ *  SHELVED 2026-05-25: alias/CBU auto-fallback removed.
+ *  To re-enable: restore the auto-fallback branch in getPaymentProvider
  *  (search for "ALIAS_CBU_ENCAJONADO") and re-add Ejemplo 6 in
  *  payments-agent-helpers.ts. AliasCbuAdapter code is intact — just unreachable
  *  via the factory for businesses without an explicit paymentProvider setting. */
@@ -105,7 +105,7 @@ class NotConnectedAdapter implements PaymentProviderAdapter {
  *    3. MP connection present → MercadoPagoAdapter
  *    4. No provider connected → NotConnectedAdapter (surfaces "connect MP" error)
  *
- *  NOTE — ALIAS_CBU_ENCAJONADO 2026-05-25:
+ *  NOTE — ALIAS_CBU_ENCAJONADO (shelved 2026-05-25):
  *  The previous auto-fallback (alias set + no MP → alias_cbu) has been removed.
  *  alias_cbu is still reachable via PAYMENT_PROVIDER_OVERRIDE or an explicit
  *  Business.paymentProvider = "alias_cbu" DB setting (owner explicit opt-in).

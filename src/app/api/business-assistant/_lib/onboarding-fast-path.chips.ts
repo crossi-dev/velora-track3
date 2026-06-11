@@ -63,7 +63,7 @@ export const T6_CHIPS: ChipsBundle = {
 };
 
 // T5 (courier): preferencia de courier del negocio.
-// OCA + Correo Argentino encajonados 2026-05-25 — fuera del chip para que
+// OCA + Correo Argentino shelved 2026-05-25 — fuera del chip para que
 // el dueño no pueda elegirlos (después T14 no podría conectarlos).
 export const T5_COURIER_CHIPS: ChipsBundle = {
   kind: "single",

@@ -29,7 +29,7 @@ export const STRATEGIC_INTENTS = new Set([
   // Its captured Pattern C intents (send_owner_push/send_employee_push/write_owner_chat_message)
   // flow through executeCommunicationsActions, not through the compound-action mapper.
   "call_communications_agent",
-  // call_equipo_agent + call_marketplace_agent ENCAJONADOS 2026-05-25.
+  // call_equipo_agent + call_marketplace_agent SHELVED 2026-05-25.
   "update_business_setup",
   // Communications agent Pattern C intents — handled by executeCommunicationsActions,
   // not by the client-side compound-action mapper.
@@ -129,7 +129,7 @@ export async function executeSupActions(
         supResult.actions = [...supResult.actions, ...captured];
         trace.add("agent-calls", `captured-intents=${captured.length}`);
         // NOTE: re-exec of employee/broadcast executors removed 2026-05-25 when
-        // Equipo Agent was encajonado. Ventas Agent's captured intents (sales /
+        // Equipo Agent was shelved. Ventas Agent's captured intents (sales /
         // catalog / stock / cash / contactos) are operational and flow through
         // resolveCompoundActions → client materialization. No per-intent
         // executor reruns are needed for those.

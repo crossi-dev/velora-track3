@@ -175,7 +175,7 @@ For the full architecture diagram (Mermaid + ASCII), see [docs/ARCHITECTURE.md](
 - **Model**: Gemini 2.5 Flash via Vertex AI Model Garden
 - **Role**: Operations assistant for employees. Guides daily operations (sales, stock, customer lookup) with permission-gated escalations to the Supervisor (B1: employee requests supervisor action; B2: supervisor proactively alerts on anomaly).
 - **Skills**: `sale.create`, `stock.query`, `customer.lookup`, `escalation.request`, `onboarding.guide`
-- **Design decision**: Internal module within `business-assistant`, not a separate A2A endpoint — avoids a network hop on every cashier turn.
+- **Design decision**: Internal module within `business-assistant`, not a separate A2A endpoint — avoids a network hop on every operator turn.
 - **NLU**: Two-tier pipeline for the owner path (Deterministic Fast Path → Gemini Pro); three-tier for the employee path (Deterministic Fast Path → Gemini Flash → Supervisor escalation) (code-present; Companion flow shelved — not active in production).
 
 #### Customer Agent (WhatsApp B2C)
@@ -246,7 +246,7 @@ The entire Velora stack runs on Google Cloud:
 - **Vertex AI Search — LIVE in production**: Per-tenant Discovery Engine datastores (`velora-products-{tenant-id}`) indexed with the catalog. Semantic search is live: "bolso para la espalda" → Mochila, "para tomar mate" → Mate. The `velora_search_agent` wraps this grounding layer and is called by the NLU pipeline on catalog intents.
 - **pgvector RAG**: Vertex `text-embedding-004` embeddings on Supabase Postgres for semantic customer and intent recall. Feature-flagged via `USE_EMBEDDINGS`.
 - **Long-context analysis**: Gemini 2.5 Pro's 1M+ token context window used for owner analytics — year-of-sales pattern detection, inventory velocity, payment trend analysis.
-- **Region routing**: Gemini 2.5 Pro routed to `us-south1` (Model Garden endpoint for Pro — not available in `southamerica-east1`); Flash routed to `southamerica-east1` for lowest latency on cashier and customer agent turns.
+- **Region routing**: Gemini 2.5 Pro routed to `us-south1` (Model Garden endpoint for Pro — not available in `southamerica-east1`); Flash routed to `southamerica-east1` for lowest latency on customer-facing turns.
 
 **Evidence**: `src/app/api/business-assistant/_lib/model.ts`, `src/lib/adk/gemini-config.ts`, `src/lib/adk/grounding.ts`, `agent-engine/supervisor_agent.py` (MCP toolset), `agent-engine/main.py` (AdkApp entry point), `src/lib/vertex-search.ts`.
 
@@ -350,7 +350,7 @@ Three non-obvious decisions differentiate the architecture:
 
 2. **A2A at the translator-agent boundary**: Each external system (MercadoPago, ARCA, Andreani) is wrapped as a standards-compliant A2A agent, not a hardcoded API integration. Any company that exposes an A2A agent card can be discovered and called by the Supervisor without pre-registration — enabling true B2B agent-to-agent coordination.
 
-3. **Deterministic Fast Path before LLM**: The tiered NLU pipeline handles >20% of traffic (sale recording, stock queries, price lookups) without any LLM call — reducing p50 latency from ~2s to <200ms on those intents. This emerged from a production constraint (cashier patience at 3 seconds) and solved it architecturally, not by making the LLM faster.
+3. **Deterministic Fast Path before LLM**: The tiered NLU pipeline handles >20% of traffic (sale recording, stock queries, price lookups) without any LLM call — reducing p50 latency from ~2s to <200ms on those intents. This emerged from a production constraint (operator patience at 3 seconds) and solved it architecturally, not by making the LLM faster.
 
 #### Demo & Presentation (20%)
 
@@ -389,5 +389,5 @@ Contest period work is delineated in [docs/CONTEST_PERIOD_WORK.md](./CONTEST_PER
 
 **Submission**: The demo video will be submitted as a URL per contest instructions. See [docs/DEMO_VIDEO_SCRIPT.md](./DEMO_VIDEO_SCRIPT.md) for the full storyboard and script.
 
-**Target duration**: 90–120 seconds  
-**Language**: Spanish (Argentine) with English subtitles
+**Duration**: ≈130 seconds (limit 180s)  
+**Language**: English narration over the Spanish-language product UI

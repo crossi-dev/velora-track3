@@ -66,7 +66,7 @@ gemini mcp add velora \
   --header "X-Business-Id: cmpow3rq70009s601j07xgmf0"
 ```
 
-The `.gemini/settings.json` file at the repo root contains the demo tenant HMAC key (scoped to a single demo business) and the live MCP endpoint. The key authenticates against `tools.somosvelora.com/api/mcp` (51 tools, 14 packs — source: `src/lib/mcp/server.ts`).
+The `.gemini/settings.json` file at the repo root contains the demo tenant HMAC key (scoped to a single demo business) and the live MCP endpoint. The key authenticates against `tools.somosvelora.com/api/mcp` (51 tools, 14 packs — source: `src/lib/mcp/server.ts`). This key is HMAC-scoped to the public demo tenant only — it cannot read or act on any other business.
 
 ## Track 3 mandatory technologies
 

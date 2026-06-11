@@ -18,11 +18,11 @@ const OPERATIONAL_INTENTS = new Set([
   "register_movement", "create_product", "delete_product",
   "stock_load", "create_customer", "edit_customer", "delete_customer", "create_supplier",
   "edit_supplier", "delete_supplier", "create_purchase_request", "return_sale",
-  // create_budget ENCAJONADO 2026-05-25 — mapper handle (mapCreateBudget) stays
+  // create_budget SHELVED 2026-05-25 — mapper handle (mapCreateBudget) stays
   // for reactivation. Restore by re-adding to this set.
   // employee.update / rename_employee / edit_employee: kept as defensive
   // catch-all so mapSingleAction returns null cleanly if the LLM emits them
-  // (Equipo Agent is encajonado but the schema still allows the underlying
+  // (Equipo Agent is shelved but the schema still allows the underlying
   // intents). NOT dead — without these the switch default would still drop
   // them, but the explicit entry makes the suppression auditable.
   "employee.update", "rename_employee", "edit_employee",
@@ -193,8 +193,8 @@ function mapStockLoad(d: Record<string, unknown>): CompoundAction {
   };
 }
 
-// ENCAJONADO 2026-05-25 — mapCreateBudget unreachable because create_budget
-// was removed from OPERATIONAL_INTENTS (Presupuestos feature parqueado).
+// SHELVED 2026-05-25 — mapCreateBudget unreachable because create_budget
+// was removed from OPERATIONAL_INTENTS (Presupuestos feature parked).
 // Function preserved for reactivation: re-list create_budget in
 // OPERATIONAL_INTENTS + uncomment the case in mapSingleAction switch.
 function mapCreateBudget(d: Record<string, unknown>, products: CatalogProduct[]): CompoundAction {
@@ -269,7 +269,7 @@ function mapSingleAction(
     }
     case "stock_load": return mapStockLoad(d);
     case "create_purchase_request": return mapCreatePurchaseRequest(d);
-    // create_budget ENCAJONADO 2026-05-25 — case kept as preserve-only.
+    // create_budget SHELVED 2026-05-25 — case kept as preserve-only.
     // Unreachable because create_budget not in OPERATIONAL_INTENTS. Restore
     // by uncommenting the call + re-listing the intent in the set above.
     // case "create_budget": return mapCreateBudget(d, products);

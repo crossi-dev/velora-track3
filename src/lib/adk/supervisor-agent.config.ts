@@ -55,7 +55,7 @@ export function budgetToLevel(budget: number): import("@google/genai").ThinkingL
 }
 
 // Names of the in-band delegation tools — aligned with INTENT_TO_AGENT in agent-call-actions.ts.
-// call_equipo_agent + call_marketplace_agent ENCAJONADOS 2026-05-25.
+// call_equipo_agent + call_marketplace_agent SHELVED 2026-05-25.
 // call_caja_agent added 2026-06-03: was missing, so usedAdkDelegation=false after
 // a Caja tool call — executeAgentCallActions would run but INTENT_TO_AGENT has no
 // "call_caja_agent" entry, so the call was a no-op. Adding it here sets

@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
 
   // POST writes a single chat message — cap raised to 120/min (2× prior 60)
   // for demo headroom. Keyed by businessId. Per-user scoping NOT implemented
-  // (team/employee dimension encajonado).
+  // (team/employee dimension shelved).
   const rateLimited = checkRateLimit(req, "chat-write", 120, 60, {
     ...bypassIfTester(actor),
     actorKey: actor.businessId ?? undefined,

@@ -6,16 +6,16 @@
 
 | Runtime | Hosts | Purpose |
 |---------|-------|---------|
-| **Cloud Run** (TS, primary) | Next.js app + agents in `src/lib/adk/` | Sub-second interactive chat for the cashier. Always-on, low latency. |
+| **Cloud Run** (TS, primary) | Next.js app + agents in `src/lib/adk/` | Sub-second interactive chat for the operator. Always-on, low latency. |
 | **Vertex Agent Engine** (Python) | `agent-engine/main.py` AdkApp wrapping Employee + Supervisor | Managed agent runtime with built-in session memory, tracing, and A2A primitives. Targeted by Pub/Sub async events and the optional `USE_AGENT_ENGINE` chat path. |
 
 The runtimes are **functionally equivalent** — same prompts, same model IDs, same A2A contract. Cloud Run is the user-facing path because:
-- Velora is a Next.js TS app. Keeping the agents in the same process avoids a network hop on every cashier turn.
+- Velora is a Next.js TS app. Keeping the agents in the same process avoids a network hop on every interactive user turn.
 - TS ADK has lower setup overhead.
 
 Agent Engine is mandated by Track 3 and gives us:
 - **Built-in observability** (Vertex AI tracing).
-- **Session memory** primitive for multi-turn cashier conversations.
+- **Session memory** primitive for multi-turn operator conversations.
 - **Managed scaling** without configuring Cloud Run min/max instances.
 
 ## Architecture

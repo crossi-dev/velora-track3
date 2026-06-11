@@ -65,7 +65,7 @@ interface AgentCallResult {
 // Fase B strangler split call_ventas_agent (sales/catalog/cash/contactos) from
 // call_payments_agent (cobros). Each agent is a specialist with its own scope —
 //
-// ENCAJONADO 2026-05-25: call_equipo_agent (→ equipo) fuera del map. Backend stays; el supervisor no lo invoca.
+// SHELVED 2026-05-25: call_equipo_agent (→ equipo) fuera del map. Backend stays; el supervisor no lo invoca.
 // MercadoLibre agent removed entirely 2026-05-25 per owner directive.
 //
 // Fix B 2026-05-28: added call_communications_agent. Previously missing — when USE_ADK=false
@@ -171,7 +171,7 @@ export async function executeAgentCallActions(
         const text = reply.text;
         if (text) result.confirmations.push(text);
 
-        // Capture Pattern C intents emitted by sub-agents (Ventas; Communications; Equipo encajonado).
+        // Capture Pattern C intents emitted by sub-agents (Ventas; Communications; Equipo shelved).
         // The agent returns { intents: CapturedAgentIntent[] } in a dataPart.
         // The owner-handler inlines these into supResult.actions so the
         // existing mapper + materialization path runs unchanged.

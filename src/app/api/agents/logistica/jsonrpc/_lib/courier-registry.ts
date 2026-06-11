@@ -6,11 +6,11 @@
 // entry. The resolveActiveCouriers helper in rate-comparison-tool.ts handles
 // the per-business DB filter on top of this static list.
 //
-// ENCAJONADO 2026-05-25 — set active:true to re-enable. UI surface lives elsewhere.
+// SHELVED 2026-05-25 — set active:true to re-enable. UI surface lives elsewhere.
 // OCA 2026-05-26 — activated (active:true). Tenant selection via Business.courierPreference.
 // The OcaAdapter handles missing credentials gracefully (empty options for quote,
 // structured error for create/track) so activating it platform-wide is safe.
-// Correo create/track are not supported by the MiCorreo v1 API; stays encajonado.
+// Correo create/track are not supported by the MiCorreo v1 API; stays shelved.
 
 import { AndreaniAdapter } from "./providers/andreani-adapter";
 import { OcaAdapter } from "./providers/oca-adapter";
@@ -20,7 +20,7 @@ import type { ProviderAdapter } from "./logistica-provider";
 
 export interface CourierEntry {
   name: string;
-  /** When false, this courier is parked (encajonado): code stays but it is
+  /** When false, this courier is parked (shelved): code stays but it is
    *  excluded from tool schemas, rate fan-outs, and dispatch fallbacks.
    *  Flip to true to re-enable without any other code change. */
   active: boolean;
@@ -44,7 +44,7 @@ export const COURIER_REGISTRY: CourierEntry[] = [
   { name: "pedidosya", active: true, getAdapter: () => new PedidosYaAdapter() },
 ];
 
-/** Returns only the couriers that are currently active (not encajonados). */
+/** Returns only the couriers that are currently active (not shelved). */
 export function getActiveCourierNames(): string[] {
   return COURIER_REGISTRY.filter((c) => c.active).map((c) => c.name);
 }
@@ -52,9 +52,9 @@ export function getActiveCourierNames(): string[] {
 /**
  * Lookup a courier entry by its slug. Returns undefined if not found.
  *
- * INTENTIONAL: searches the full registry including inactive (encajonado) entries.
+ * INTENTIONAL: searches the full registry including inactive (shelved) entries.
  * This allows track_shipment to resolve historical shipments created before a courier
- * was encajonado, and provides a consistent lookup primitive for all callers.
+ * was shelved, and provides a consistent lookup primitive for all callers.
  *
  * Active-gate responsibility lives in CALLERS:
  *  - skill-dispatch (handleSkillDispatch) rejects inactive entries with a structured RPC error.

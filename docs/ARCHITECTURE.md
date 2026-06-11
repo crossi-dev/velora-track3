@@ -190,7 +190,7 @@ Plus three additional agents not in the Supervisor's tool belt but running on Cl
 
 ### Runtime 2 — Vertex AI Agent Engine Python ADK (real commerce execution)
 
-The Python Supervisor (`agent-engine/main.py`) is deployed as a `vertexai.agent_engines` Reasoning Engine. It connects to Velora's live MCP server via `ADK MCPToolset + StreamableHTTPConnectionParams`, reusing the same 48 production tools instead of reimplementing them:
+The Python Supervisor (`agent-engine/main.py`) is deployed as a `vertexai.agent_engines` Reasoning Engine. It connects to Velora's live MCP server via `ADK MCPToolset + StreamableHTTPConnectionParams`, reusing the same 51 production tools instead of reimplementing them:
 
 - `query_catalog` → real catalog lookup (verified: returns live data)
 - `register_sale` → records a sale
@@ -198,7 +198,7 @@ The Python Supervisor (`agent-engine/main.py`) is deployed as a `vertexai.agent_
 - `emit_invoice` → ARCA electronic invoice
 - + 47 more tools from the MCP server
 
-The Agent Engine Python path uses Gemini 2.5 Pro and is the managed-runtime mandate satisfier for Track 3.
+The Agent Engine Python path uses Gemini 2.5 Pro and is the managed-runtime mandate satisfier for Track 3. The Python AdkApp deploys the root Supervisor (gemini-2.5-pro) with the Employee agent (gemini-2.5-flash) as ADK sub-agent.
 
 ### Runtime 3 — MCP Server (engine-agnostic tool layer)
 

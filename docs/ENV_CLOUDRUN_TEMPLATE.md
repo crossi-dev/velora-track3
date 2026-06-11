@@ -91,7 +91,7 @@ NODE_ENV="production"
 
 | Flag | OFF behavior | ON behavior | Closes which gap |
 |------|-------------|-------------|------------------|
-| `USE_ADK` | Direct Vertex SDK call | ADK Agent + InMemoryRunner | Mandatory tech #2 |
+| `USE_ADK` | Direct Vertex SDK call | ADK Agent + Runner (Postgres-backed sessions) | Mandatory tech #2 |
 | `USE_VERTEX_SEARCH` | SQL fuzzy match only | Semantic fallback via Vertex AI Search | Mandatory tech #6 |
 | `USE_EMBEDDINGS` | Exact customer match only | pgvector cosine via text-embedding-004 | Mandatory tech #7 |
 | `USE_AGENT_ENGINE` | Local TS ADK in-process | Forward turns to Reasoning Engine | Mandatory tech #5 |

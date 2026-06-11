@@ -117,7 +117,7 @@ Ejemplo 10b — saldar promesa parcial (owner indica monto distinto EXPLÍCITAME
   Tool call: settle_promesa_payment({ originalPaymentIntentId: "pi_example_001", paymentMethod: "transferencia", amount: 1000, reason: "pago parcial Juan" })
   Respuesta: "Pago parcial registrado. CashMovement de $1000 vía transferencia."
 
-// ALIAS/CBU encajonado 2026-05-25 — un-encajonar reactivando este ejemplo + el branch en payment-provider.ts (buscar ALIAS_CBU_ENCAJONADO).
+// ALIAS/CBU shelved 2026-05-25 — re-enable by restoring this example + the branch in payment-provider.ts (search ALIAS_CBU_ENCAJONADO).
 // Ejemplo 7 — instrucciones de transferencia (alias/CBU):
 //   Input: "businessId: biz_123\nLink de pago por $5000 — aceite motor."
 //   Tool call: create_payment_link({ amountARS: 5000, description: "Venta Velora - aceite motor" })

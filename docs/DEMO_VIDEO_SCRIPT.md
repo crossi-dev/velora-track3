@@ -1,7 +1,9 @@
 # Velora — Demo Video Script
 ## Google for Startups AI Agents Challenge — Track 3
 
-**Target duration**: 90–120 seconds  
+> NOTE — Draft storyboard. The final recorded video (130s, full English narration, Owner/Customer personas, current 12-endpoint agent topology) supersedes this draft; kept for production history.
+
+**Final duration**: ≈130 seconds (contest limit 180s)
 **Language**: Spanish Argentine narration with English subtitle notes  
 **Format**: Screen recording (PWA on desktop + Android APK) with voice-over
 
@@ -101,7 +103,7 @@
 
 **What to show**: Highlight the two-layer topology:
 - Role-agent FunctionTools inside the Supervisor (call_contador / call_ventas / call_logistica / call_marketplace)
-- The four translator agents (Payments, Fiscal, MercadoLibre, Andreani) as A2A v0.3.0 endpoints
+- The A2A specialist sub-agents (Payments, Fiscal, Logística, …) as A2A v0.3.0 endpoints
 - A live curl to `GET /api/agents/payments/agent-card` returning the agent card JSON
 
 ---
@@ -117,7 +119,7 @@
 **Action**: Owner types: `"Cotizá envío de la venta de Carla a CP 1425"`
 
 **What to show**:
-- Supervisor invokes `call_logistica_agent` → A2A call to `/api/agents/andreani/jsonrpc`
+- Supervisor invokes `call_logistica_agent` → A2A call to `/api/agents/logistica/jsonrpc`
 - Three shipment options returned (sucursal / domicilio / express) with ARS prices and estimated days
 - Callout on screen: "ANDREANI_MOCK_MODE=true — Andreani sandbox"
 

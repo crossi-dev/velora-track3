@@ -217,7 +217,7 @@ async function handleSkillDispatch(body: JsonRpcRequest) {
   const courierEntry = getCourierEntry(requestedProvider)
     // Hard fallback: if the requested slug is unknown, default to the first ACTIVE entry
     // (Andreani). This prevents a 500 for legacy callers that send no provider.
-    // Uses first active entry so encajonados are never silently selected.
+    // Uses first active entry so shelved couriers are never silently selected.
     ?? COURIER_REGISTRY.find((c) => c.active);
 
   // No active courier found at all — structured error, never silently route.

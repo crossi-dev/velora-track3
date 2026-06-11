@@ -50,7 +50,7 @@ export interface ToolContext {
   callCaja?: CallCajaAgentToolContext;
   /** When present, the call_inventario_agent tool is registered. */
   callInventario?: CallInventarioAgentToolContext;
-  // callEquipo + callMarketplace ENCAJONADOS 2026-05-25.
+  // callEquipo + callMarketplace SHELVED 2026-05-25.
 }
 
 /**
@@ -93,7 +93,7 @@ export function buildSupervisorTools(toolContext: ToolContext | undefined, busin
         // call_inventario_agent: always included when context is provided (no provider gate needed —
         // stock and catalog are core Velora features, not optional integrations).
         ...(toolContext.callInventario ? [createCallInventarioAgentTool(toolContext.callInventario)] : []),
-        // callEquipo + callMarketplace ENCAJONADOS 2026-05-25.
+        // callEquipo + callMarketplace SHELVED 2026-05-25.
       ]
     : [];
   // Grounding: Vertex AI Search product-search tool. Inert ([]) unless

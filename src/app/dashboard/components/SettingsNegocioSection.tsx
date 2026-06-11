@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { InlineNotice } from "./InlineNotice";
 import { SettingsMercadoPagoCard } from "./SettingsMercadoPagoCard";
-// SettingsModoCard ENCAJONADO 2026-05-25 — import preserved as comment for restore.
+// SettingsModoCard SHELVED 2026-05-25 — import preserved as comment for restore.
 // import { SettingsModoCard } from "./SettingsModoCard";
 import { SettingsPeersCard } from "./SettingsPeersCard";
 import { SettingsFiscalCard } from "./SettingsFiscalCard";
@@ -259,7 +259,7 @@ export function SettingsNegocioSection({
           <SettingsMercadoPagoCard />
         </div>
 
-        {/* ── Card 5c: MODO ENCAJONADO 2026-05-25 — restore by uncommenting.
+        {/* ── Card 5c: MODO SHELVED 2026-05-25 — restore by uncommenting.
         <div id="settings-card-negocio-modo">
           <SettingsModoCard />
         </div>

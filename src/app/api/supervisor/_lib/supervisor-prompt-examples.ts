@@ -4,23 +4,23 @@
 export const SUPERVISOR_EXAMPLES_PURCHASE_BUDGET = "";
 // SUPERVISOR_EXAMPLES_PURCHASE_BUDGET migrated 2026-05-25 — purchase request
 // few-shots now live in VENTAS_SYSTEM_PROMPT (Ventas Agent absorbs the intent
-// via Pattern C). Presupuestos block was previously ENCAJONADO. The string is
+// via Pattern C). Presupuestos block was previously SHELVED. The string is
 // kept as "" so the template literal in supervisor-prompt.ts still resolves.
 
-// Ejemplos few-shot — Presupuestos: ENCAJONADO 2026-05-25 — feature create_budget
-// removido del supervisor prompt + del mapper. UI tab también encajonada. El
+// Ejemplos few-shot — Presupuestos: SHELVED 2026-05-25 — feature create_budget
+// removido del supervisor prompt + del mapper. UI tab también shelved. El
 // código de handlers/mapper queda intacto en supervisor-action-mapper.ts y
 // los components para reactivación futura. Restaurar agregando el block here
 // + re-listing create_budget en OPERATIONAL_INTENTS + CANONICAL_INTENTS.
 
-// SUPERVISOR_EXAMPLES_A2A_STOCK: ENCAJONADO 2026-05-25 junto con el Companion.
+// SUPERVISOR_EXAMPLES_A2A_STOCK: SHELVED 2026-05-25 junto con el Companion.
 // El supervisor ya no escucha EMPLOYEE_EVENTs porque el Companion no emite.
 // El handler STOCK_INGRESS_REQUEST sigue vivo si en el futuro se re-activa
 // — el bloque original quedó preservado en git history (revertir con
 // `git log -- supervisor-prompt-examples.ts` y restaurar el template literal).
 
 // SUPERVISOR_EXAMPLES_EMPLOYEES: removed in Fase E (Equipo Agent), Equipo Agent
-// then also encajonado 2026-05-25 alongside Companion. Code stays in
+// then also shelved 2026-05-25 alongside Companion. Code stays in
 // employee-actions.ts / broadcast-actions.ts and src/app/api/agents/equipo/ for
 // reactivation. Restore by re-exposing the block and re-wiring the agent.
 

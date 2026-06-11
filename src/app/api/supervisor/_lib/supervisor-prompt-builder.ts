@@ -16,10 +16,10 @@ import { SUPERVISOR_PROMPT } from "./supervisor-prompt";
 // de delegación registradas. Le dice al LLM que llame las tools DIRECTAMENTE
 // (no que emita intents en actions[]) y que espere el resultado antes de
 // responder al dueño.
-// call_marketplace_agent is ENCAJONADO (2026-05-25) — removed from this block.
+// call_marketplace_agent is SHELVED (2026-05-25) — removed from this block.
 // It is NOT registered in supervisor-agent.ts toolContext, so the Pro model would
 // waste the full 25s ADK timeout attempting to call a non-existent tool. Re-add
-// here only when the ML agent is un-encajonado and the tool is re-registered.
+// here only when the ML agent is un-shelved and the tool is re-registered.
 //
 // call_ventas_agent is excluded when USE_OWNER_ASSISTANT=true: the Owner Assistant
 // intercepts all ventas/cobros mutations upstream, so the tool is not registered

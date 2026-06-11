@@ -40,7 +40,7 @@ const CANONICAL_INTENTS = [
   "call_contador_agent",
   "call_ventas_agent",
   "call_payments_agent",
-  // call_equipo_agent + call_marketplace_agent ENCAJONADOS 2026-05-25 — supervisor no los emite.
+  // call_equipo_agent + call_marketplace_agent SHELVED 2026-05-25 — supervisor no los emite.
   // Restore por re-listing ambos + el zod variant abajo + re-wire toolContext.
   "call_logistica_agent",
   "update_business_setup",
@@ -153,7 +153,7 @@ const supervisorActionSchema = z.discriminatedUnion("intent", [
   z.object({ intent: z.literal("call_payments_agent"),         data: genericData, summary: z.string().max(500).optional() }),
   z.object({ intent: z.literal("call_logistica_agent"),        data: genericData, summary: z.string().max(500).optional() }),
   z.object({ intent: z.literal("call_communications_agent"),  data: genericData, summary: z.string().max(500).optional() }),
-  // call_equipo_agent + call_marketplace_agent ENCAJONADOS 2026-05-25.
+  // call_equipo_agent + call_marketplace_agent SHELVED 2026-05-25.
 ]);
 
 export const supervisorResponseSchema = z.object({

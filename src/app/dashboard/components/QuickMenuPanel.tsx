@@ -30,7 +30,7 @@ export function QuickMenuPanel({ setActiveTab, setQuickAction, t }: QuickMenuPan
       }}
     >
       <div className="flex flex-col py-1.5">
-        {/* Presupuestos ENCAJONADO 2026-05-25 — restore by uncommenting this block.
+        {/* Presupuestos SHELVED 2026-05-25 — restore by uncommenting this block.
         <Button
           variant="ghost"
           onClick={() => { setActiveTab("budget"); setQuickAction(null); }}

@@ -76,7 +76,7 @@ export async function loadBusinessCapabilities(
       mpConnection: { select: { id: true } },
       // AFIP/ARCA fiscal credentials.
       arcaCredential: { select: { id: true } },
-      // Courier credentials — only andreani is active; OCA + Correo are encajonados.
+      // Courier credentials — only andreani is active; OCA + Correo are shelved.
       courierCredentials: {
         where: { provider: "andreani" },
         select: { id: true },

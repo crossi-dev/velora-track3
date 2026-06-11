@@ -134,7 +134,7 @@ export const CUSTOMER_AGENT_DISPATCH_TIMEOUT_MS = Number(
 );
 
 /**
- * Equipo agent: employee management (encajonado — included for completeness).
+ * Equipo agent: employee management (shelved — included for completeness).
  * Inner ADK = 28s (EQUIPO_ADK_TIMEOUT_MS in handle-equipo-rpc.ts).
  * Outer = 40s = 28s inner + 12s margin. < SUPERVISOR_ADK 65s ✓.
  * Env-overridable for live tuning without redeploy.

@@ -74,7 +74,7 @@ function SkeletonCard() {
   );
 }
 
-// companionSubtitle: ENCAJONADO 2026-05-25 — Companion card hidden in this tab,
+// companionSubtitle: SHELVED 2026-05-25 — Companion card hidden in this tab,
 // helper unused. Restore alongside the AgentCard kind="companion" block below.
 
 /** Extract connected-services map for the Supervisor message composer. */
@@ -217,7 +217,7 @@ export function ServiciosTab() {
 
       {!loading && !error && status && (
         <div className="flex flex-col gap-4">
-          {/* Ventas — modo + alias ENCAJONADOS 2026-05-25 (MP OAuth only). */}
+          {/* Ventas — modo + alias SHELVED 2026-05-25 (MP OAuth only). */}
           <AgentCard
             kind="ventas"
             title="Tus cobros."
@@ -237,7 +237,7 @@ export function ServiciosTab() {
             onProviderClick={setActiveProvider}
           />
 
-          {/* Logística — OCA + Correo ENCAJONADOS 2026-05-25 (Andreani only).
+          {/* Logística — OCA + Correo SHELVED 2026-05-25 (Andreani only).
             PedidosYa (same-city last-mile courier) lives here too — its credential
             is BYOA in BusinessChannelCredential so its status comes from the
             comunicaciones endpoint, but it renders alongside the other couriers. */}
@@ -270,7 +270,7 @@ export function ServiciosTab() {
             onProviderClick={setActiveProvider}
           />
 
-          {/* Companion ENCAJONADO 2026-05-25 — restore by uncommenting:
+          {/* Companion SHELVED 2026-05-25 — restore by uncommenting:
           <AgentCard
             kind="companion"
             title="Tu mano derecha para los empleados."

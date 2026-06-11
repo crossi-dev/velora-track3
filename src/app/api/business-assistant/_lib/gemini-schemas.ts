@@ -136,7 +136,7 @@ export const SUPERVISOR_RESPONSE_SCHEMA = {
             enum: [
               // Slimmed 2026-05-25 — supervisor delegates operational intents to
               // sub-agents via call_*_agent (Pattern C). Removed entries are
-              // either encajonado (create_budget, create_employee, reset_employee_pin,
+              // either shelved (create_budget, create_employee, reset_employee_pin,
               // get_employee_credentials, broadcast_employees, call_marketplace_agent,
               // call_equipo_agent) or migrated to sub-agents (register_sale,
               // create_product, edit_product, delete_product, bulk_price_update,

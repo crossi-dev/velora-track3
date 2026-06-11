@@ -148,7 +148,7 @@ export async function callSupervisor(
                 ventasReportes: { businessId: bizId, currency: context.currency ?? "ARS" }, // ventas.consultar_ventas
                 callCaja: { businessId: bizId, appUrl, apiKey, requestStartedAt }, // DB-only, always available
                 callInventario: { businessId: bizId, appUrl, apiKey, requestStartedAt },
-                // callEquipo + callMarketplace ENCAJONADOS 2026-05-25.
+                // callEquipo + callMarketplace SHELVED 2026-05-25.
               }
             : undefined,
         });
