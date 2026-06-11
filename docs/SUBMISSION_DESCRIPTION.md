@@ -389,5 +389,5 @@ Contest period work is delineated in [docs/CONTEST_PERIOD_WORK.md](./CONTEST_PER
 
 **Submission**: The demo video will be submitted as a URL per contest instructions. See [docs/DEMO_VIDEO_SCRIPT.md](./DEMO_VIDEO_SCRIPT.md) for the full storyboard and script.
 
-**Duration**: ≈2:56 (176 seconds, within the 180s limit)  
+**Duration**: ≈2:16 (136 seconds, within the 180s limit)  
 **Language**: English narration over the Spanish-language product UI
