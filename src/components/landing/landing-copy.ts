@@ -156,9 +156,9 @@ export const defaultCopy: LandingCopy = {
       {
         name: "Gemini",
         imageAlt:
-          "Gemini Spark — próximamente vas a poder manejar Velora con el agente personal de Google",
-        caption: "Pronto vas a poder manejar Velora con Gemini Spark.",
-        imageSrc: "/integraciones/gemini-spark.jpg",
+          "Sesión real de Gemini CLI consultando el catálogo de Velora vía MCP: Gemini llama a mcp_velora_query_catalog y lista los productos con stock en vivo",
+        caption: "Gemini opera Velora vía MCP — en vivo.",
+        imageSrc: "/integraciones/gemini-cli-velora.jpg",
         hasScreenshot: true,
       },
     ],
@@ -166,7 +166,7 @@ export const defaultCopy: LandingCopy = {
   faq: {
     /* Title is split into three parts so the middle word can be italicised. */
     title: ["Lo que ", "probablemente", " querés saber."],
-    subtitle: "Si falta algo, escribinos a owner@example.com.",
+    subtitle: "Si falta algo, escribinos a gestiones@somosvelora.com.",
     items: [
       {
         q: "¿Qué es Velora?",
@@ -213,7 +213,7 @@ export const defaultCopy: LandingCopy = {
       { label: "Privacidad", href: "/privacy" },
       { label: "Términos", href: "/terminos" },
     ],
-    contactEmail: "owner@example.com",
+    contactEmail: "gestiones@somosvelora.com",
   },
 };
 
