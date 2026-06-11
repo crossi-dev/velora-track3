@@ -146,7 +146,7 @@ export const defaultCopyEn: LandingCopy = {
     items: [
       {
         q: "What is Velora?",
-        a: "An agentic commerce platform: AI agents that sell, charge, invoice and ship end to end, interoperate agent-to-agent, and are operated from the Velora App, ChatGPT or Claude.",
+        a: "An agentic commerce platform: AI agents that sell, charge, invoice and ship end to end, interoperate agent-to-agent, and are operated from the Velora App, ChatGPT, Claude or Gemini.",
       },
       {
         q: "Where can I use Velora?",

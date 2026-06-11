@@ -15,7 +15,7 @@ export type BenefitsCopy = {
 export default function Benefits({ copy }: { copy: BenefitsCopy }) {
   return (
     <section
-      id="como-funciona"
+      id="capacidades"
       aria-label={copy.label}
       data-screen-label="Benefits"
       className="pt-[clamp(96px,14vw,160px)] pb-[clamp(48px,7vw,72px)] border-t border-[color:var(--color-line)]"

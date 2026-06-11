@@ -170,7 +170,7 @@ export const defaultCopy: LandingCopy = {
     items: [
       {
         q: "¿Qué es Velora?",
-        a: "Una plataforma de comercio agéntico: agentes de IA que venden, cobran, facturan y despachan de punta a punta, interoperan agente a agente, y se operan desde la Velora App, ChatGPT o Claude.",
+        a: "Una plataforma de comercio agéntico: agentes de IA que venden, cobran, facturan y despachan de punta a punta, interoperan agente a agente, y se operan desde la Velora App, ChatGPT, Claude o Gemini.",
       },
       {
         q: "¿Desde dónde puedo usar Velora?",
