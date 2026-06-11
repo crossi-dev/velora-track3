@@ -231,7 +231,7 @@ const styles = {
 
 export default function Track3SubmissionPage() {
   return (
-    <main style={styles.page}>
+    <main id="main-content" style={styles.page}>
       <div style={styles.wrap}>
         <section style={styles.hero}>
           <span style={styles.badge}>Track 3 · Google for Startups AI Agents Challenge</span>
@@ -354,7 +354,7 @@ export default function Track3SubmissionPage() {
             <a href={`${REPO}/blob/main/docs/SUBMISSION_DESCRIPTION.md`} style={styles.link}>
               docs/SUBMISSION_DESCRIPTION.md
             </a>{" "}
-            (v2 final, 2:56 — dual adversarial review APPROVED June 11).
+            (v4 final, under 2 minutes — dual adversarial review APPROVED June 11).
           </p>
         </footer>
       </div>

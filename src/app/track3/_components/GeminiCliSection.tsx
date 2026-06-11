@@ -116,7 +116,7 @@ export function GeminiCliSection() {
       <span style={s.badge}>NEW — Judge Shortcut</span>
       <h2 style={s.h2}>Try it with Gemini CLI</h2>
       <p style={s.p}>
-        Velora&apos;s MCP server exposes 51 production tools (catalog, sales, payments, invoicing,
+        Velora&apos;s MCP server exposes 50 live tools (catalog, sales, payments, invoicing,
         logistics) over StreamableHTTP. Any MCP-compatible client can connect. Gemini CLI is the
         fastest way for a judge to run a live tool call in under 2 minutes.
       </p>
