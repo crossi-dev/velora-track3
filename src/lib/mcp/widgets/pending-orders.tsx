@@ -29,6 +29,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
 import type { UCPOrder, UCPLineItem, UCPTotal } from "../_lib/ucp-types";
+import { Centered } from "./_widget-primitives";
 
 // ── Velora display extension (not UCP fields) ─────────────────────────────────
 // UCP Order has no buyer/created_at fields. Velora carries them alongside.
@@ -193,12 +194,6 @@ function PendingOrdersList(): React.JSX.Element {
       )}
     </main>
   );
-}
-
-// ── Presentational primitives ─────────────────────────────────────────────────
-
-function Centered({ children }: { children: React.ReactNode }): React.JSX.Element {
-  return <div className="mx-auto max-w-md p-8 text-center text-base text-ink-soft">{children}</div>;
 }
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────

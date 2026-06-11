@@ -33,6 +33,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
+import { Centered } from "./_widget-primitives";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -220,12 +221,6 @@ function OnboardingHub(): React.JSX.Element {
       )}
     </main>
   );
-}
-
-// ── Presentational primitives ─────────────────────────────────────────────────
-
-function Centered({ children }: { children: React.ReactNode }): React.JSX.Element {
-  return <div className="mx-auto max-w-md p-8 text-center text-base text-ink-soft">{children}</div>;
 }
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────

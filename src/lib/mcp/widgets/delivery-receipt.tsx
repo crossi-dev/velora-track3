@@ -23,7 +23,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { SecondaryButton } from "./_widget-primitives";
+import { SecondaryButton, Centered } from "./_widget-primitives";
 import type { UCPOrder, UCPTotal } from "../_lib/ucp-types";
 
 // ── Velora display extensions ─────────────────────────────────────────────────
@@ -131,7 +131,7 @@ function DeliveryReceiptWidget(): React.JSX.Element {
       // send_whatsapp_text: fields are `to` (phone), `text` (message body), optional `mediaUrl`.
       // pdfUrl is the AFIP fiscal QR URL (not a downloadable PDF), so we include it in the text
       // body rather than as mediaUrl (mediaUrl requires a directly downloadable media file).
-      const message = `Hola! Te mando el comprobante de tu compra. QR AFIP: ${pdfUrl}`;
+      const message = `¡Hola! Te mandamos el comprobante de tu compra. Ver comprobante AFIP: ${pdfUrl}`;
       const result = await app.callServerTool({
         name: "send_whatsapp_text",
         arguments: { to: phone, text: message },
@@ -190,7 +190,7 @@ function DeliveryReceiptWidget(): React.JSX.Element {
             rel="noopener noreferrer"
             className="mt-1 text-sm text-accent underline"
           >
-            Ver QR AFIP
+            Ver comprobante AFIP
           </a>
         )}
       </section>
@@ -265,12 +265,6 @@ function DeliveryReceiptWidget(): React.JSX.Element {
 
     </main>
   );
-}
-
-// ── Presentational primitives ─────────────────────────────────────────────────
-
-function Centered({ children }: { children: React.ReactNode }): React.JSX.Element {
-  return <div className="mx-auto max-w-md p-8 text-center text-base text-ink-soft">{children}</div>;
 }
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────

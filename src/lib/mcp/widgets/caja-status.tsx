@@ -207,7 +207,6 @@ function CajaStatusWidget(): React.JSX.Element {
         <Row label="Egresos" value={prefill.totalOutflows != null ? ars(-Math.abs(prefill.totalOutflows)) : "—"} />
         {prefill.movementCount != null && <Row label="Movimientos" value={String(prefill.movementCount)} />}
       </dl>
-      <Field label=""><span /></Field>
       <SecondaryButton onClick={() => { setActionMode("cerrar"); setActionErr(null); }}>Cerrar caja</SecondaryButton>
     </Card>
   );

@@ -26,7 +26,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
 import type { UCPOrder, UCPTotal } from "../_lib/ucp-types";
-import { SecondaryButton } from "./_widget-primitives";
+import { SecondaryButton, Centered } from "./_widget-primitives";
 
 // ── Velora display extensions (not UCP fields) ────────────────────────────────
 
@@ -226,12 +226,6 @@ function CobroStatusWidget(): React.JSX.Element {
       )}
     </main>
   );
-}
-
-// ── Presentational primitives ─────────────────────────────────────────────────
-
-function Centered({ children }: { children: React.ReactNode }): React.JSX.Element {
-  return <div className="mx-auto max-w-md p-8 text-center text-base text-ink-soft">{children}</div>;
 }
 
 /**
