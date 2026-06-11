@@ -34,6 +34,39 @@ A single Gemini call carrying both Employee + Supervisor system prompts runs 4-5
 
 The Supervisor and its 8 sub-agents communicate over the **A2A protocol v0.3.0** with signed JSON-RPC 2.0 calls and Ed25519 agent identity. The Supervisor runs on **Cloud Run** as a TypeScript ADK wrapper (interactive path) AND on **Vertex AI Agent Engine** as a Python AdkApp (`projects/<project>/locations/us-central1/reasoningEngines/<id>`, live id at somosvelora.com/track3) — the Agent Engine path connects to Velora's live MCP server via `ADK MCPToolset + StreamableHTTPConnectionParams` (defined in `agent-engine/supervisor_agent.py`, `_build_mcp_toolset()`; `agent-engine/main.py` is the `AdkApp` entry point) and executes real commerce operations (catalog lookup, sale registration, payment links, invoices) through the same 51 production tools.
 
+## Try it with Gemini CLI
+
+The fastest way for a judge to run a live Velora tool call:
+
+```bash
+# Install Gemini CLI (requires Node 18+)
+npm install -g @google/gemini-cli
+
+# Clone this repo — .gemini/settings.json with demo key is included
+git clone https://github.com/crossi-dev/velora-track3
+cd velora-track3
+
+# Start Gemini CLI — auto-loads MCP from settings.json
+gemini
+
+# Try these queries:
+# > list the products in my catalog
+# > register a sale of 2 "Mochila Urbana" at $15000 each
+# > what's the current cash balance?
+```
+
+Alternatively, add the server without cloning:
+
+```bash
+gemini mcp add velora \
+  --transport http \
+  --url https://tools.somosvelora.com/api/mcp \
+  --header "X-API-Key: <get from .gemini/settings.json>" \
+  --header "X-Business-Id: cmpow3rq70009s601j07xgmf0"
+```
+
+The `.gemini/settings.json` file at the repo root contains the demo tenant HMAC key (scoped to a single demo business) and the live MCP endpoint. The key authenticates against `tools.somosvelora.com/api/mcp` (51 tools, 14 packs — source: `src/lib/mcp/server.ts`).
+
 ## Track 3 mandatory technologies
 
 | # | Mandate | Implementation | Status |

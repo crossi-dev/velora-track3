@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "velora": {
+      "httpUrl": "https://tools.somosvelora.com/api/mcp",
+      "headers": {
+        "X-API-Key": "H2h8zpKPHCYZtY9YCZnag8ev_uyhGmBqRtvTCKsbULE",
+        "X-Business-Id": "cmpow3rq70009s601j07xgmf0"
+      }
+    }
+  }
+}

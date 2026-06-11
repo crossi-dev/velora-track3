@@ -26,6 +26,31 @@ No existing tool addresses this as an interoperability problem. Legacy enterpris
 
 ### Business Case
 
+#### Market Size (TAM → SAM → SOM)
+
+| Tier | Value | Basis |
+|------|-------|-------|
+| **TAM** | $694B | LATAM B2B e-commerce market (Straits Research 2024, 23.9% CAGR) |
+| **SAM** | ~$240M–490M ARR addressable | ~515,000 Argentine SMB retail + wholesale × $39–79/mo (from ~525,538 total companies, 98% SMEs — UCEMA Sep 2025) |
+| **SOM Y1** | ~$35,400 ARR | Mendoza pilot: 50 businesses × $59 avg/mo |
+
+**ROI for the buyer** — before vs. after Velora:
+
+| Item | Before (manual) | With Velora |
+|------|----------------|-------------|
+| Coordination hours/week | 6–10 h (model estimate) | <1 h |
+| Monthly labor cost (USD 8/h est.) | USD 192–320 | USD 25 (oversight) |
+| SaaS cost | — | USD 39–79/mo |
+| Net monthly saving | — | **USD 128–256** |
+| Payback period | — | **3–10 days** |
+
+*Wage estimate: model estimate based on Ministerio de Trabajo Argentina 2025 minimum wage schedule. Hours/week: model estimate from SMB operator interviews.*
+
+**Why Google Marketplace** (stats verified against [Google Cloud Blog, Jun 2025](https://cloud.google.com/blog/products/ai-machine-learning/partner-built-agents-available-in-gemini-enterprise)):
+- Marketplace vendors close deals **112% larger** than off-marketplace (Futurum whitepaper cited therein)
+- Purchasing cycles accelerate **up to 50% faster**
+- **$460B+** committed enterprise spend available to Marketplace partners
+
 #### The Opportunity
 
 Latin America's retail e-commerce market reached **$191.25 billion in 2025** — the world's fastest-growing retail e-commerce market in 2025, outpacing global growth at 12.2% year-over-year ([eMarketer, 2025](https://www.emarketer.com/content/latin-america-ecommerce-forecast-2025-growth-outlook-argentina-brazil-mexico)). In Argentina alone, e-commerce billing grew 181% in 2024 ([CACE Annual Study 2024](https://cace.org.ar/blogs/news/estudio-anual-de-cace-2024-el-ecommerce-en-argentina-alcanzo-los-22-billones-en-facturacion)). On the B2B side, the LATAM B2B e-commerce market was valued at **$694 billion in 2024**, growing at a 23.9% CAGR through 2033 ([Straits Research, LATAM B2B E-commerce Market report (2024)](https://web.archive.org/web/2024/https://straitsresearch.com/report/b2b-ecommerce-market/latam)).

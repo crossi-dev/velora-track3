@@ -6,8 +6,16 @@
 // organizer. Designed as a 60-second tour: what Velora is, what's in
 // scope for Track 3, how to verify the architecture, and where to go
 // next (live demo, source code, docs).
+//
+// New sections (contest improvements):
+//   GeminiCliSection — try Velora MCP with Gemini CLI
+//   BusinessMetricsSection — TAM/SAM/SOM + ROI table + Marketplace stats
+//   JudgeQuerySection — live Agent Engine query button (no auth)
 
 import Link from "next/link";
+import { GeminiCliSection } from "./_components/GeminiCliSection";
+import { BusinessMetricsSection } from "./_components/BusinessMetricsSection";
+import { JudgeQuerySection } from "./_components/JudgeQuerySection";
 
 export const metadata = {
   title: "Velora · Track 3 Submission · Google for Startups AI Agents Challenge",
@@ -330,6 +338,10 @@ export default function Track3SubmissionPage() {
             </li>
           </ol>
         </section>
+
+        <JudgeQuerySection />
+        <GeminiCliSection />
+        <BusinessMetricsSection />
 
         <footer style={styles.footer}>
           <p>
