@@ -76,12 +76,6 @@ export default function Widgets({ copy }: { copy: WidgetsCopy }) {
                   : "",
               ].join(" ")}
             >
-              <p
-                className="m-0 mb-5 font-[family-name:var(--font-serif)] font-medium leading-none tracking-[-0.02em] text-[color:var(--color-ink-40)]"
-                style={{ fontSize: "clamp(2.5rem, 4vw, 3rem)" }}
-              >
-                {step.n}
-              </p>
               <h3
                 className="m-0 mb-3 font-[family-name:var(--font-serif)] font-semibold leading-[1.15] tracking-[-0.015em] text-[color:var(--color-ink)]"
                 style={{ fontSize: "clamp(1.375rem, 2.4vw, 1.75rem)" }}
