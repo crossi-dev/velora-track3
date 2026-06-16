@@ -3,7 +3,7 @@
     "velora": {
       "httpUrl": "https://tools.somosvelora.com/api/mcp",
       "headers": {
-        "X-API-Key": "t7zZYuFgOceFYrr8QNfXegMvQbGi_-YyDvHDBR8rWvk",
+        "X-API-Key": "REPLACE_WITH_YOUR_X_API_KEY",
         "X-Business-Id": "cmpow3rq70009s601j07xgmf0"
       }
     }
