@@ -95,7 +95,7 @@ async function buildContadorFullMessage(
   const nameMatches = fiscalCustomers.filter((c) => {
     if (!c.name || c.name.length < 4) return false;
     // Word-boundary anchored -- the name must appear as a complete token.
-    const re = new RegExp(`(?<![\w\u00C0-\u024F])${escapeRegex(c.name.toLowerCase())}(?![\w\u00C0-\u024F])`, "u");
+    const re = new RegExp(`(?<![w\u00C0-\u024F])${escapeRegex(c.name.toLowerCase())}(?![w\u00C0-\u024F])`, "u");
     return re.test(msgLower);
   });
 
