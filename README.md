@@ -68,6 +68,24 @@ gemini mcp add velora \
 
 The `.gemini/settings.json` file at the repo root contains the demo tenant HMAC key (scoped to a single demo business) and the live MCP endpoint. The key authenticates against `tools.somosvelora.com/api/mcp` (51 tools across 14 packs — 50 exposed in production; `connect_tiendanube` is hidden until `TIENDANUBE_CLIENT_ID`/`TIENDANUBE_CLIENT_SECRET` env vars are configured — source: `src/lib/mcp/server.ts`). This key is HMAC-scoped to the public demo tenant only — it cannot read or act on any other business.
 
+## Local Development
+
+```bash
+# Clone and install
+git clone https://github.com/crossi-dev/velora-track3
+cd velora-track3
+npm install
+
+# Configure environment — copy the template and fill in your own values
+# (see "Environment variables" below and src/lib/env.ts for the full list)
+cp .env.example .env
+
+# Run the dev server
+npm run dev
+```
+
+The app runs on `http://localhost:3000` by default (`next dev --hostname 0.0.0.0`). Other useful commands: `npm run lint` (ESLint), `npm run typecheck` (`tsc --noEmit`), `npm run test:vitest` (vitest suite).
+
 ## Track 3 mandatory technologies
 
 | # | Mandate | Implementation | Status |

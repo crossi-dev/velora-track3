@@ -19,7 +19,7 @@ const fieldOrFalta = (v: string | null | undefined): string =>
 // A brand-new customer row is created by the wpp worker with name = phone (no real
 // name yet). Treat a phone-like name (only +/digits/spaces/()-) as missing so the
 // agent captures the real name opportunistically instead of echoing the number.
-const PHONE_LIKE = /^[+\d\s()\-]+$/;
+const PHONE_LIKE = /^[+\d\s()-]+$/;
 const nameOrFalta = (v: string | null | undefined): string => {
   const t = (v ?? "").trim();
   return t.length === 0 || PHONE_LIKE.test(t) ? "(falta)" : t;
