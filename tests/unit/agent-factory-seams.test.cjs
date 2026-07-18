@@ -25,6 +25,11 @@ Module._cache[adkPath] = {
   id: adkPath, filename: adkPath, loaded: true,
   exports: {
     Agent: class FakeAgent { constructor(cfg) { lastAgentConfig = cfg; } },
+    // Base class extended by src/lib/adk/engine-adapter.ts (VeloraEngineAdapter).
+    // This mock stays cached on Module._cache after this file loads (never
+    // restored), so any later require of engine-adapter.ts still needs a real
+    // constructor here or `class ... extends BaseLlm` throws at load time.
+    BaseLlm: class {},
     BaseTool: class {}, Gemini: class {}, InMemorySessionService: class {},
     BaseSessionService: class {}, createEvent: (e) => e, isFinalResponse: () => true,
     getFunctionCalls: () => [], getFunctionResponses: () => [],
