@@ -1,6 +1,6 @@
 // src/lib/mcp/server.ts — Velora MCP server factory.
 //
-// Exposes 15 tool packs (51 tools, 50 live in prod — connect_tiendanube hidden until
+// Exposes 15 tool packs (49 tools, 48 live in prod — connect_tiendanube hidden until
 // TIENDANUBE_CLIENT_ID and TIENDANUBE_CLIENT_SECRET env vars are configured) over the
 // Model Context Protocol:
 //   Pure (always-on):
@@ -14,9 +14,6 @@
 //   - ventas pack          : query_catalog, open_catalog_selector
 //   - ventas + logistica   : open_shipment_prep (combined stock + shipping-quote widget;
 //                            registers only when both packs are selected)
-//   - caja + payments +    : open_business_panel (ONE widget, four tabs: Cliente 360,
-//     ventas + reportes +    Cerrar el día, Reposición de stock, Dashboard de ventas;
-//     supplier + customer    registers only when all six packs are selected)
 //   - customer pack        : find_customer, upsert_customer, delete_customer
 //   - messaging pack       : send_whatsapp_text, send_whatsapp_template
 //   - catalog pack         : create_product, edit_product, stock_load, adjust_stock,
@@ -28,8 +25,11 @@
 //   - caja pack            : caja_consultar_saldo, caja_ciclo_caja, caja_registrar_movimiento,
 //                            open_caja_status
 //   - reportes pack        : query_sales
-//   - overview pack        : open_business_overview (read-aggregation "front door" widget —
-//                            composes caja + payments + ventas + reportes backends, no new logic)
+//   - caja + payments +    : open_business_overview (ONE widget, two display modes — inline
+//     ventas + reportes +    snapshot by default, fullscreen tabs (Cliente 360, Cerrar el día,
+//     supplier + customer    Reposición de stock, Dashboard de ventas) on demand; registers
+//                            only when all six packs are selected, per the MCP Apps design
+//                            guidelines' "start simple, reveal complexity in fullscreen" pattern)
 //   - connection pack      : connection_status, open_onboarding
 //   - onboarding pack      : connect_mercadopago, connect_pedidosya,
 //                            connect_whatsapp, connect_tiendanube (hidden when TIENDANUBE_* absent),
@@ -64,7 +64,6 @@ import { registerSaleConfirmRenderTool } from "./_lib/sale-confirm-render";
 import { registerCajaStatusRenderTool } from "./_lib/caja-status-render";
 import { registerShipmentPrepRenderTool } from "./_lib/shipment-prep-render";
 import { registerBusinessOverviewRenderTool } from "./_lib/business-overview-render";
-import { registerBusinessPanelRenderTool } from "./_lib/business-panel-render";
 import { resolveTenantBackendMap } from "./_lib/tenant-tool-config";
 import { createCatalogBackend } from "./_lib/catalog-backend.factory";
 import { createCustomerBackend } from "./_lib/customer-backend.factory";
@@ -198,19 +197,6 @@ export async function buildVeloraMcpServer(businessId?: string, packs?: string[]
       registerCajaStatusRenderTool(server, businessId, cajaBackend);
     }
     if (wants("reportes")) registerReportesTools(server, businessId, createReportesBackend(map.reportes));
-    // open_business_overview: read-only "front door" dashboard. Aggregates the SAME backend
-    // ports the caja/payments/ventas/reportes packs already use — each factory call below is
-    // independent (mirrors how every other pack constructs its own backend instance), no new
-    // query logic is introduced. Registered as its own pack so it can be excluded from a
-    // connector's pack-set independently of the four packs it reads from.
-    if (wants("overview")) {
-      registerBusinessOverviewRenderTool(server, businessId, {
-        caja: createCajaBackend(),
-        payments: createPaymentsBackend(map.payments),
-        ventas: createVentasBackend(map.ventas),
-        reportes: createReportesBackend(map.reportes),
-      });
-    }
     // Connection status + graphical onboarding hub — both read-only, no credentials,
     // ship in the v1 published connector pack-set.
     // open_onboarding is intentionally in this pack (not onboarding) because it is a
@@ -231,10 +217,14 @@ export async function buildVeloraMcpServer(businessId?: string, packs?: string[]
         !!process.env.TIENDANUBE_CLIENT_ID && !!process.env.TIENDANUBE_CLIENT_SECRET;
       registerOnboardingTools(server, businessId, { includeTiendanube: tiendanubeConfigured });
     }
-    // open_business_panel: ONE widget, four tabs (Cliente 360, Cerrar el día, Reposición
-    // de stock, Dashboard de ventas) — aggregates caja + payments + ventas + reportes +
-    // supplier + customer reads. Only registers when all six packs are selected (mirrors
-    // open_shipment_prep's dual-pack gate above, extended to six packs here).
+    // open_business_overview: ONE widget, two display modes (per the official MCP Apps
+    // design guidelines: inline summary by default, fullscreen tabs — Cliente 360, Cerrar
+    // el día, Reposición de stock, Dashboard de ventas — on demand). Aggregates caja +
+    // payments + ventas + reportes + supplier + customer reads. Only registers when all
+    // six packs are selected (mirrors open_shipment_prep's dual-pack gate above, extended
+    // to six packs here). Tradeoff: a connector missing supplier/customer no longer gets
+    // even the lighter 4-backend inline-only snapshot — accepted for one coherent tool
+    // instead of two overlapping ones, per Anthropic's tool-design guidance.
     if (
       wants("caja") &&
       wants("payments") &&
@@ -243,7 +233,7 @@ export async function buildVeloraMcpServer(businessId?: string, packs?: string[]
       wants("supplier") &&
       wants("customer")
     ) {
-      registerBusinessPanelRenderTool(server, businessId, {
+      registerBusinessOverviewRenderTool(server, businessId, {
         caja: createCajaBackend(),
         payments: createPaymentsBackend(map.payments),
         ventas: createVentasBackend(map.ventas),

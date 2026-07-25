@@ -161,14 +161,15 @@ describe("sales tools — registration", () => {
     } finally { await cleanup(); }
   });
 
-  it("total tool count is 50", async () => {
+  it("total tool count is 49", async () => {
     const { client, cleanup } = await buildConnectedClient("biz-count-001");
     try {
       const result = await client.listTools();
-      // 49 stateful (52, incl. open_business_overview + open_shipment_prep + open_business_panel,
-      // minus register_promesa_sale/confirm_promesa_payment/settle_promesa_payment — no fiado
-      // in this business) + 1 pure (validate_cuit) = 50
-      expect(result.tools).toHaveLength(50);
+      // 48 stateful (open_business_overview folds Cliente 360/Cerrar el día/Reposición/
+      // Dashboard into ONE tool with fullscreen tabs instead of a separate open_business_panel;
+      // open_shipment_prep also included; no fiado tools in this business) + 1 pure
+      // (validate_cuit) = 49
+      expect(result.tools).toHaveLength(49);
     } finally { await cleanup(); }
   });
 });

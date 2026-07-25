@@ -26,7 +26,6 @@
 @source "./caja-status.tsx";
 @source "./shipment-prep.tsx";
 @source "./business-overview.tsx";
-@source "./business-panel.tsx";
 
 @theme inline {
   --color-surface: var(--color-background-primary, light-dark(#ffffff, #1c1c1e));
