@@ -22,6 +22,7 @@
 @source "./delivery-receipt.tsx";
 @source "./onboarding.tsx";
 @source "./shipment-prep.tsx";
+@source "./business-panel.tsx";
 
 @theme inline {
   --color-surface: var(--color-background-primary, light-dark(#ffffff, #1c1c1e));
@@ -35,4 +36,11 @@
   --color-danger-ink: var(--color-text-danger, light-dark(#b00020, #ff7a85));
   --radius-card: var(--border-radius-lg, 0.75rem);
   --radius-control: var(--border-radius-md, 0.5rem);
+
+  /* Velora brand accent — deliberately NOT chameleon-mapped to the host palette.
+   * Exact hex from crossi-dev/velora/src/styles/tokens.css (--brand / --tone-on-brand):
+   * navy #1B3A6B (light) / #8AB0F0 (dark), on-brand cream #FAF6EE (light) / #02060F (dark).
+   * Used only for the business-panel tab bar so the brand identity persists across hosts. */
+  --color-brand: light-dark(#1b3a6b, #8ab0f0);
+  --color-on-brand: light-dark(#faf6ee, #02060f);
 }
