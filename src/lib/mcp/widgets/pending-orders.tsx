@@ -29,7 +29,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
 import type { UCPOrder, UCPLineItem, UCPTotal } from "../_lib/ucp-types";
-import { Centered } from "./_widget-primitives";
+import { Centered, SecondaryButton, StatusChip } from "./_widget-primitives";
 
 // ── Velora display extension (not UCP fields) ─────────────────────────────────
 // UCP Order has no buyer/created_at fields. Velora carries them alongside.
@@ -164,22 +164,13 @@ function PendingOrdersList(): React.JSX.Element {
                   <span className="text-base font-semibold text-ink">
                     {formatARS(total)}
                   </span>
-                  <span
-                    aria-label="Estado del cobro"
-                    className="rounded-full border border-line bg-surface px-3 py-1 text-sm font-medium text-ink-soft"
-                  >
-                    Esperando pago
+                  <span aria-label="Estado del cobro">
+                    <StatusChip tone="pending">Esperando pago</StatusChip>
                   </span>
                 </div>
 
                 {/* HOP: → cobro-status */}
-                <button
-                  type="button"
-                  onClick={() => onViewStatus(order.ucp.id)}
-                  className="w-full rounded-control border border-line bg-surface px-4 py-2 text-base text-ink"
-                >
-                  Ver estado
-                </button>
+                <SecondaryButton onClick={() => onViewStatus(order.ucp.id)}>Ver estado</SecondaryButton>
                 {navErr && <p className="text-sm text-danger-ink">{navErr}</p>}
               </li>
             );

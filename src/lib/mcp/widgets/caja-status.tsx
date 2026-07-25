@@ -21,7 +21,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { Card, Field, PrimaryButton, SecondaryButton, Centered } from "./_widget-primitives";
+import { Card, PrimaryButton, SecondaryButton, Centered, StatusBanner, StatusChip } from "./_widget-primitives";
 
 type CajaState = "OPEN" | "CLOSED" | "NO_SESSION";
 
@@ -135,10 +135,7 @@ function CajaStatusWidget(): React.JSX.Element {
   if (doneBanner) {
     return (
       <Card title="Estado de caja">
-        <div className="flex items-center justify-center rounded-control px-4 py-3 text-base font-semibold"
-          style={{ color: "light-dark(#117a3d, #4ade80)", background: "light-dark(#e7f6ec, #16331f)" }}>
-          {doneBanner}
-        </div>
+        <StatusBanner tone="success">{doneBanner}</StatusBanner>
         <p className="text-center text-sm text-ink-soft">Refrescá el estado para ver los datos actualizados.</p>
       </Card>
     );
@@ -180,7 +177,7 @@ function CajaStatusWidget(): React.JSX.Element {
           <Row label="Efectivo contado" value={ars(prefill.closedCashAmount)} />
           {prefill.variance != null && (
             <Row label="Diferencia" value={
-              <span style={prefill.variance !== 0 ? { color: "light-dark(#b91c1c, #f87171)" } : undefined}>{ars(prefill.variance)}</span>
+              <span className={prefill.variance !== 0 ? "text-danger-ink" : undefined}>{ars(prefill.variance)}</span>
             } />
           )}
         </dl>
@@ -195,9 +192,8 @@ function CajaStatusWidget(): React.JSX.Element {
       <section aria-label="Saldo actual" className="flex flex-col items-center gap-1 rounded-control bg-surface-2 px-4 py-4">
         <span className="text-sm text-ink-soft">Efectivo esperado</span>
         <span className="text-4xl font-bold text-ink">{ars(prefill.expectedCashAmount)}</span>
-        <span className="mt-1 rounded-full px-3 py-1 text-sm font-medium"
-          style={{ color: "light-dark(#117a3d, #4ade80)", background: "light-dark(#e7f6ec, #16331f)" }}>
-          Turno abierto
+        <span className="mt-1">
+          <StatusChip tone="success">Turno abierto</StatusChip>
         </span>
       </section>
       <dl className="flex flex-col gap-2 rounded-control bg-surface-2 px-4 py-3">

@@ -33,7 +33,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { Centered } from "./_widget-primitives";
+import { Centered, StatusChip, StatusBanner } from "./_widget-primitives";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -142,24 +142,13 @@ function OnboardingHub(): React.JSX.Element {
           >
             <span className="text-base text-ink">{item.label}</span>
             {item.connected ? (
-              <span
-                aria-label="Conectado"
-                className="flex items-center gap-1 rounded-full px-2 py-0.5 text-sm font-medium"
-                style={{
-                  backgroundColor: "var(--color-green-100, #dcfce7)",
-                  color: "var(--color-green-800, #166534)",
-                }}
-              >
-                <svg
-                  aria-hidden="true"
-                  width="12"
-                  height="12"
-                  viewBox="0 0 12 12"
-                  fill="currentColor"
-                >
-                  <path d="M10 3L5 8.5 2 5.5l-.7.7 3.7 3.7 5.7-5.7L10 3z" />
-                </svg>
-                Conectado
+              <span aria-label="Conectado" className="shrink-0">
+                <StatusChip tone="success">
+                  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="currentColor" className="mr-1">
+                    <path d="M10 3L5 8.5 2 5.5l-.7.7 3.7 3.7 5.7-5.7L10 3z" />
+                  </svg>
+                  Conectado
+                </StatusChip>
               </span>
             ) : item.connectUrl ? (
               <button
@@ -215,9 +204,7 @@ function OnboardingHub(): React.JSX.Element {
 
       {/* All connected state */}
       {connectedCount === integrations.length && (
-        <p className="rounded-control bg-surface-2 p-4 text-base text-ink-soft">
-          ¡Todo conectado! Tu negocio está listo para operar.
-        </p>
+        <StatusBanner tone="success">¡Todo conectado! Tu negocio está listo para operar.</StatusBanner>
       )}
     </main>
   );

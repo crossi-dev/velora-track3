@@ -23,7 +23,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { SecondaryButton, Centered } from "./_widget-primitives";
+import { SecondaryButton, Centered, TONE_CLASSES, type StatusTone } from "./_widget-primitives";
 import type { UCPOrder, UCPTotal } from "../_lib/ucp-types";
 
 // ── Velora display extensions ─────────────────────────────────────────────────
@@ -68,30 +68,25 @@ function formatARS(minorUnits: number): string {
 }
 
 // ── Envío status chip configuration ──────────────────────────────────────────
+// Tone + label per status — colors resolve through widget.css's shared
+// success/danger tokens (StatusTone in _widget-primitives), not one-off
+// light-dark() inline styles.
 
 interface ChipConfig {
   label: string;
-  /** Tailwind utility classes for layout/spacing (not color). */
-  classes: string;
-  /** Inline color style — uses light-dark() for dark-mode safety. Undefined = no inline style needed. */
-  colorStyle?: React.CSSProperties;
+  tone: StatusTone;
 }
 
 function resolveEnvioChip(status: string): ChipConfig {
   switch (status) {
     case "delivered":
-      return {
-        label: "Entregado ✓",
-        classes: "",
-        // Mirror the onboarding "Conectado" chip pattern: light-dark() vars, not raw Tailwind palette.
-        colorStyle: { color: "light-dark(#117a3d, #4ade80)", background: "light-dark(#e7f6ec, #16331f)" },
-      };
+      return { label: "Entregado ✓", tone: "success" };
     case "in_transit":
-      return { label: "En tránsito", classes: "bg-surface-2 text-ink" };
+      return { label: "En tránsito", tone: "pending" };
     case "failed":
-      return { label: "Problema en envío", classes: "bg-danger-surface text-danger-ink" };
+      return { label: "Problema en envío", tone: "danger" };
     default: // "created" and others
-      return { label: "Envío creado", classes: "bg-surface-2 text-ink-soft" };
+      return { label: "Envío creado", tone: "pending" };
   }
 }
 
@@ -230,10 +225,7 @@ function DeliveryReceiptWidget(): React.JSX.Element {
           <div className="flex flex-col gap-2 rounded-control bg-surface-2 px-4 py-3">
             <div className="flex items-center justify-between gap-2">
               <span className="text-base font-medium text-ink">{envio.carrier}</span>
-              <span
-                className={`rounded-full px-3 py-1 text-sm font-medium ${envioChip!.classes}`}
-                style={envioChip!.colorStyle}
-              >
+              <span className={`rounded-full px-3 py-1 text-sm font-medium ${TONE_CLASSES[envioChip!.tone]}`}>
                 {envioChip!.label}
               </span>
             </div>

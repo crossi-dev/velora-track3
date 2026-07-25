@@ -146,10 +146,7 @@ function SaleConfirmWidget(): React.JSX.Element {
             ? `Venta para ${prefill.customerName} registrada correctamente.`
             : "Venta registrada correctamente."}
         </p>
-        <div
-          className="flex items-center justify-between rounded-control bg-surface-2 px-4 py-3"
-          style={{ color: "light-dark(#117a3d, #4ade80)", background: "light-dark(#e7f6ec, #16331f)" }}
-        >
+        <div className="flex items-center justify-between rounded-control bg-success-surface px-4 py-3 text-success-ink">
           <span className="text-base font-medium">Total cobrado</span>
           <span className="text-xl font-bold">{ars(prefill.totalARS)}</span>
         </div>

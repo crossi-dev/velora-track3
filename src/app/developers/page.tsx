@@ -58,6 +58,8 @@ export default function DevelopersPage() {
       style={{
         minHeight: "100dvh",
         backgroundColor: "var(--background)",
+        backgroundImage:
+          "radial-gradient(60rem 30rem at 85% -10%, var(--brand-soft) 0%, transparent 60%)",
         color: "var(--tone-strong)",
         fontFamily: "var(--font-dm-sans), sans-serif",
       }}
@@ -70,14 +72,10 @@ export default function DevelopersPage() {
       <div className="mx-auto max-w-[64rem] px-[clamp(1.25rem,4vw,2rem)]">
         <a
           href="/"
-          style={{
-            display: "inline-block",
-            marginTop: "2rem",
-            fontSize: "0.875rem",
-            color: "var(--brand)",
-            textDecoration: "none",
-          }}
+          className="mt-8 inline-flex items-center gap-2 text-[0.875rem] no-underline"
+          style={{ color: "var(--brand)" }}
         >
+          <img src="/velora-mark.svg" alt="" aria-hidden width={16} height={16} style={{ borderRadius: "4px" }} />
           &larr; Volver a Velora
         </a>
 
