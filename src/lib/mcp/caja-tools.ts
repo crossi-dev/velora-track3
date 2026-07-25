@@ -19,10 +19,15 @@ import "server-only";
 //   caja_consultar_saldo is read-only — no idempotency needed.
 //
 // Idempotency key derivation (MCP context):
-//   MCP requests do not carry an ADK turnId. We derive the key from:
-//     SHA-256(requestId | toolName | JSON.stringify(sortedInput)).slice(0, 32)
-//   requestId is a per-request UUID generated once and shared across all three tools.
-//   This matches the deriveServerKey contract from caja-ciclo-tool.ts (Part A).
+//   MCP requests do not carry an ADK turnId. Two key derivations exist:
+//   - caja_ciclo_caja: SHA-256(requestId | toolName | sortedInput).slice(0, 32) —
+//     requestId is a per-request UUID (deriveMcpCajaKey). Per-request only; a
+//     cross-request retry gets a new key, but abrir/cerrar have a natural DB-state
+//     guard against duplicates (see the tool's own annotations/description).
+//   - caja_registrar_movimiento: content + UTC-minute bucket (deriveMovementRetryKey,
+//     same pattern as register_movement in sales-mutations.ts) — chosen because a
+//     duplicate movement has NO natural guard, so a stable cross-request key matters
+//     more here (judgment-day finding, fixed).
 //
 // References:
 //   Square CashDrawerShift — https://developer.squareup.com/reference/square/objects/CashDrawerShift
@@ -45,6 +50,24 @@ import {
 
 function deriveMcpCajaKey(requestId: string, toolName: string, input: object): string {
   const canonical = [requestId, toolName, JSON.stringify(input, Object.keys(input).sort())].join("|");
+  return createHash("sha256").update(canonical).digest("hex").slice(0, 32);
+}
+
+// Content + UTC-minute-bucket key (same pattern as register_movement in
+// sales-mutations.ts) — unlike deriveMcpCajaKey above, this survives a
+// cross-request retry: the SAME movement retried within the same UTC minute
+// reuses this key and dedupes; a genuinely NEW movement submitted a minute
+// later gets a different key. Judgment-day finding: the per-request random
+// requestId (deriveMcpCajaKey) was the ONLY entropy in both the idempotency
+// key and the DB clientMessageId, so a lost-response network retry always
+// looked like a brand-new request and could double-create a cash movement —
+// there is no natural DB-state guard for a movement the way abrir/cerrar has
+// (duplicate shift open/close). Trade-off: two distinct movements with
+// identical tipo+monto+descripcion within the same UTC minute will collide —
+// acceptable, standard minute-bucket dedup trade-off.
+function deriveMovementRetryKey(toolName: string, input: object): string {
+  const dateBucket = new Date().toISOString().slice(0, 16); // "YYYY-MM-DDTHH:MM"
+  const canonical = [toolName, JSON.stringify(input, Object.keys(input).sort()), dateBucket].join("|");
   return createHash("sha256").update(canonical).digest("hex").slice(0, 32);
 }
 
@@ -186,12 +209,12 @@ export function registerCajaTools(
         "Records a cash movement: income (ingreso), expense (gasto), " +
         "withdrawal/sangría (retiro/sangria), tax (impuesto), or payroll (sueldo). " +
         "Pass a positive monto — the server applies the correct accounting sign. " +
-        "EXECUTES IMMEDIATELY on each call. The idempotency key is server-derived " +
-        "per HTTP request — a network-layer retry regenerates the key and MAY " +
-        "create a duplicate cash movement. " +
-        "Do NOT retry after a network error without first calling caja_consultar_saldo " +
-        "to confirm no movement was created. Same-HTTP-request retries are safe (idempotent); " +
-        "cross-request retries are NOT. " +
+        "The idempotency key is content-addressed (tipo+monto+descripcion) bucketed to " +
+        "the current UTC minute, so a network-layer retry within the same minute " +
+        "safely dedupes instead of creating a duplicate cash movement. Two genuinely " +
+        "distinct movements with identical tipo/monto/descripcion submitted within " +
+        "the same UTC minute would collide — rare in practice, but if it happens vary " +
+        "the descripcion slightly. " +
         "Returns the stored movement id, domain type, and signed amount.",
       inputSchema: {
         tipo: z
@@ -201,12 +224,14 @@ export function registerCajaTools(
         descripcion: z.string().min(1).max(500).describe("Movement description (e.g. 'Electric bill payment')."),
       },
       // Standard MCP tool annotations — https://modelcontextprotocol.io/specification/2025-06-18/schema
-      // idempotentHint FALSE: a cross-request retry can create a duplicate cash movement (honest).
-      // destructiveHint: true — creates an irreversible cash movement record; cross-request retries may double-create.
-      annotations: { readOnlyHint: false, idempotentHint: false, destructiveHint: true, openWorldHint: false },
+      // idempotentHint TRUE: content+minute-bucket key now survives cross-request retries
+      // within the same UTC minute (see deriveMovementRetryKey) — fixed from a judgment-day
+      // finding that the prior per-request random key never deduped across requests at all.
+      // destructiveHint: true — still creates an irreversible cash movement record.
+      annotations: { readOnlyHint: false, idempotentHint: true, destructiveHint: true, openWorldHint: false },
     },
     async (args) => {
-      const derivedKey = deriveMcpCajaKey(requestId, "caja_registrar_movimiento", {
+      const derivedKey = deriveMovementRetryKey("caja_registrar_movimiento", {
         tipo: args.tipo,
         monto: args.monto,
         descripcion: args.descripcion,
