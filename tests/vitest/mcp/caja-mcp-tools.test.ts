@@ -255,7 +255,7 @@ describe("(c6–c7) caja_ciclo_caja", () => {
       const { isError, data } = parseResult(raw);
       const d = data as Record<string, unknown>;
       expect(isError).toBe(true);
-      expect((d.error as Record<string, unknown>).code).toBe("SESSION_ALREADY_OPEN");
+      expect(d.code).toBe("SESSION_ALREADY_OPEN");
     } finally {
       await cleanup();
     }

@@ -14,6 +14,7 @@ import {
 import { recordCriticalWriteEvent } from "@/infrastructure/shared/critical-write-audit";
 import { prisma } from "@/lib/prisma";
 import type { CajaBackend } from "./caja-backend.port";
+import { errResponse as errCajaResponse } from "./mcp-responses";
 
 // ── Shared constants ──────────────────────────────────────────────────────────
 
@@ -34,15 +35,6 @@ export const TIPO_LABEL: Record<string, string> = {
   tax: "Impuesto",
   salary: "Sueldo",
 };
-
-// ── Error helper ─────────────────────────────────────────────────────────────
-
-export function errCajaResponse(code: string, message: string) {
-  return {
-    content: [{ type: "text" as const, text: JSON.stringify({ error: { code, message } }) }],
-    isError: true,
-  };
-}
 
 // ── handleCicloCajaAbrir ──────────────────────────────────────────────────────
 
