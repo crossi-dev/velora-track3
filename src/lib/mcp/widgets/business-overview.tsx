@@ -61,6 +61,9 @@ interface VentasPeriodo {
   saleCount: number;
   totalRevenue: number;
   totalRevenueFormatted: string;
+  /** true when this section failed to load server-side — render "no pudimos
+   * cargar" instead of a confident (and possibly false) "0 ventas". */
+  failed?: boolean;
 }
 
 interface LowStockItem {
@@ -168,6 +171,11 @@ const ars = (n: number | null | undefined) =>
     ? "$ " + n.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })
     : "—";
 
+function ventasLabel(v: VentasPeriodo): string {
+  if (v.failed) return "no pudimos cargar";
+  return `${v.saleCount} venta${v.saleCount !== 1 ? "s" : ""} · ${v.totalRevenueFormatted || ars(v.totalRevenue)}`;
+}
+
 function cajaChipLabel(state: CajaState): string {
   if (state === "OPEN") return "Turno abierto";
   if (state === "CLOSED") return "Caja cerrada";
@@ -197,21 +205,40 @@ function VeloraMark({ size = 24 }: { size?: number }): React.JSX.Element {
   );
 }
 
+/** Matches InlineSummary's shape (4 SectionCards + 1 action) so the loading →
+ * loaded transition doesn't jump — per the doc's mobile loading-states guidance:
+ * "Show skeleton screens... match the layout structure... avoid spinners for
+ * inline content." Replaces the old plain "Cargando…" text. */
+function InlineSkeleton(): React.JSX.Element {
+  return (
+    <main className="mx-auto flex max-w-md flex-col gap-4 p-5" aria-busy="true" aria-label="Cargando resumen del negocio">
+      <div className="h-6 w-40 animate-pulse rounded-control bg-surface-2" />
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="flex h-16 flex-col justify-center gap-2 rounded-control bg-surface-2 p-4">
+          <div className="h-3 w-20 animate-pulse rounded-full bg-surface" />
+          <div className="h-4 w-32 animate-pulse rounded-full bg-surface" />
+        </div>
+      ))}
+      <div className="h-11 w-full animate-pulse rounded-control bg-surface-2" />
+    </main>
+  );
+}
+
 // ── Inline summary ────────────────────────────────────────────────────────────
 // Doc constraints (claude.com/docs/.../design-guidelines#inline-card):
 // "Max data points: 4-5" and "Max actions: 2, placed at the bottom of the card."
-// 4 sections (caja, ventas, cobros pendientes, stock bajo) + 2 actions at the
-// bottom (Ver caja, Ver panel completo). Full lists (low-stock items, cobros
-// detail) live in fullscreen's tabs, not inline.
+// 4 sections (caja, ventas, cobros pendientes, stock bajo) + 1 action at the
+// bottom (Ver panel completo, defaults to the Cerrar el día tab — no separate
+// "Ver caja" jump, since that used to swap this widget out for open_caja_status
+// and strand the owner with no way back; the balance is already shown inline).
+// Full lists (low-stock items, cobros detail) live in fullscreen's tabs.
 
 function InlineSummary({
   data,
-  onOpenCaja,
   onExpand,
   canExpand,
 }: {
   data: Prefill["summary"];
-  onOpenCaja: () => void;
   onExpand: () => void;
   canExpand: boolean;
 }): React.JSX.Element {
@@ -228,15 +255,11 @@ function InlineSummary({
       <SectionCard title="Ventas">
         <div className="flex items-center justify-between gap-2">
           <dt className="text-sm text-ink-soft">Hoy</dt>
-          <dd className="text-sm font-medium tabular-nums text-ink">
-            {data.ventasHoy.saleCount} venta{data.ventasHoy.saleCount !== 1 ? "s" : ""} · {data.ventasHoy.totalRevenueFormatted || ars(data.ventasHoy.totalRevenue)}
-          </dd>
+          <dd className={`text-sm font-medium tabular-nums ${data.ventasHoy.failed ? "text-danger-ink" : "text-ink"}`}>{ventasLabel(data.ventasHoy)}</dd>
         </div>
         <div className="flex items-center justify-between gap-2">
           <dt className="text-sm text-ink-soft">Esta semana</dt>
-          <dd className="text-sm font-medium tabular-nums text-ink">
-            {data.ventasSemana.saleCount} venta{data.ventasSemana.saleCount !== 1 ? "s" : ""} · {data.ventasSemana.totalRevenueFormatted || ars(data.ventasSemana.totalRevenue)}
-          </dd>
+          <dd className={`text-sm font-medium tabular-nums ${data.ventasSemana.failed ? "text-danger-ink" : "text-ink"}`}>{ventasLabel(data.ventasSemana)}</dd>
         </div>
       </SectionCard>
 
@@ -258,24 +281,15 @@ function InlineSummary({
         </div>
       </SectionCard>
 
-      <div className="flex gap-2">
+      {canExpand && (
         <button
           type="button"
-          onClick={onOpenCaja}
-          className="min-h-11 flex-1 rounded-control border border-line bg-surface px-4 text-base text-ink"
+          onClick={onExpand}
+          className="min-h-11 w-full rounded-control bg-brand px-4 text-base font-semibold text-on-brand"
         >
-          Ver caja
+          Ver panel completo
         </button>
-        {canExpand && (
-          <button
-            type="button"
-            onClick={onExpand}
-            className="min-h-11 flex-1 rounded-control bg-brand px-4 text-base font-semibold text-on-brand"
-          >
-            Ver panel completo
-          </button>
-        )}
-      </div>
+      )}
     </>
   );
 }
@@ -425,11 +439,17 @@ function CierreDiaTab({
       </SectionCard>
 
       <SectionCard title="Ventas de hoy">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-2xl font-bold tabular-nums text-ink">{data.ventasHoy.saleCount}</span>
-          <span className="text-sm text-ink-soft">venta{data.ventasHoy.saleCount !== 1 ? "s" : ""}</span>
-        </div>
-        <div className="text-base font-semibold tabular-nums text-ink">{data.ventasHoy.totalRevenueFormatted}</div>
+        {data.ventasHoy.failed ? (
+          <p className="text-sm text-danger-ink">No pudimos cargar las ventas de hoy.</p>
+        ) : (
+          <>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-2xl font-bold tabular-nums text-ink">{data.ventasHoy.saleCount}</span>
+              <span className="text-sm text-ink-soft">venta{data.ventasHoy.saleCount !== 1 ? "s" : ""}</span>
+            </div>
+            <div className="text-base font-semibold tabular-nums text-ink">{data.ventasHoy.totalRevenueFormatted}</div>
+          </>
+        )}
       </SectionCard>
 
       <SectionCard title="Cobros pendientes">
@@ -643,10 +663,25 @@ function BusinessOverviewWidget(): React.JSX.Element {
       .catch(() => setNavError("No se pudo buscar el cliente. Intentá de nuevo."));
   }
 
+  async function retryLoad() {
+    if (!app) return;
+    setReceived(false);
+    await app.callServerTool({ name: "open_business_overview", arguments: {} }).catch(() => setReceived(true));
+  }
+
   if (error) return <Centered>No pudimos abrir el resumen del negocio. {error.message}</Centered>;
   if (!isConnected) return <Centered>Conectando…</Centered>;
-  if (!prefill && received) return <Centered>No pudimos cargar el resumen. Probá de nuevo.</Centered>;
-  if (!prefill) return <Centered>Cargando resumen del negocio…</Centered>;
+  if (!prefill && received) {
+    return (
+      <Centered>
+        No pudimos cargar el resumen del negocio.
+        <button type="button" onClick={retryLoad} className="mt-3 min-h-11 w-full rounded-control bg-brand px-4 text-base font-semibold text-on-brand">
+          Reintentar
+        </button>
+      </Centered>
+    );
+  }
+  if (!prefill) return <InlineSkeleton />;
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 p-5 text-ink">
@@ -697,12 +732,7 @@ function BusinessOverviewWidget(): React.JSX.Element {
             <VeloraMark size={20} />
             <h1 className="text-xl font-semibold leading-snug">Tu negocio, al día</h1>
           </div>
-          <InlineSummary
-            data={prefill.summary}
-            onOpenCaja={openCajaStatus}
-            onExpand={() => requestFullscreen(true)}
-            canExpand
-          />
+          <InlineSummary data={prefill.summary} onExpand={() => requestFullscreen(true)} canExpand />
         </>
       )}
 

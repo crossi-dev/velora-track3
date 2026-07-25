@@ -56,6 +56,10 @@ interface VentasPeriodo {
   saleCount: number;
   totalRevenue: number;
   totalRevenueFormatted: string;
+  /** true when this section's query_sales call errored/failed to parse — the
+   * widget shows "no pudimos cargar" instead of a confident "0 ventas", so a
+   * backend timeout never reads as "you sold nothing today." */
+  failed?: boolean;
 }
 
 interface Margen {
@@ -114,7 +118,9 @@ function parseJson<T>(result: CallToolResult, fallback: T): T {
 }
 
 function parseVentasPeriodo(result: CallToolResult): VentasPeriodo {
-  return parseJson(result, { saleCount: 0, totalRevenue: 0, totalRevenueFormatted: "$ 0" });
+  const parsed = parseJson<VentasPeriodo | null>(result, null);
+  if (parsed) return parsed;
+  return { saleCount: 0, totalRevenue: 0, totalRevenueFormatted: "$ 0", failed: true };
 }
 
 // Caps mirror pending-orders.tsx's DISPLAY_CAP=10 convention for widget lists.
