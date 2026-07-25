@@ -37,6 +37,26 @@
   --color-on-accent: var(--color-text-inverse, light-dark(#ffffff, #1c1c1e));
   --color-danger-surface: var(--color-background-danger, light-dark(#fdecef, #3a1a1f));
   --color-danger-ink: var(--color-text-danger, light-dark(#b00020, #ff7a85));
-  --radius-card: var(--border-radius-lg, 0.75rem);
-  --radius-control: var(--border-radius-md, 0.5rem);
+  --color-success-surface: var(--color-background-success, light-dark(#e7f6ec, #16331f));
+  --color-success-ink: var(--color-text-success, light-dark(#117a3d, #4ade80));
+  /* Fallbacks pinned to Velora's own radius scale (--radius-lg: 14px card /
+     --radius-md: 10px control) instead of arbitrary rem values, so a
+     no-host local preview still reads as Velora, not a generic form. */
+  --radius-card: var(--border-radius-lg, 0.875rem);
+  --radius-control: var(--border-radius-md, 0.625rem);
+}
+
+/* Motion: one shared duration + easing for interactive state changes
+   (hover/active/focus) across every widget. Split into two vars because
+   Tailwind's duration-[] / ease-[] utilities each take a single value, not
+   a transition shorthand. Respects reduced-motion. */
+:root {
+  --widget-duration: 140ms;
+  --widget-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --widget-duration: 0ms;
+  }
 }

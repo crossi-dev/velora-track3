@@ -26,7 +26,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
 import type { UCPOrder, UCPTotal } from "../_lib/ucp-types";
-import { SecondaryButton, Centered } from "./_widget-primitives";
+import { SecondaryButton, Centered, TONE_CLASSES, type StatusTone } from "./_widget-primitives";
 
 // ── Velora display extensions (not UCP fields) ────────────────────────────────
 
@@ -67,39 +67,25 @@ function formatDate(iso: string): string {
 }
 
 // ── Status chip configuration ─────────────────────────────────────────────────
+// Tone + label per estado — colors resolve through widget.css's shared
+// success/danger tokens (StatusTone in _widget-primitives), not one-off
+// light-dark() inline styles.
 
 interface ChipConfig {
   label: string;
-  /** Tailwind utility classes for layout/spacing (not color). */
-  classes: string;
-  /** Inline color style — uses light-dark() for dark-mode safety. Undefined = no inline style needed. */
-  colorStyle?: React.CSSProperties;
+  tone: StatusTone;
 }
 
 function resolveChipConfig(estado: CobroEstado): ChipConfig {
   switch (estado) {
     case "confirmed":
-      return {
-        label: "Pagado ✓",
-        classes: "",
-        // Mirror the onboarding "Conectado" chip pattern: light-dark() vars, not raw Tailwind palette.
-        colorStyle: { color: "light-dark(#117a3d, #4ade80)", background: "light-dark(#e7f6ec, #16331f)" },
-      };
+      return { label: "Pagado ✓", tone: "success" };
     case "pending":
-      return {
-        label: "Esperando pago",
-        classes: "bg-surface-2 text-ink-soft",
-      };
+      return { label: "Esperando pago", tone: "pending" };
     case "expired":
-      return {
-        label: "Vencido",
-        classes: "bg-danger-surface text-danger-ink",
-      };
+      return { label: "Vencido", tone: "danger" };
     case "cancelled":
-      return {
-        label: "Cancelado",
-        classes: "bg-danger-surface text-danger-ink",
-      };
+      return { label: "Cancelado", tone: "danger" };
   }
 }
 
@@ -157,8 +143,7 @@ function CobroStatusWidget(): React.JSX.Element {
       {/* BIG status banner */}
       <section
         aria-label="Estado del cobro"
-        className={`flex items-center justify-center rounded-control px-4 py-3 text-lg font-semibold ${chip.classes}`}
-        style={chip.colorStyle}
+        className={`flex items-center justify-center rounded-control px-4 py-3 text-lg font-semibold ${TONE_CLASSES[chip.tone]}`}
       >
         {chip.label}
       </section>
