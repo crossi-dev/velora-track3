@@ -40,40 +40,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { gzipSync } from "node:zlib";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { verifyA2AApiKeyForTenant } from "@/app/api/agents/_lib/a2a-auth";
-import { reportWarning } from "@/lib/cloud-logger";
+import { checkRateLimitAsync } from "@/app/api/_lib/route-helpers";
 import { buildVeloraMcpServer } from "@/lib/mcp/server";
 import { verifyBearerToken, MCP_RESOURCE_URI } from "@/lib/mcp/oauth-verify";
 
 // ── Per-tenant (per-key) rate limiter ────────────────────────────────────────
-// Same 60/min-per-tenant intent as the A2A route, but a self-contained in-memory
-// sliding window (the A2A route uses the DB-backed checkRateLimitAsync; this route
-// stays stateless/in-process). Defense against unbounded SMS/email fan-out via MCP.
+// 60 req/min per businessId. Uses the SAME DB-backed token bucket the A2A route
+// uses (checkRateLimitAsync + actorKey), not a self-contained in-memory map —
+// judgment-day finding: an in-process Map means each of Cloud Run's horizontally
+// scaled instances gets its own independent 60/min bucket, so the real ceiling
+// was 60 x instanceCount, not the "60 calls per minute per tenant" this server's
+// own MCP `instructions` string advertises to every connecting client.
+// checkRateLimitCoreAsync is Postgres-backed by default whenever NODE_ENV is
+// "production" (see rate-limit-core.ts) — the Dockerfile already sets that, so
+// this is multi-instance-correct with no additional env var needed.
 // Applied AFTER auth resolves businessId — unauthenticated requests are rejected
 // at the auth gate before reaching this limiter.
-const MCP_RATE_MAX = 60;
-const MCP_RATE_WINDOW_MS = 60_000;
-const MCP_RATE_MAX_KEYS = 1_000;
-const mcpRateMap = new Map<string, number[]>();
-
-function checkMcpRateLimit(businessId: string): boolean {
-  const now = Date.now();
-  const cutoff = now - MCP_RATE_WINDOW_MS;
-
-  // Opportunistic prune at hard cap (cheap; only when full).
-  if (mcpRateMap.size > MCP_RATE_MAX_KEYS) {
-    for (const [key, timestamps] of mcpRateMap) {
-      if (timestamps.length === 0 || timestamps[timestamps.length - 1] <= cutoff) {
-        mcpRateMap.delete(key);
-      }
-    }
-  }
-
-  const timestamps = mcpRateMap.get(businessId) ?? [];
-  const recent = timestamps.filter((t) => t > cutoff);
-  recent.push(now);
-  mcpRateMap.set(businessId, recent);
-  return recent.length <= MCP_RATE_MAX;
-}
 
 // ── Auth gate ─────────────────────────────────────────────────────────────────
 
@@ -203,15 +185,12 @@ async function handleMcpRequest(req: NextRequest): Promise<Response> {
   const auth = await resolveAuth(req);
   if (!auth.ok) return auth.response;
 
-  // Per-tenant rate limit — enforced after auth resolves businessId.
-  // Mirrors the A2A route pattern: 60 req/min per key, in-memory sliding window.
-  if (!checkMcpRateLimit(auth.businessId)) {
-    reportWarning("MCP per-tenant rate limit hit", { scope: "mcp.rate-limit-tenant", businessId: auth.businessId });
-    return NextResponse.json(
-      { code: "RATE_LIMIT_EXCEEDED", message: "Rate limit exceeded for this tenant. Retry after 60 seconds." },
-      { status: 429, headers: { "Retry-After": "60" } },
-    );
-  }
+  // Per-tenant rate limit — enforced after auth resolves businessId, keyed by
+  // businessId (not IP — Cloud Run instances share egress IPs in some paths,
+  // and the whole point is one bucket per tenant regardless of which instance
+  // or client IP the request comes from).
+  const rateLimited = await checkRateLimitAsync(req, "mcp", 60, 60, { actorKey: auth.businessId });
+  if (rateLimited) return rateLimited;
 
   // A fresh server + transport per request: correct for stateless mode.
   // McpServer holds no per-session state; transport handles the HTTP
