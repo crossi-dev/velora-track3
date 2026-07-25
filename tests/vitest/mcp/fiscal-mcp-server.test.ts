@@ -265,7 +265,7 @@ describe("buildVeloraMcpServer — tools/list", () => {
     }
   });
 
-  it("registers fifty-one tools when a businessId is provided", async () => {
+  it("registers fifty-two tools when a businessId is provided", async () => {
     const { client, cleanup } = await buildConnectedClient("biz-001");
     try {
       const result = await client.listTools();
@@ -307,6 +307,7 @@ describe("buildVeloraMcpServer — tools/list", () => {
         "open_payment_link_wizard",
         "open_pending_orders",
         "open_sale_confirm",
+        "open_shipment_prep",
         "query_catalog",
         "query_sales",
         "quote_shipping",
