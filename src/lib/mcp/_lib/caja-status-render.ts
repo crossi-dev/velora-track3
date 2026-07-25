@@ -46,7 +46,6 @@ export interface CajaPrefill {
 //
 // Exported so other render tools (e.g. open_business_overview) can reuse the exact
 // same balance-resolution logic instead of duplicating it — see business-overview-render.ts.
-
 export async function resolveCajaPrefill(businessId: string, backend: CajaBackend): Promise<CajaPrefill> {
   const openSession = await backend.findOpenSessionWithAmount(businessId);
 

@@ -14,6 +14,9 @@
 //   - ventas pack          : query_catalog, open_catalog_selector
 //   - ventas + logistica   : open_shipment_prep (combined stock + shipping-quote widget;
 //                            registers only when both packs are selected)
+//   - caja + payments +    : open_business_panel (ONE widget, four tabs: Cliente 360,
+//     ventas + reportes +    Cerrar el día, Reposición de stock, Dashboard de ventas;
+//     supplier + customer    registers only when all six packs are selected)
 //   - customer pack        : find_customer, upsert_customer, delete_customer
 //   - messaging pack       : send_whatsapp_text, send_whatsapp_template
 //   - catalog pack         : create_product, edit_product, stock_load, adjust_stock,
@@ -62,6 +65,7 @@ import { registerSaleConfirmRenderTool } from "./_lib/sale-confirm-render";
 import { registerCajaStatusRenderTool } from "./_lib/caja-status-render";
 import { registerShipmentPrepRenderTool } from "./_lib/shipment-prep-render";
 import { registerBusinessOverviewRenderTool } from "./_lib/business-overview-render";
+import { registerBusinessPanelRenderTool } from "./_lib/business-panel-render";
 import { resolveTenantBackendMap } from "./_lib/tenant-tool-config";
 import { createCatalogBackend } from "./_lib/catalog-backend.factory";
 import { createCustomerBackend } from "./_lib/customer-backend.factory";
@@ -227,6 +231,27 @@ export async function buildVeloraMcpServer(businessId?: string, packs?: string[]
       const tiendanubeConfigured =
         !!process.env.TIENDANUBE_CLIENT_ID && !!process.env.TIENDANUBE_CLIENT_SECRET;
       registerOnboardingTools(server, businessId, { includeTiendanube: tiendanubeConfigured });
+    }
+    // open_business_panel: ONE widget, four tabs (Cliente 360, Cerrar el día, Reposición
+    // de stock, Dashboard de ventas) — aggregates caja + payments + ventas + reportes +
+    // supplier + customer reads. Only registers when all six packs are selected (mirrors
+    // open_shipment_prep's dual-pack gate above, extended to six packs here).
+    if (
+      wants("caja") &&
+      wants("payments") &&
+      wants("ventas") &&
+      wants("reportes") &&
+      wants("supplier") &&
+      wants("customer")
+    ) {
+      registerBusinessPanelRenderTool(server, businessId, {
+        caja: createCajaBackend(),
+        payments: createPaymentsBackend(map.payments),
+        ventas: createVentasBackend(map.ventas),
+        reportes: createReportesBackend(map.reportes),
+        supplier: createSupplierBackend(map.supplier),
+        customer: createCustomerBackend(map.customer),
+      });
     }
   }
 

@@ -257,6 +257,7 @@ describe("owner list tools — port delegation (no direct Prisma)", () => {
       createPurchaseRequest: vi.fn(),
       editSupplier: vi.fn(),
       deleteSupplier: vi.fn(),
+      listPurchaseRequests: vi.fn(),
     };
 
     const { createListSuppliersTool } = await import("@/lib/adk/tools/list-suppliers-tool");

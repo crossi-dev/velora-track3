@@ -84,11 +84,32 @@ export interface DeleteSupplierOutput {
   ok: true;
 }
 
+// ── listPurchaseRequests ──────────────────────────────────────────────────────
+// Read-only exposure of the existing PurchaseRequest repository (already used by
+// GET /api/purchase-requests and create-purchase-request.use-case) — no new query
+// logic, just a port seam so open_business_panel can reuse it without duplicating
+// the Prisma read. Note: PurchaseRequest has no status/fulfillment field in the
+// schema today — this returns the request record only (id, number, date, amount).
+
+export interface ListPurchaseRequestsInput {
+  tenantId: string;
+}
+
+export interface PurchaseRequestListResult {
+  id: string;
+  requestNumber: string;
+  issuedAt: string; // ISO 8601
+  currency: string;
+  totalAmount: number;
+  supplierId: string | null;
+}
+
 /**
  * Backend-agnostic supplier port for the MCP supplier tool pack.
  *
  * Every method maps to one MCP tool (create_supplier, create_purchase_request,
- * edit_supplier, delete_supplier).
+ * edit_supplier, delete_supplier), except listPurchaseRequests which backs the
+ * open_business_panel aggregate widget (Reposición de stock tab) — READ-ONLY.
  * Throw an Error with a domain code (e.g. "SUPPLIER_NOT_FOUND") for error-path handling —
  * supplier-tools.ts converts thrown errors to MCP isError responses.
  *
@@ -100,4 +121,6 @@ export interface SupplierBackend {
   createPurchaseRequest(input: CreatePurchaseRequestInput): Promise<CreatePurchaseRequestOutput>;
   editSupplier(input: EditSupplierInput): Promise<EditSupplierOutput>;
   deleteSupplier(input: DeleteSupplierInput): Promise<DeleteSupplierOutput>;
+  /** READ-ONLY. Reuses prismaPurchaseRequestRepository.list — same query the dashboard uses. */
+  listPurchaseRequests(input: ListPurchaseRequestsInput): Promise<PurchaseRequestListResult[]>;
 }

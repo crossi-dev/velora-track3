@@ -19,6 +19,8 @@ import type {
   EditSupplierOutput,
   DeleteSupplierInput,
   DeleteSupplierOutput,
+  ListPurchaseRequestsInput,
+  PurchaseRequestListResult,
 } from "./supplier-backend.port";
 import { prisma } from "@/lib/prisma";
 import { createSupplierUseCase } from "@/application/use-cases/create-supplier.use-case";
@@ -202,5 +204,20 @@ export class VeloraSupplierAdapter implements SupplierBackend {
     if (result.outcome === "not_found") throw new Error("SUPPLIER_NOT_FOUND");
     if (result.outcome !== "deleted") throw new Error(`Unexpected outcome: ${result.outcome}`);
     return { supplierId, ok: true };
+  }
+
+  async listPurchaseRequests(input: ListPurchaseRequestsInput): Promise<PurchaseRequestListResult[]> {
+    const { tenantId: businessId } = input;
+    // Reuses the exact repository the dashboard's GET /api/purchase-requests route
+    // already calls — no new query logic, just exposed through the port.
+    const rows = await prismaPurchaseRequestRepository.list(businessId);
+    return rows.map((r) => ({
+      id: r.id,
+      requestNumber: r.requestNumber,
+      issuedAt: r.issuedAt.toISOString(),
+      currency: r.currency,
+      totalAmount: r.totalAmount,
+      supplierId: r.supplierId,
+    }));
   }
 }

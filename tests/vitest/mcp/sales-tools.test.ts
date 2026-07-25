@@ -183,12 +183,13 @@ describe("sales tools — registration", () => {
     } finally { await cleanup(); }
   });
 
-  it("total tool count is 52", async () => {
+  it("total tool count is 53", async () => {
     const { client, cleanup } = await buildConnectedClient("biz-count-001");
     try {
       const result = await client.listTools();
-      // 51 stateful (49 + open_business_overview + open_shipment_prep) + 1 pure (validate_cuit) = 52
-      expect(result.tools).toHaveLength(52);
+      // 52 stateful (49 + open_business_overview + open_shipment_prep + open_business_panel)
+      // + 1 pure (validate_cuit) = 53
+      expect(result.tools).toHaveLength(53);
     } finally { await cleanup(); }
   });
 });
