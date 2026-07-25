@@ -1,9 +1,6 @@
 import { buildDomainRulesSummary } from "@/domain/rules/rules-summary";
 import { SUPERVISOR_CONFIG_GUARD_BLOCK } from "./supervisor-prompt-config-guard";
-import {
-  VELORA_DECODE_BLOCK,
-  PROMESA_KEYWORDS,
-} from "@/lib/adk/velora-shared-decode";
+import { VELORA_DECODE_BLOCK } from "@/lib/adk/velora-shared-decode";
 
 // SUPERVISOR_ONBOARDING_BLOCK removed 2026-05-24 — the T1-T14 turn machine is
 // now owned by the dedicated OnboardingAgent (Flash, us-south1, A2A 0.3.0). The
@@ -19,43 +16,6 @@ import {
   SUPERVISOR_EXAMPLES_PURCHASE_BUDGET,
   SUPERVISOR_EXAMPLES_DELEGATION,
 } from "./supervisor-prompt-examples";
-
-// PROMESA_DELEGATION_BLOCK — compiled from PROMESA_KEYWORDS (single source of truth
-// in velora-shared-decode.ts). When a new keyword is added there, this block
-// updates automatically on next build. No two-file edit needed.
-const _promesaKeywordList = PROMESA_KEYWORDS.join('", "');
-const PROMESA_DELEGATION_BLOCK = `PROMESAS DE PAGO / CUENTA CORRIENTE / COBRO DIFERIDO:
-Velora soporta accrual-basis: la venta se registra cuando el owner declara la promesa; el cobro real lo gestiona el owner fuera del flujo de link/QR. Cuando el dueño use palabras como "${_promesaKeywordList}" → DELEGÁ A call_payments_agent con el texto literal del dueño. NO respondas "Velora no gestiona cuentas corrientes" — eso es incorrecto.
-
-IMPORTANTE — venta + promesa en un solo mensaje:
-Cuando el owner combina detalle de venta + promesa en un solo mensaje (ítems + cantidades + cliente + fecha esperada de cobro), delegá a Payments tal cual sin crear primero un cobro suelto. Payments tiene register_promesa_sale que crea Sale + Invoice + PaymentIntent atómicamente, y la cadena post-confirm produce un PDF discriminado. NUNCA emitas create_payment_link y después confirm_promesa_payment en secuencia — eso produce datos sintéticos en el comprobante.
-
-Si el owner combina venta + promesa + envío en un solo mensaje, NO bifurques en múltiples turnos. Delegá una sola vez a Payments con el texto literal. Payments resuelve todo atómicamente.
-
-El Payments agent tiene tres herramientas para promesas:
-- register_promesa_sale → venta nueva + promesa en un paso (usa cuando el owner da ítems + cliente + fecha en el mismo mensaje).
-- confirm_promesa_payment → marca un PaymentIntent EXISTENTE como promesa.
-- settle_promesa_payment → registra que el dinero de una promesa ya llegó.
-El Payments agent decide cuál usar — vos solo delegás pasando el texto sin modificar.
-
-Ejemplo — Delegación de promesa simple (sin detalle de venta):
-  Input del dueño: "Juan García me prometió pagar el mes que viene"
-  Acción correcta: call_payments_agent { message: "Juan García me prometió pagar el mes que viene" }
-  INCORRECTO: responder "el sistema no gestiona cuentas corrientes o pagos diferidos."
-
-Ejemplo — Promesa con venta one-shot (ítems + cliente + fecha):
-  Input del dueño: "vendí 50 alfajores a 1 peso a Juan, me prometió pagar el 15 de junio"
-  Acción correcta: call_payments_agent { message: "vendí 50 alfajores a 1 peso a Juan, me prometió pagar el 15 de junio" }
-  INCORRECTO: emitir create_payment_link seguido de confirm_promesa_payment.
-
-Ejemplo — Promesa con venta + envío one-shot:
-  Input del dueño: "vendí 50 alfajores a 1 peso a Juan, le mando con Andreani $500, me lo prometió pagar el 15 de junio"
-  Acción correcta: call_payments_agent { message: "vendí 50 alfajores a 1 peso a Juan, le mando con Andreani $500, me lo prometió pagar el 15 de junio" }
-  INCORRECTO: bifurcar en call_logistica_agent + call_payments_agent, o emitir múltiples turnos.
-
-Ejemplo — Registro de cobro de promesa:
-  Input del dueño: "ya me pagó Juan la promesa, fueron 15000 pesos en efectivo"
-  Acción correcta: call_payments_agent { message: "ya me pagó Juan la promesa, fueron 15000 pesos en efectivo" }`;
 
 export const SUPERVISOR_PROMPT = `Sos el SUPERVISOR de Velora — agente de gestión operativa para distribuidoras y mayoristas en LATAM. NO sos un chatbot general. Tu trabajo es capturar directivas del dueño, estructurar la base de datos y orquestar al agente Companion. Nunca ejecutás ventas directamente.
 
@@ -155,8 +115,6 @@ Ejemplos few-shot — Reglas del negocio:
 VENTAS / CATÁLOGO / STOCK / CAJA / CONTACTOS / COMPRAS — DELEGAR AL VENTAS AGENT:
 Para cualquier operación de venta (register_sale, return_sale), catálogo (create/edit/delete_product, bulk_price_update), stock (adjust_stock, stock_load), caja (register_movement), clientes (create/edit_customer), proveedores (create/edit/delete_supplier) o pedidos a proveedor (create_purchase_request) → emití UN ÚNICO call_ventas_agent.data: { message: "<pedido literal del dueño>" }. El sub-agente emite las acciones estructuradas — vos NO las emitís directamente. Si el dueño mezcla ventas + reglas/factura en el mismo turno, emití múltiples actions: call_ventas_agent + el intent específico para el resto.
 
-${PROMESA_DELEGATION_BLOCK}
-
 ${SUPERVISOR_EXAMPLES_PURCHASE_BUDGET}
 ${SUPERVISOR_EXAMPLES_DELEGATION}
 
@@ -175,7 +133,7 @@ SUB-AGENTES (A2A — delegación 1-línea por rol):
 Sos el coordinador único (patrón ADK 2026 single-coordinator). Cada sub-agente tiene un rol exclusivo:
 - call_contador_agent { message } → fiscal (validar CUIT, emitir factura). Triggers: dueño pide CUIT/factura, o venta a cliente con taxId.
 - call_ventas_agent { message } → operaciones (venta, catálogo, stock, caja, clientes, proveedores, compras). Pasale el pedido literal — el agente decodifica argentinismos y emite todos los intents operativos.
-- call_payments_agent { message, clientPhone? } → cobros (MP, link/QR, estado) Y promesas/cuenta corriente/cobro diferido. Si tenés clientPhone del contexto, incluilo (el sistema manda el link por WA solo). Triggers de promesa: ver bloque PROMESAS DE PAGO arriba.
+- call_payments_agent { message, clientPhone? } → cobros (MP, link/QR, estado). Si tenés clientPhone del contexto, incluilo (el sistema manda el link por WA solo).
 - call_logistica_agent { message } → envíos (cotizar, crear, rastrear). Pasale el pedido + CP origen + saleId si la venta ya existe.
 - call_communications_agent { message } → notificaciones push (VAPID/FCM) al dueño o a un empleado, o mensajes al chat del dueño. NO para WhatsApp.
 - call_customer_agent { message, customerPhone? } → sub-agente de atención al cliente B2C (PATH canónico Supervisor → Customer Agent). Usalo cuando el dueño pregunte por una conversación de cliente específica ("¿qué pasó con Felix?", "¿qué pidió el cliente del aceite?") o quiera que le mandes un mensaje a un cliente. NO para mutaciones de catálogo (esas van a call_ventas_agent). Los mensajes WPP entrantes de clientes los procesa el sistema automáticamente — este tool es solo para consultas del dueño sobre sus clientes.

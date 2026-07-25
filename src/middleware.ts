@@ -50,10 +50,8 @@ const API_ALLOWLIST = ["/api/auth", "/api/service-worker", "/api/whatsapp/webhoo
 // server-to-server, no browser session; auth enforced inside the handler via CRON_SECRET bearer.
 // /api/internal/agents/payment-link-sale: agent-to-core callback for Payments sale registration (Phase 2 Payments) —
 // server-to-server, no browser session; auth enforced inside the handler via CRON_SECRET bearer.
-// /api/internal/agents/promesa-sale: agent-to-core callback for Payments promesa-sale registration (Phase 2 Payments) —
-// server-to-server, no browser session; auth enforced inside the handler via CRON_SECRET bearer.
 // Future internal-agents endpoints MUST be added here individually (explicit list, not a prefix wildcard).
-"/api/internal/agents/biz-snapshot", "/api/internal/agents/shipments", "/api/internal/agents/invoice-cae", "/api/internal/agents/payment-link-sale", "/api/internal/agents/promesa-sale", "/api/agents/customer/jsonrpc", "/api/agents/customer/agent-card", "/api/agents/customer/jwks", "/api/agents/caja/jsonrpc", "/api/agents/caja/agent-card", "/api/agents/caja/jwks", "/api/agents/inventario/jsonrpc", "/api/agents/inventario/agent-card", "/api/agents/inventario/jwks",
+"/api/internal/agents/biz-snapshot", "/api/internal/agents/shipments", "/api/internal/agents/invoice-cae", "/api/internal/agents/payment-link-sale", "/api/agents/customer/jsonrpc", "/api/agents/customer/agent-card", "/api/agents/customer/jwks", "/api/agents/caja/jsonrpc", "/api/agents/caja/agent-card", "/api/agents/caja/jwks", "/api/agents/inventario/jsonrpc", "/api/agents/inventario/agent-card", "/api/agents/inventario/jwks",
 // /api/mcp: fiscal MCP server — dual-auth gated (HMAC or OAuth 2.1 Bearer)
 "/api/mcp",
 // /.well-known/oauth-protected-resource: RFC 9728 protected resource metadata.

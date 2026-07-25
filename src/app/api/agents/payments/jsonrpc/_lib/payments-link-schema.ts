@@ -4,7 +4,7 @@
 import { Type } from "@google/genai";
 import type { Schema } from "@google/genai";
 
-// Raw @google/genai Schema — same pattern as payments-register-promesa-sale-tool.ts.
+// Raw @google/genai Schema — same pattern as other Payments ADK tools.
 // Zod v3 produces exclusiveMinimum:true (Draft 4 boolean) which Vertex AI's
 // Schema validator rejects, silently dropping the entire function declaration list.
 export const createPaymentLinkParams: Schema = {

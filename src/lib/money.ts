@@ -116,7 +116,7 @@ export function sumLineItems(
  * ROUND_HALF_UP. Returns 0.00 when taxRate is 0 or falsy.
  *
  * Tax is a property of the transaction and must be computed consistently
- * regardless of payment method (cash, payment-link, promesa). This is the
+ * regardless of payment method (cash, payment-link, transfer). This is the
  * single authoritative formula for all sale paths in Velora.
  *
  * Source: https://docs.stripe.com/tax/how-tax-works (VERIFIED HTTP 200)

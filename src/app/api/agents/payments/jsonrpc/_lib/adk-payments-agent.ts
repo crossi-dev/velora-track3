@@ -20,9 +20,6 @@ import { getAdkPaymentsModel } from "@/lib/adk/gemini-config";
 import { PAYMENTS_SYSTEM_PROMPT } from "./payments-agent-helpers";
 import { buildCreatePaymentLinkTool, buildGetPaymentStatusTool } from "./payments-agent-tools";
 import { buildMcpCreatePaymentLinkTool, isMcpPaymentsToolEnabled } from "./payments-mcp-link-tool";
-import { buildConfirmPromesaPaymentTool } from "./payments-promesa-tool";
-import { buildRegisterPromesaSaleTool } from "./payments-register-promesa-sale-tool";
-import { buildSettlePromesaPaymentTool } from "./payments-settle-tool";
 import type { BizSnapshot } from "./payments-agent-types";
 
 // Derives a stable idempotency key per (business, description, turn).
@@ -65,13 +62,6 @@ export function createPaymentsAgent(ctx: {
         ? buildMcpCreatePaymentLinkTool(resolvedCtx)
         : buildCreatePaymentLinkTool(resolvedCtx),
       buildGetPaymentStatusTool(resolvedCtx),
-      buildConfirmPromesaPaymentTool(resolvedCtx),
-      // One-shot venta + promesa: creates Sale + Invoice + PI atomically.
-      // Use when owner provides items + customer + expectedAt in one message.
-      buildRegisterPromesaSaleTool(resolvedCtx),
-      // Settle a previously-recorded promesa — records that the deferred cash
-      // actually arrived (creates a real CashMovement linked to the original PI).
-      buildSettlePromesaPaymentTool(resolvedCtx),
     ],
     // Function calling: rely on AUTO mode (the ADK default) plus the system
     // prompt's one-shot examples to guide the model to the correct tool.

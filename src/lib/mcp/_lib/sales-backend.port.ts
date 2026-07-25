@@ -8,10 +8,6 @@
 //   port (this file) → adapter (VeloraSalesAdapter in sales-backend.factory.ts)
 //                    → factory (createSalesBackend in sales-backend.factory.ts)
 //
-// The promesa tools (register_promesa_sale, confirm_promesa_payment,
-// settle_promesa_payment) already have their own createPromesaBackend() seam —
-// they are intentionally NOT included here.
-//
 // Input/output types are intentionally narrow (tool-contract shapes), not full
 // domain types. The port is a seam, not a domain model.
 
@@ -57,8 +53,6 @@ export interface ReturnSaleInput {
  *
  * Tenant isolation is enforced by each adapter via businessId on every input.
  * Throws or returns isError:true for error paths — sales-tools.ts forwards both.
- *
- * The promesa tools live behind createPromesaBackend() and are NOT part of this port.
  */
 export interface SalesBackend {
   registerSale(input: RegisterSaleInput): Promise<CallToolResult>;

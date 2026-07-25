@@ -26,7 +26,6 @@ import type { PaymentToolCtx } from "./payments-agent-types";
 // emits exclusiveMinimum:true (JSON Schema Draft 4 boolean form) which Vertex AI
 // Schema validator rejects, silently dropping the entire function declaration list.
 // Use .min(N) instead (produces numeric minimum: N, not a boolean flag).
-// See payments-register-promesa-sale-tool.ts history note for full context.
 
 const CrearLinkPagoInput = z.object({
   customerId: z.string().min(1),

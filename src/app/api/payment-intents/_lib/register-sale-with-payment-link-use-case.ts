@@ -83,7 +83,7 @@ export type RegisterSaleWithPaymentLinkResult =
   | { outcome: "idempotency_in_flight" };
 
 // ---------------------------------------------------------------------------
-// P2002 guard (mirrors register-promesa-sale-use-case.ts — no instanceof needed)
+// P2002 guard (no instanceof needed)
 // ---------------------------------------------------------------------------
 
 function isP2002OnIdempotencyKey(err: unknown): boolean {

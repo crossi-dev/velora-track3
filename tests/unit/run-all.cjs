@@ -227,6 +227,5 @@ require("./customer-agent-nostock-guard.test.cjs");
 require("./shipping-quote-extract.test.cjs");
 require("./a2a-transport-failsafe.test.cjs");
 require("./owner-assistant.test.cjs");
-require("./payments-settle-amount-dbfirst.test.cjs");
 require("./onboarding-integration-nudge.test.cjs");
 require("./onboarding-nudge-worker.test.cjs");

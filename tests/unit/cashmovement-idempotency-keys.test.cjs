@@ -1,8 +1,8 @@
 "use strict";
-// Unit tests — CashMovement idempotency-key deduplication for promesa-sale and refund.
+// Unit tests — CashMovement idempotency-key deduplication for refund.
 //
-// ERP-hardening SLICE 1: register-promesa-sale.transaction.ts and refund-transaction.ts
-// now set clientMessageId on every CashMovement write. The partial unique index
+// ERP-hardening SLICE 1: refund-transaction.ts sets clientMessageId on every
+// CashMovement write. The partial unique index
 // "CashMovement_businessId_clientMessageId_key" (migration 20260607100000)
 // deduplicates concurrent retries via P2002 — treated as a successful no-op.
 //
@@ -10,7 +10,6 @@
 //   1. The migration SQL exists and defines the partial unique index.
 //   2. An in-memory mock correctly simulates P2002 on duplicate clientMessageId.
 //   3. refund-transaction runRefundTransaction catches P2002 and returns "refunded".
-//   4. register-promesa-sale.transaction sets clientMessageId = "promesa-sale-{key}".
 //
 // Sources:
 //   https://docs.stripe.com/api/idempotent_requests
@@ -239,101 +238,4 @@ test("refund-transaction: P2002 on clientMessageId → idempotent 'refunded' (no
   assert.equal(result.outcome, "refunded", "P2002 must produce idempotent 'refunded' outcome");
   assert.equal(result.paymentIntentId, PI_ID);
   assert.equal(result.monto, 1000);
-});
-
-// ── 4. register-promesa-sale.transaction: clientMessageId = "promesa-sale-{key}" ──
-
-function loadRunPromesaSaleTransaction() {
-  resetSourceModules();
-  clearMockModules();
-  setMockModule("@/lib/cloud-logger", { cloudLog: () => {} });
-  setMockModule("@/app/api/payment-intents/_lib/register-promesa-sale.invoice-builder", {
-    buildRegisterPromesaSaleInvoice: async () => ({
-      invoice: { id: "inv-1", invoiceNumber: "REC-0001-00000001" },
-    }),
-  });
-  return require("../../src/app/api/payment-intents/_lib/register-promesa-sale.transaction.ts");
-}
-
-const IDEM_KEY = "test-idempotency-key-001";
-
-test("register-promesa-sale.transaction: sets clientMessageId=promesa-sale-{idempotencyKey}", async () => {
-  const cashCreates = [];
-  const now = new Date();
-  const expectedAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-  const fakeTx = {
-    business: {
-      findUnique: async () => ({
-        id: BIZ_ID,
-        name: "Test Biz",
-        currency: "ARS",
-        cuit: "30-99999999-9",
-        address: "Test 123",
-        ivaCondition: "Monotributista",
-        puntoVenta: "0001",
-        iibb: null,
-        activityStart: null,
-        taxRate: 0,
-        allowNegativeStock: false,
-      }),
-    },
-    sale: {
-      create: async () => ({ id: SALE_ID }),
-    },
-    saleItem: { createMany: async () => ({ count: 1 }) },
-    product: { updateMany: async () => ({ count: 1 }) },
-    cashMovement: {
-      create: async (opts) => {
-        cashCreates.push(opts.data);
-        return { id: "cm-promesa-1", ...opts.data };
-      },
-    },
-    paymentIntent: {
-      create: async () => ({ id: PI_ID }),
-    },
-    // invoice + businessCounter required by buildRegisterPromesaSaleInvoice → sale-invoice.ts
-    invoice: {
-      findFirst: async () => null,
-      create: async () => ({
-        id: "inv-1",
-        invoiceNumber: "REC-0001-00000001",
-        sequenceNumber: 1,
-        documentType: "receipt",
-        issuedAt: now,
-        payloadJson: "{}",
-      }),
-    },
-    businessCounter: {
-      upsert: async () => ({ id: "bc-1", businessId: BIZ_ID, counterType: "invoice:receipt", value: 1 }),
-    },
-  };
-
-  const { runPromesaSaleTransaction } = loadRunPromesaSaleTransaction();
-  await runPromesaSaleTransaction(fakeTx, {
-    businessId: BIZ_ID,
-    customer: {
-      id: "cust1", name: "Test Customer", email: null, phone: null,
-      taxId: null, dni: null, address: null, postalCode: null, city: null,
-    },
-    resolvedItems: [
-      { productId: "prod1", productName: "Test Product", quantity: 1, unitPrice: 500, lineTotal: 500 },
-    ],
-    grandTotal: 500,
-    now,
-    expectedAt,
-    expectedDateStr: expectedAt.toISOString().slice(0, 10),
-    reason: undefined,
-    idempotencyKey: IDEM_KEY,
-    shipping: null,
-    productMap: new Map([["prod1", { quantity: 10, name: "Test Product" }]]),
-  });
-
-  assert.equal(cashCreates.length, 1, "exactly one CashMovement must be written");
-  assert.equal(
-    cashCreates[0].clientMessageId,
-    `promesa-sale-${IDEM_KEY}`,
-    "clientMessageId must be promesa-sale-{idempotencyKey}"
-  );
-  assert.equal(cashCreates[0].type, "in");
-  assert.equal(cashCreates[0].saleId, SALE_ID);
 });

@@ -202,7 +202,7 @@ describe("sumLineItems() — per-line model consistency proofs", () => {
 describe("computeTaxAmount() — shared tax formula", () => {
   // Source: https://docs.stripe.com/tax/how-tax-works (VERIFIED HTTP 200)
   // Tax is a property of the transaction; rate must be applied consistently
-  // regardless of payment method (cash, payment-link, promesa).
+  // regardless of payment method (cash, payment-link, transfer).
 
   it("1000 @ 21% → 210.00", () => {
     expect(computeTaxAmount(1000, 21).toNumber()).toBe(210.00);

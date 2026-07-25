@@ -21,7 +21,7 @@ const LANDING_LLMS_TXT = `# Velora
 
 > Agentic commerce platform — end-to-end. An AI agent sells, charges, invoices
 > and ships autonomously, coordinating agent-to-agent (A2A) across fiscal,
-> payment, logistics, and messaging systems. MCP toolkit (51 tools) available
+> payment, logistics, and messaging systems. MCP toolkit (48 tools) available
 > at https://tools.somosvelora.com/api/mcp.
 
 ## Platform
@@ -43,7 +43,7 @@ Velora automates the complete commerce loop without human intervention:
 - Customers & suppliers: find, create, update; purchase request generation
 - WhatsApp, SMS, email: outbound messaging and inbound customer-agent conversations
 - Agent-to-agent (A2A): Supervisor coordinates Payments, Fiscal, Logistics, Communications sub-agents
-- MCP toolkit: 51 tools across fiscal, payments, logistics, sales, catalog, messaging, caja, customers, suppliers
+- MCP toolkit: 48 tools across fiscal, payments, logistics, sales, catalog, messaging, caja, customers, suppliers
 
 ## Documentation
 
@@ -54,7 +54,7 @@ Velora automates the complete commerce loop without human intervention:
 
 // Source: src/app/tools/_lib/tool-catalog.ts — kept in sync manually.
 // Tool descriptions match the MCP tool definitions in src/lib/mcp/*-tools.ts.
-// 51 tools across 14 packs (Pure always-on + 12 stateful requiring businessId) + 6 widget tools (open_*).
+// 48 tools across 14 packs (Pure always-on + 12 stateful requiring businessId) + 6 widget tools (open_*).
 const TOOLS_LLMS_TXT = `# Velora Toolkit
 
 > Servidor MCP (Model Context Protocol) que expone 48 herramientas de negocio
@@ -116,9 +116,6 @@ cliente envía el access token en \`Authorization: Bearer <token>\` en cada requ
 
 - [register_sale](https://tools.somosvelora.com): Registra venta completa con items, cliente y método de pago.
 - [register_movement](https://tools.somosvelora.com): Registra movimiento de caja (ingreso, egreso, impuesto, sueldo).
-- [register_promesa_sale](https://tools.somosvelora.com): Registra venta con pago diferido (promesa / cuentas a cobrar).
-- [confirm_promesa_payment](https://tools.somosvelora.com): Marca un PaymentIntent existente como promesa de pago.
-- [settle_promesa_payment](https://tools.somosvelora.com): Registra el cobro efectivo de una promesa previa.
 - [return_sale](https://tools.somosvelora.com): Revierte las N ventas más recientes (restaura stock y caja).
 
 ### Caja

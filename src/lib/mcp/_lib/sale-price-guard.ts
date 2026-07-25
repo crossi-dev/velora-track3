@@ -9,7 +9,6 @@
 //   confirmation modal), the MCP surface has no human confirmation step, so the
 //   guard must be hard.
 //
-// Mirror pattern: register-promesa-sale-use-case.ts unitPriceOverride guard.
 // NABAOS reference: arXiv 2603.10060, M2 — monetary values must come from DB rows.
 
 import { detectPriceOutlier, DEFAULT_PRICE_OUTLIER_THRESHOLD } from "@/domain/rules";

@@ -159,7 +159,7 @@ export async function triggerShipmentCreate(
           // Validated non-null above — safe to pass here.
           dni: customerDni,
         },
-        // Default service for promesa/checkout_pro_link auto-trigger; owner can override via Logística agent.
+        // Default service for checkout_pro_link auto-trigger; owner can override via Logística agent.
         service: "domicilio",
         weightGrams: DEFAULT_WEIGHT_GRAMS,
         declaredValue,

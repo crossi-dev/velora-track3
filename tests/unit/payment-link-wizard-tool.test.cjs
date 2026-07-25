@@ -4,7 +4,7 @@
 //   T-4: approval-gate seam (isAutoApprovalEnabled) — always OFF in Entrega 1.
 //
 // Money path. Uses the phase4 module-hooks harness to stub heavy deps and load
-// the TS sources directly (mirrors payments-settle-tool-registration.test.cjs).
+// the TS sources directly.
 
 "use strict";
 

@@ -63,47 +63,4 @@ export const PAYMENT_INTENT_MUTATION_CONTRACT = {
     requiresIdempotency: false,
     idempotencyStrategy: "header",
   },
-  // Promesa de pago: owner records an AR accrual — cash expected later.
-  // No gateway webhook, no client idempotency key — re-entrancy is guarded
-  // by the DB state check inside confirmPromesaPaymentUseCase.
-  "payment_intent.confirm_promesa": {
-    actionType: "payment_intent.confirm_promesa",
-    routeScope: "agents/payments/jsonrpc",
-    resourceType: "payment_intent",
-    requiresTrace: true,
-    requiresIdempotency: false,
-    idempotencyStrategy: "header",
-    compositeChildren: ["cash-movement.create"],
-  },
-  // Register a one-shot Sale + Invoice + PaymentIntent (promesa) in a single atomic
-  // transaction. Distinct from confirm_promesa (which confirms an EXISTING intent);
-  // this action TYPE is used exclusively by registerPromesaSaleUseCase.
-  "payment_intent.register_promesa_sale": {
-    actionType: "payment_intent.register_promesa_sale",
-    routeScope: "agents/payments/jsonrpc",
-    resourceType: "payment_intent",
-    requiresTrace: true,
-    requiresIdempotency: false,
-    idempotencyStrategy: "header",
-    compositeChildren: [
-      "sale.create",
-      "sale-item.create",
-      "inventory.decrement",
-      "invoice.create",
-      "cash-movement.create",
-      "payment_intent.create_confirmed",
-    ],
-  },
-  // Settle a deferred promesa de pago — records that the AR cash actually arrived.
-  // Idempotency is guarded by a partial unique index on CashMovement.clientMessageId
-  // ("promesa-settle-{piId}") rather than a header key.
-  "payment_intent.settle_promesa": {
-    actionType: "payment_intent.settle_promesa",
-    routeScope: "agents/payments/jsonrpc",
-    resourceType: "payment_intent",
-    requiresTrace: true,
-    requiresIdempotency: false,
-    idempotencyStrategy: "derived",
-    compositeChildren: ["cash-movement.create"],
-  },
 } as const satisfies Record<string, MutationContractEntry>;

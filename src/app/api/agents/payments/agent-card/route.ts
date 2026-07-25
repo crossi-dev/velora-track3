@@ -63,32 +63,6 @@ export function GET() {
           "estado del pago mp-456789",
         ],
       },
-      {
-        // M-1: previously undeclared tool — A2A v0.3.0 §3 requires all capabilities listed.
-        id: "payment.promesa.confirm",
-        name: "Confirm Promesa Payment",
-        description:
-          "Marks an existing PaymentIntent as confirmed with method='promesa' " +
-          "(deferred payment / informal account). Triggers receipt, shipment, and " +
-          "owner notification. Use when the owner says the customer will pay later.",
-        examples: [
-          "marcar pi_abc123 como promesa, el cliente paga en junio",
-          "confirm promesa payment pi_xyz expectedAt 2026-07-01",
-        ],
-      },
-      {
-        // M-1: previously undeclared tool — A2A v0.3.0 §3 requires all capabilities listed.
-        id: "payment.promesa.register",
-        name: "Register Promesa Sale",
-        description:
-          "Creates a complete sale (Sale + SaleItems + Invoice + PaymentIntent) " +
-          "as a promesa in one atomic step, then triggers receipt and WhatsApp. " +
-          "Use when the owner combines sale details and promised payment in one message.",
-        examples: [
-          "registrar venta promesa: cliente Juan, 3 cajas aceite, paga en julio",
-          "register promesa sale customer cust_123 items productId prod_456 qty 2",
-        ],
-      },
     ],
     securitySchemes: {
       ApiKeyAuth: {

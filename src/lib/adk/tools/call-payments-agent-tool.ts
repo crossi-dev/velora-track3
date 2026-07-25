@@ -48,7 +48,7 @@ export function createCallPaymentsAgentTool(ctx: CallPaymentsAgentToolContext) {
       // Source: Wiesinger et al. SS3.2 "description functions as LLM documentation -- precision matters"
       // https://www.kaggle.com/whitepaper-agents
       description:
-        "Creates payment links (MercadoPago Checkout, transfer requests with alias/CBU), generates dynamic QR codes for in-store payments, queries payment status, and registers deferred-payment (promesa) sales. " +
+        "Creates payment links (MercadoPago Checkout, transfer requests with alias/CBU), generates dynamic QR codes for in-store payments, and queries payment status. " +
         "Use for any collection rail: cobrar, link de pago, QR, alias, transferencia. " +
         "NOT for product sales registration -- that is call_ventas_agent.",
       schema: CALL_PAYMENTS_SCHEMA,
@@ -77,7 +77,7 @@ export function createCallPaymentsAgentTool(ctx: CallPaymentsAgentToolContext) {
           businessId: c.businessId,
           objective: resolvedMessage,
           outputFormat:
-            "Responde con el resultado de la operacion de cobro: URL del link, estado del pago, o confirmacion de la promesa. Sin inventar datos.",
+            "Responde con el resultado de la operacion de cobro: URL del link o estado del pago. Sin inventar datos.",
           failureInstruction:
             "Si no podes generar el link o el pago fallo, devuelve el error real del proveedor. NUNCA inventes un link o un ID de pago.",
         });

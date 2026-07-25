@@ -1,6 +1,6 @@
 // src/lib/mcp/server.ts — Velora MCP server factory.
 //
-// Exposes 15 tool packs (54 tools, 53 live in prod — connect_tiendanube hidden until
+// Exposes 15 tool packs (51 tools, 50 live in prod — connect_tiendanube hidden until
 // TIENDANUBE_CLIENT_ID and TIENDANUBE_CLIENT_SECRET env vars are configured) over the
 // Model Context Protocol:
 //   Pure (always-on):
@@ -23,8 +23,7 @@
 //                            delete_product, bulk_price_update
 //   - supplier pack        : list_suppliers, create_supplier, create_purchase_request,
 //                            edit_supplier, delete_supplier
-//   - sales pack           : register_sale, register_movement, register_promesa_sale,
-//                            confirm_promesa_payment, settle_promesa_payment, return_sale,
+//   - sales pack           : register_sale, register_movement, return_sale,
 //                            open_sale_confirm
 //   - caja pack            : caja_consultar_saldo, caja_ciclo_caja, caja_registrar_movimiento,
 //                            open_caja_status

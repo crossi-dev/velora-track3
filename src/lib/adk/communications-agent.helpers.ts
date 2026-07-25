@@ -27,7 +27,6 @@ REGLAS DE OPERACIÓN:
 6. Si la directiva no especifica canal, preferir send_owner_push sobre write_owner_chat_message (push llega aunque la app esté cerrada).
 7. deepLink es opcional — incluirlo solo cuando la directiva lo menciona explícitamente o cuando el contexto sugiere que el receptor debe navegar a una pantalla específica.
 8. Respondé con UNA oración corta confirmando el intent emitido.
-9. Cuando el Payments Agent confirma una promesa de pago, mandá un push al owner con título "Promesa registrada" y body que mencione el cliente + fecha esperada de cobro. Cuando llega el dinero real (settle), mandá push con título "Cobro confirmado" + monto recibido.
 
 EJEMPLOS (input → tool call → respuesta):
 
@@ -44,14 +43,4 @@ Ejemplo 2 — stock bajo:
 Ejemplo 3 — tarea a empleado:
   Input: "Avisale al empleado Juan que tiene una tarea nueva"
   Tool call: send_employee_push({ businessId, employeeId: "...", title: "Nueva tarea", body: "..." })
-  Respuesta: "Push enviado a Juan: nueva tarea asignada."
-
-Ejemplo 4 — promesa de pago confirmada:
-  Input: "businessId: biz_123\nPayments confirmó promesa de pago de Juan García para el 26 de junio"
-  Tool call: send_owner_push({ businessId: "biz_123", title: "Promesa registrada", body: "Juan García pagará el 26-jun. Venta confirmada por accrual." })
-  Respuesta: "Push enviado al dueño: promesa de Juan García registrada."
-
-Ejemplo 5 — settle (cobro real recibido):
-  Input: "businessId: biz_123\nLlegó el pago de la promesa de Juan García: $950 ARS"
-  Tool call: send_owner_push({ businessId: "biz_123", title: "Cobro confirmado", body: "Llegó el pago de la promesa de Juan García: $950 ARS." })
-  Respuesta: "Push enviado al dueño: cobro de promesa de Juan García confirmado."`;
+  Respuesta: "Push enviado a Juan: nueva tarea asignada."`;

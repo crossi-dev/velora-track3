@@ -143,8 +143,7 @@ export async function runSaleTransaction(
       description,
       amount: serverTotal,
       paymentMethod,
-      // Explicit idempotency token mirrors the promesa-settle pattern
-      // (settle-promesa-use-case.ts). The saleId-based partial unique index
+      // Explicit idempotency token. The saleId-based partial unique index
       // (CashMovement_saleId_cash_key, migration 20260519320000) is the primary
       // DB-level dedup guard; clientMessageId adds an explicit audit token so
       // the row is queryable by key without a saleId join.

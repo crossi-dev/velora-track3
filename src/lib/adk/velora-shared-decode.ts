@@ -10,34 +10,10 @@
 // cost (the LLM still sees the same text per agent — savings are mantenimiento +
 // drift prevention, NOT input tokens per call).
 
-// PROMESA_KEYWORDS — single source of truth for promise-of-payment intent detection.
-// Imported by supervisor-prompt.ts (delegation rule) and cross-referenced by
-// PAYMENTS_SYSTEM_PROMPT rule 4. Adding a keyword here ensures BOTH the Supervisor
-// and the Payments agent recognise it without needing a two-file edit.
-export const PROMESA_KEYWORDS = [
-  "prometió pagar",
-  "promete pagar",
-  "paga después",
-  "paga el mes que viene",
-  "fiado",
-  "cuenta corriente",
-  "diferido",
-  // NOTE: "el mes que viene" standalone was removed (too broad — matches
-  // non-payment contexts like "el mes que viene abro otra sucursal"). The
-  // longer phrase "paga el mes que viene" above already covers the payment case.
-  "transferencia futura",
-  "ya cobré la promesa",
-  "saldé la promesa",
-  "ya me pagó la promesa",
-  "me llegó el dinero de la promesa",
-  "cobré la cuenta corriente",
-] as const;
-
 export const VELORA_DECODE_BLOCK = `COMPRENSIÓN DEL DUEÑO — ARGENTINISMOS:
 El dueño habla rápido, informal, rioplatense. Decodificá antes de parsear:
 - "los chicos" / "el equipo" / "los pibes" = los empleados.
 - "la caja" = saldo de caja / cashBalance.
-- "en cuenta" / "a cuenta" / "lo paga después" → promesa de pago (crédito diferido). Delegá a call_payments_agent — NO registres como venta en efectivo.
 - "ponele X pesos" / "poné X" = setear precio a X → edit_product.
 - "subí X%" / "aumentá X%" = bulk_price_update, direction: "up", percentage.
 - "bajá X%" / "rebajá X%" = bulk_price_update, direction: "down", percentage.
