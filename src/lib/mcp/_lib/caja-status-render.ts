@@ -26,7 +26,7 @@ export const CAJA_STATUS_RESOURCE_URI = "ui://caja-status";
 
 type CajaState = "OPEN" | "CLOSED" | "NO_SESSION";
 
-interface CajaPrefill {
+export interface CajaPrefill {
   state: CajaState;
   /** Defined when state=OPEN */
   sessionId?: string;
@@ -43,8 +43,11 @@ interface CajaPrefill {
 }
 
 // ── Resolution ────────────────────────────────────────────────────────────────
+//
+// Exported so other render tools (e.g. open_business_overview) can reuse the exact
+// same balance-resolution logic instead of duplicating it — see business-overview-render.ts.
 
-async function resolveCajaPrefill(businessId: string, backend: CajaBackend): Promise<CajaPrefill> {
+export async function resolveCajaPrefill(businessId: string, backend: CajaBackend): Promise<CajaPrefill> {
   const openSession = await backend.findOpenSessionWithAmount(businessId);
 
   if (!openSession) {

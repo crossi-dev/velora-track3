@@ -187,7 +187,7 @@ describe("sales tools — registration", () => {
     const { client, cleanup } = await buildConnectedClient("biz-count-001");
     try {
       const result = await client.listTools();
-      // 50 stateful + 1 pure (validate_cuit) = 51
+      // 50 stateful (49 + open_business_overview) + 1 pure (validate_cuit) = 51
       expect(result.tools).toHaveLength(51);
     } finally { await cleanup(); }
   });

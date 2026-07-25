@@ -100,6 +100,14 @@ const WIDGET_LIST = [
     title: "Preparar envío — Velora",
     sourceComment: "src/lib/mcp/widgets/shipment-prep.tsx + widget.css",
   },
+  {
+    entry: join(WIDGETS, "business-overview.tsx"),
+    cssEntry: join(WIDGETS, "widget.css"),
+    outFile: join(OUT_DIR, "business-overview.html.ts"),
+    exportName: "BUSINESS_OVERVIEW_HTML",
+    title: "Resumen del negocio — Velora",
+    sourceComment: "src/lib/mcp/widgets/business-overview.tsx + widget.css",
+  },
 ];
 
 mkdirSync(OUT_DIR, { recursive: true });
