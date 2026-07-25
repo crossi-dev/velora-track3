@@ -4,7 +4,12 @@ import GoogleMark from "./GoogleMark";
 import HeroVisual from "./HeroVisual";
 
 const DEFAULT_IMAGE_ALT =
-  "Velora en uso: el dueño pregunta por un producto y ve su catálogo en el chat";
+  "Velora en uso: el dueño pregunta \"veamos mi negocio\" y Claude abre el panel del negocio como widget gráfico";
+
+/** Set once the real capture of the live "veamos mi negocio" widget exists at
+ *  this path in /public — HeroVisual falls back to an honest placeholder
+ *  until then (see HeroVisual.tsx). */
+const HERO_SCREENSHOT_SRC: string | undefined = undefined;
 
 export type HeroCopy = {
   /** Giant wordmark. Conventionally uppercase. */
@@ -105,7 +110,7 @@ export default function Hero({
 
         {/* App screenshot — "see Velora in use" above the fold */}
         <div className="md:justify-self-end">
-          <HeroVisual alt={copy.imageAlt ?? DEFAULT_IMAGE_ALT} />
+          <HeroVisual alt={copy.imageAlt ?? DEFAULT_IMAGE_ALT} screenshotSrc={HERO_SCREENSHOT_SRC} />
         </div>
       </div>
     </section>
