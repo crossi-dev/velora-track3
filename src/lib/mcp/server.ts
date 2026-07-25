@@ -1,6 +1,6 @@
 // src/lib/mcp/server.ts — Velora MCP server factory.
 //
-// Exposes 14 tool packs (51 tools, 50 live in prod — connect_tiendanube hidden until
+// Exposes 15 tool packs (52 tools, 51 live in prod — connect_tiendanube hidden until
 // TIENDANUBE_CLIENT_ID and TIENDANUBE_CLIENT_SECRET env vars are configured) over the
 // Model Context Protocol:
 //   Pure (always-on):
@@ -24,6 +24,8 @@
 //   - caja pack            : caja_consultar_saldo, caja_ciclo_caja, caja_registrar_movimiento,
 //                            open_caja_status
 //   - reportes pack        : query_sales
+//   - overview pack        : open_business_overview (read-aggregation "front door" widget —
+//                            composes caja + payments + ventas + reportes backends, no new logic)
 //   - connection pack      : connection_status, open_onboarding
 //   - onboarding pack      : connect_mercadopago, connect_pedidosya,
 //                            connect_whatsapp, connect_tiendanube (hidden when TIENDANUBE_* absent),
@@ -56,6 +58,7 @@ import { registerOnboardingTools } from "./onboarding-tools";
 import { registerOnboardingRenderTool } from "./_lib/onboarding-render";
 import { registerSaleConfirmRenderTool } from "./_lib/sale-confirm-render";
 import { registerCajaStatusRenderTool } from "./_lib/caja-status-render";
+import { registerBusinessOverviewRenderTool } from "./_lib/business-overview-render";
 import { resolveTenantBackendMap } from "./_lib/tenant-tool-config";
 import { createCatalogBackend } from "./_lib/catalog-backend.factory";
 import { createCustomerBackend } from "./_lib/customer-backend.factory";
@@ -178,6 +181,19 @@ export async function buildVeloraMcpServer(businessId?: string, packs?: string[]
       registerCajaStatusRenderTool(server, businessId, cajaBackend);
     }
     if (wants("reportes")) registerReportesTools(server, businessId, createReportesBackend(map.reportes));
+    // open_business_overview: read-only "front door" dashboard. Aggregates the SAME backend
+    // ports the caja/payments/ventas/reportes packs already use — each factory call below is
+    // independent (mirrors how every other pack constructs its own backend instance), no new
+    // query logic is introduced. Registered as its own pack so it can be excluded from a
+    // connector's pack-set independently of the four packs it reads from.
+    if (wants("overview")) {
+      registerBusinessOverviewRenderTool(server, businessId, {
+        caja: createCajaBackend(),
+        payments: createPaymentsBackend(map.payments),
+        ventas: createVentasBackend(map.ventas),
+        reportes: createReportesBackend(map.reportes),
+      });
+    }
     // Connection status + graphical onboarding hub — both read-only, no credentials,
     // ship in the v1 published connector pack-set.
     // open_onboarding is intentionally in this pack (not onboarding) because it is a
