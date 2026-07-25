@@ -73,16 +73,6 @@
     "description": "Daily MP OAuth token health-check (09:00 ART = 12:00 UTC) — pings /users/me per active MpConnection; marks expired on 401 and notifies owner via WhatsApp"
   },
   {
-    "name": "velora-promesa-vencida",
-    "schedule": "0 9 * * *",
-    "timezone": "America/Argentina/Mendoza",
-    "uri": "https://somosvelora.com/api/scheduled/promesa-vencida",
-    "state": "ENABLED",
-    "description": "Daily check at 09:00 ART for PaymentIntents with metodo=promesa + estado=confirmed + promesaExpectedAt < now. Nudges owner per PI via ChatMessage (owner_only) + push. Idempotent: clientMessageId=promesa-vencida-{id}-{YYYYMMDD}.",
-    "httpMethod": "POST",
-    "headers": { "Authorization": "Bearer ${CRON_SECRET}" }
-  },
-  {
     "name": "velora-push-cleanup",
     "schedule": "0 7 1 * *",
     "path": "/api/scheduled/push-cleanup",

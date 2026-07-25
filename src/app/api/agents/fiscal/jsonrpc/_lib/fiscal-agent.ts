@@ -102,7 +102,7 @@ function buildSystemInstruction(profile: BusinessFiscalProfile | null): string {
 //   Vertex AI's Schema validator → empty function declaration list → Gemini
 //   returns no tool call → drainEvents yields zero events → fallback fires.
 //   Fix: raw `Schema` from `@google/genai` (Type enum), identical to the fix
-//   applied to Payments `register_promesa_sale` tool (2026-05-26).
+//   applied to other Payments tools (2026-05-26).
 //   ADK FunctionTool accepts Schema | ZodObject | undefined — see
 //   node_modules/@google/adk/dist/types/tools/function_tool.d.ts line 14.
 const validateCuitParams: Schema = {

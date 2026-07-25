@@ -19,8 +19,7 @@
 // Mocked modules: server-only, @google/adk (Agent, FunctionTool),
 //                 agent-factory, gemini-config, payments-agent-helpers,
 //                 payments-agent-tools, pagos-crear-link-pago.execute,
-//                 payments-promesa-tool, payments-register-promesa-sale-tool,
-//                 payments-settle-tool, adk-payments-agent (for buildLinkIdempotencyKey).
+//                 adk-payments-agent (for buildLinkIdempotencyKey).
 //
 // NOTE: The agent-factory and ADK modules require mocking because createPaymentsAgent
 // calls createAdkAgent which hits real ADK initialisation (Vertex credentials).
@@ -92,21 +91,6 @@ vi.mock(
     executeCrearLinkPago: vi.fn().mockResolvedValue({}),
   }),
 );
-
-vi.mock("@/app/api/agents/payments/jsonrpc/_lib/payments-promesa-tool", () => ({
-  buildConfirmPromesaPaymentTool: vi.fn().mockReturnValue({ name: "confirm_promesa_payment" }),
-}));
-
-vi.mock(
-  "@/app/api/agents/payments/jsonrpc/_lib/payments-register-promesa-sale-tool",
-  () => ({
-    buildRegisterPromesaSaleTool: vi.fn().mockReturnValue({ name: "register_promesa_sale" }),
-  }),
-);
-
-vi.mock("@/app/api/agents/payments/jsonrpc/_lib/payments-settle-tool", () => ({
-  buildSettlePromesaPaymentTool: vi.fn().mockReturnValue({ name: "settle_promesa_payment" }),
-}));
 
 // ── Imports ────────────────────────────────────────────────────────────────────
 

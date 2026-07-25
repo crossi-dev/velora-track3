@@ -9,7 +9,6 @@
 //   `exclusiveMinimum: true` (Draft 4 boolean form) which Vertex AI's
 //   Schema validator silently rejects → no function declarations → Gemini
 //   returns empty candidate → drainEvents yields zero events → fallback fires.
-//   Canonical in-repo reference: payments-register-promesa-sale-tool.ts.
 //   AFIP invoice types (A/B/C) per AFIP RG 2485 and resolución general 4291.
 
 import { Type } from "@google/genai";

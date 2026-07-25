@@ -1,9 +1,7 @@
 // tests/vitest/mcp/sales-tools.test.ts
 //
 // Unit tests for Batch 4 money tools:
-//   sales-tools.ts     : register_sale, register_movement
-//                        register_promesa_sale, confirm_promesa_payment,
-//                        settle_promesa_payment
+//   sales-tools.ts     : register_sale, register_movement, return_sale
 //
 // ALL mutations go through mocked use-cases — no real DB is touched.
 //
@@ -27,16 +25,10 @@ import { buildVeloraMcpServer } from "@/lib/mcp/server";
 const {
   saleExecuteMock,
   cashMovementExecuteMock,
-  registerPromesaSaleMock,
-  confirmPromesaMock,
-  settlePromesaMock,
   productFindManyMock,
 } = vi.hoisted(() => ({
   saleExecuteMock: vi.fn(),
   cashMovementExecuteMock: vi.fn(),
-  registerPromesaSaleMock: vi.fn(),
-  confirmPromesaMock: vi.fn(),
-  settlePromesaMock: vi.fn(),
   // Used by resolveCatalogPrices (sale-price-guard.ts) to return catalog prices
   // for register_sale. Default: return prod-001 at price 1500 (matches ITEM below).
   productFindManyMock: vi.fn().mockResolvedValue([
@@ -52,18 +44,6 @@ vi.mock("@/application/use-cases/create-sale.use-case", () => ({
 
 vi.mock("@/application/use-cases/create-cash-movement.use-case", () => ({
   createCashMovementUseCase: () => ({ execute: cashMovementExecuteMock }),
-}));
-
-vi.mock("@/app/api/payment-intents/_lib/register-promesa-sale-use-case", () => ({
-  registerPromesaSaleUseCase: registerPromesaSaleMock,
-}));
-
-vi.mock("@/app/api/payment-intents/_lib/confirm-promesa-use-case", () => ({
-  confirmPromesaPaymentUseCase: confirmPromesaMock,
-}));
-
-vi.mock("@/app/api/payment-intents/_lib/settle-promesa-use-case", () => ({
-  settlePromesaUseCase: settlePromesaMock,
 }));
 
 // ── Infrastructure adapter mocks (no real DB) ─────────────────────────────────
@@ -158,16 +138,14 @@ async function buildConnectedClient(businessId?: string) {
 describe("sales tools — registration", () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it("registers all 5 money tools + open_sale_confirm render tool when businessId is present", async () => {
+  it("registers all 3 money tools + open_sale_confirm render tool when businessId is present", async () => {
     const { client, cleanup } = await buildConnectedClient("biz-reg-001");
     try {
       const result = await client.listTools();
       const names = result.tools.map((t) => t.name);
       expect(names).toContain("register_sale");
       expect(names).toContain("register_movement");
-      expect(names).toContain("register_promesa_sale");
-      expect(names).toContain("confirm_promesa_payment");
-      expect(names).toContain("settle_promesa_payment");
+      expect(names).toContain("return_sale");
       expect(names).toContain("open_sale_confirm");
     } finally { await cleanup(); }
   });
@@ -177,18 +155,18 @@ describe("sales tools — registration", () => {
     try {
       const result = await client.listTools();
       const names = result.tools.map((t) => t.name);
-      for (const name of ["register_sale", "register_movement", "register_promesa_sale", "confirm_promesa_payment", "settle_promesa_payment"]) {
+      for (const name of ["register_sale", "register_movement", "return_sale"]) {
         expect(names).not.toContain(name);
       }
     } finally { await cleanup(); }
   });
 
-  it("total tool count is 51", async () => {
+  it("total tool count is 47", async () => {
     const { client, cleanup } = await buildConnectedClient("biz-count-001");
     try {
       const result = await client.listTools();
-      // 50 stateful + 1 pure (validate_cuit) = 51
-      expect(result.tools).toHaveLength(51);
+      // 46 stateful (connect_tiendanube hidden — TIENDANUBE_* not set) + 1 pure (validate_cuit) = 47
+      expect(result.tools).toHaveLength(47);
     } finally { await cleanup(); }
   });
 });
@@ -357,246 +335,6 @@ describe("register_movement tool", () => {
       const raw = await client.callTool({ name: "register_movement", arguments: { type: "purchase", description: "X", amount: 500 } });
       const result = asToolResult(raw);
       expect(result.isError).toBe(true);
-    } finally { await cleanup(); }
-  });
-});
-
-// ── register_promesa_sale ─────────────────────────────────────────────────────
-
-describe("register_promesa_sale tool", () => {
-  const BIZ = "biz-rps-001";
-  const ITEMS = [{ productId: "prod-001", quantity: 1 }];
-
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("happy path — returns paymentIntentId, saleId, grandTotal", async () => {
-    registerPromesaSaleMock.mockResolvedValue({
-      outcome: "created",
-      paymentIntentId: "pi-001",
-      saleId: "sale-001",
-      grandTotal: 2500,
-    });
-    const { client, cleanup } = await buildConnectedClient(BIZ);
-    try {
-      const raw = await client.callTool({ name: "register_promesa_sale", arguments: { customerId: "cust-001", items: ITEMS, expectedAt: "2026-07-15" } });
-      const result = asToolResult(raw);
-      expect(result.isError).toBeFalsy();
-      const parsed = JSON.parse(result.content[0].text) as { paymentIntentId: string; saleId: string; grandTotal: number };
-      expect(parsed.paymentIntentId).toBe("pi-001");
-      expect(parsed.saleId).toBe("sale-001");
-      expect(parsed.grandTotal).toBe(2500);
-    } finally { await cleanup(); }
-  });
-
-  it("IDEMPOTENCY: replayed outcome is not isError", async () => {
-    registerPromesaSaleMock.mockResolvedValue({ outcome: "replayed", paymentIntentId: "pi-001", saleId: "sale-001" });
-    const { client, cleanup } = await buildConnectedClient(BIZ);
-    try {
-      const raw = await client.callTool({ name: "register_promesa_sale", arguments: { customerId: "cust-001", items: ITEMS, expectedAt: "2026-07-15" } });
-      const result = asToolResult(raw);
-      expect(result.isError).toBeFalsy();
-      const parsed = JSON.parse(result.content[0].text) as { replayed: boolean };
-      expect(parsed.replayed).toBe(true);
-    } finally { await cleanup(); }
-  });
-
-  it("TENANT ISOLATION: foreign customerId → CUSTOMER_NOT_FOUND isError — no sale created", async () => {
-    registerPromesaSaleMock.mockResolvedValue({ outcome: "customer_not_found" });
-    const { client, cleanup } = await buildConnectedClient(BIZ);
-    try {
-      const raw = await client.callTool({ name: "register_promesa_sale", arguments: { customerId: "cust-foreign", items: ITEMS, expectedAt: "2026-07-15" } });
-      const result = asToolResult(raw);
-      expect(result.isError).toBe(true);
-      const parsed = JSON.parse(result.content[0].text) as { code: string };
-      expect(parsed.code).toBe("CUSTOMER_NOT_FOUND");
-    } finally { await cleanup(); }
-  });
-
-  it("TENANT ISOLATION: foreign productId → PRODUCT_NOT_FOUND isError — no sale created", async () => {
-    registerPromesaSaleMock.mockResolvedValue({ outcome: "product_not_found", productId: "prod-foreign" });
-    const { client, cleanup } = await buildConnectedClient(BIZ);
-    try {
-      const raw = await client.callTool({ name: "register_promesa_sale", arguments: { customerId: "cust-001", items: [{ productId: "prod-foreign", quantity: 1 }], expectedAt: "2026-07-15" } });
-      const result = asToolResult(raw);
-      expect(result.isError).toBe(true);
-      const parsed = JSON.parse(result.content[0].text) as { code: string };
-      expect(parsed.code).toBe("PRODUCT_NOT_FOUND");
-      // Use-case must have been called with closure businessId
-      expect(registerPromesaSaleMock).toHaveBeenCalledWith(expect.objectContaining({ businessId: BIZ }));
-    } finally { await cleanup(); }
-  });
-
-  it("returns isError for insufficient_stock", async () => {
-    registerPromesaSaleMock.mockResolvedValue({ outcome: "insufficient_stock", productName: "Yerba", available: 0 });
-    const { client, cleanup } = await buildConnectedClient(BIZ);
-    try {
-      const raw = await client.callTool({ name: "register_promesa_sale", arguments: { customerId: "cust-001", items: ITEMS, expectedAt: "2026-07-15" } });
-      const result = asToolResult(raw);
-      expect(result.isError).toBe(true);
-      const parsed = JSON.parse(result.content[0].text) as { code: string };
-      expect(parsed.code).toBe("INSUFFICIENT_STOCK");
-    } finally { await cleanup(); }
-  });
-
-  it("TENANT ISOLATION: closure businessId is sent to the use-case", async () => {
-    registerPromesaSaleMock.mockResolvedValue({ outcome: "created", paymentIntentId: "pi-1", saleId: "s-1", grandTotal: 100 });
-    const { client, cleanup } = await buildConnectedClient(BIZ);
-    try {
-      await client.callTool({ name: "register_promesa_sale", arguments: { customerId: "cust-001", items: ITEMS, expectedAt: "2026-07-15" } });
-      expect(registerPromesaSaleMock).toHaveBeenCalledWith(expect.objectContaining({ businessId: BIZ }));
-    } finally { await cleanup(); }
-  });
-});
-
-// ── confirm_promesa_payment ───────────────────────────────────────────────────
-
-describe("confirm_promesa_payment tool", () => {
-  const BIZ = "biz-cp-001";
-
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("happy path — returns paymentIntentId and promesaExpectedAt", async () => {
-    const expectedAt = new Date("2026-07-15");
-    confirmPromesaMock.mockResolvedValue({ outcome: "confirmed", paymentIntentId: "pi-001", promesaExpectedAt: expectedAt });
-    const { client, cleanup } = await buildConnectedClient(BIZ);
-    try {
-      const raw = await client.callTool({ name: "confirm_promesa_payment", arguments: { paymentIntentId: "pi-001", expectedAt: "2026-07-15" } });
-      const result = asToolResult(raw);
-      expect(result.isError).toBeFalsy();
-      const parsed = JSON.parse(result.content[0].text) as { paymentIntentId: string; promesaExpectedAt: string };
-      expect(parsed.paymentIntentId).toBe("pi-001");
-    } finally { await cleanup(); }
-  });
-
-  it("IDEMPOTENCY: already_confirmed → replayed=true without isError", async () => {
-    confirmPromesaMock.mockResolvedValue({ outcome: "already_confirmed", paymentIntentId: "pi-001" });
-    const { client, cleanup } = await buildConnectedClient(BIZ);
-    try {
-      const raw = await client.callTool({ name: "confirm_promesa_payment", arguments: { paymentIntentId: "pi-001", expectedAt: "2026-07-15" } });
-      const result = asToolResult(raw);
-      expect(result.isError).toBeFalsy();
-      const parsed = JSON.parse(result.content[0].text) as { replayed: boolean };
-      expect(parsed.replayed).toBe(true);
-    } finally { await cleanup(); }
-  });
-
-  it("TENANT ISOLATION: foreign paymentIntentId → PAYMENT_INTENT_NOT_FOUND isError", async () => {
-    // use-case does findFirst({ id, businessId }) → null → not_found
-    confirmPromesaMock.mockResolvedValue({ outcome: "not_found" });
-    const { client, cleanup } = await buildConnectedClient(BIZ);
-    try {
-      const raw = await client.callTool({ name: "confirm_promesa_payment", arguments: { paymentIntentId: "pi-foreign", expectedAt: "2026-07-15" } });
-      const result = asToolResult(raw);
-      expect(result.isError).toBe(true);
-      const parsed = JSON.parse(result.content[0].text) as { code: string };
-      expect(parsed.code).toBe("PAYMENT_INTENT_NOT_FOUND");
-      // Verify closure businessId was sent
-      expect(confirmPromesaMock).toHaveBeenCalledWith(expect.objectContaining({ businessId: BIZ, paymentIntentId: "pi-foreign" }));
-    } finally { await cleanup(); }
-  });
-
-  it("TENANT ISOLATION: closure businessId is sent to the use-case — never from input", async () => {
-    confirmPromesaMock.mockResolvedValue({ outcome: "confirmed", paymentIntentId: "pi-1", promesaExpectedAt: new Date() });
-    const { client, cleanup } = await buildConnectedClient(BIZ);
-    try {
-      await client.callTool({ name: "confirm_promesa_payment", arguments: { paymentIntentId: "pi-1", expectedAt: "2026-07-15" } });
-      expect(confirmPromesaMock).toHaveBeenCalledWith(expect.objectContaining({ businessId: BIZ }));
-    } finally { await cleanup(); }
-  });
-
-  it("returns isError for wrong_state", async () => {
-    confirmPromesaMock.mockResolvedValue({ outcome: "wrong_state", currentState: "cancelled" });
-    const { client, cleanup } = await buildConnectedClient(BIZ);
-    try {
-      const raw = await client.callTool({ name: "confirm_promesa_payment", arguments: { paymentIntentId: "pi-001", expectedAt: "2026-07-15" } });
-      const result = asToolResult(raw);
-      expect(result.isError).toBe(true);
-      const parsed = JSON.parse(result.content[0].text) as { code: string };
-      expect(parsed.code).toBe("WRONG_STATE");
-    } finally { await cleanup(); }
-  });
-});
-
-// ── settle_promesa_payment ────────────────────────────────────────────────────
-
-describe("settle_promesa_payment tool", () => {
-  const BIZ = "biz-sp-001";
-
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("happy path — returns cashMovementId and settledAt", async () => {
-    const now = new Date();
-    settlePromesaMock.mockResolvedValue({ outcome: "settled", cashMovementId: "cm-001", settledAt: now });
-    const { client, cleanup } = await buildConnectedClient(BIZ);
-    try {
-      const raw = await client.callTool({ name: "settle_promesa_payment", arguments: { originalPaymentIntentId: "pi-001", paymentMethod: "transferencia", amount: 2500 } });
-      const result = asToolResult(raw);
-      expect(result.isError).toBeFalsy();
-      const parsed = JSON.parse(result.content[0].text) as { cashMovementId: string; settledAt: string };
-      expect(parsed.cashMovementId).toBe("cm-001");
-    } finally { await cleanup(); }
-  });
-
-  it("IDEMPOTENCY: already_settled → replayed=true without isError — no double CashMovement", async () => {
-    settlePromesaMock.mockResolvedValue({ outcome: "already_settled", cashMovementId: "cm-001" });
-    const { client, cleanup } = await buildConnectedClient(BIZ);
-    try {
-      const raw = await client.callTool({ name: "settle_promesa_payment", arguments: { originalPaymentIntentId: "pi-001", paymentMethod: "efectivo", amount: 2500 } });
-      const result = asToolResult(raw);
-      expect(result.isError).toBeFalsy();
-      const parsed = JSON.parse(result.content[0].text) as { replayed: boolean; cashMovementId: string };
-      expect(parsed.replayed).toBe(true);
-      expect(parsed.cashMovementId).toBe("cm-001");
-      // settle use-case called only once (not twice)
-      expect(settlePromesaMock).toHaveBeenCalledTimes(1);
-    } finally { await cleanup(); }
-  });
-
-  it("TENANT ISOLATION: foreign originalPaymentIntentId → PAYMENT_INTENT_NOT_FOUND isError", async () => {
-    // use-case does findFirst({ id, businessId }) → null → not_found
-    settlePromesaMock.mockResolvedValue({ outcome: "not_found" });
-    const { client, cleanup } = await buildConnectedClient(BIZ);
-    try {
-      const raw = await client.callTool({ name: "settle_promesa_payment", arguments: { originalPaymentIntentId: "pi-foreign", paymentMethod: "mp", amount: 1000 } });
-      const result = asToolResult(raw);
-      expect(result.isError).toBe(true);
-      const parsed = JSON.parse(result.content[0].text) as { code: string };
-      expect(parsed.code).toBe("PAYMENT_INTENT_NOT_FOUND");
-      // Verify closure businessId was sent and not the caller's choice
-      expect(settlePromesaMock).toHaveBeenCalledWith(expect.objectContaining({ businessId: BIZ, originalPaymentIntentId: "pi-foreign" }));
-    } finally { await cleanup(); }
-  });
-
-  it("TENANT ISOLATION: closure businessId is sent to the use-case — never from tool input", async () => {
-    settlePromesaMock.mockResolvedValue({ outcome: "settled", cashMovementId: "cm-1", settledAt: new Date() });
-    const { client, cleanup } = await buildConnectedClient(BIZ);
-    try {
-      await client.callTool({ name: "settle_promesa_payment", arguments: { originalPaymentIntentId: "pi-001", paymentMethod: "efectivo", amount: 500 } });
-      expect(settlePromesaMock).toHaveBeenCalledWith(expect.objectContaining({ businessId: BIZ }));
-    } finally { await cleanup(); }
-  });
-
-  it("returns isError for amount_too_large", async () => {
-    settlePromesaMock.mockResolvedValue({ outcome: "amount_too_large" });
-    const { client, cleanup } = await buildConnectedClient(BIZ);
-    try {
-      const raw = await client.callTool({ name: "settle_promesa_payment", arguments: { originalPaymentIntentId: "pi-001", paymentMethod: "transferencia", amount: 99999 } });
-      const result = asToolResult(raw);
-      expect(result.isError).toBe(true);
-      const parsed = JSON.parse(result.content[0].text) as { code: string };
-      expect(parsed.code).toBe("AMOUNT_TOO_LARGE");
-    } finally { await cleanup(); }
-  });
-
-  it("returns isError for wrong_metodo (not a promesa PI)", async () => {
-    settlePromesaMock.mockResolvedValue({ outcome: "wrong_metodo", metodo: "mp" });
-    const { client, cleanup } = await buildConnectedClient(BIZ);
-    try {
-      const raw = await client.callTool({ name: "settle_promesa_payment", arguments: { originalPaymentIntentId: "pi-001", paymentMethod: "efectivo", amount: 100 } });
-      const result = asToolResult(raw);
-      expect(result.isError).toBe(true);
-      const parsed = JSON.parse(result.content[0].text) as { code: string };
-      expect(parsed.code).toBe("WRONG_METODO");
     } finally { await cleanup(); }
   });
 });

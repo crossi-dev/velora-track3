@@ -2,7 +2,7 @@
 // el webhook (o el owner) confirma un PaymentIntent.
 // Camino A: checkout_pro_link → runLinkPaymentPostConfirm (owner notify + PDF + envío)
 // Camino B: cualquier otro    → notifyCustomerOnConfirm (PDF WPP) +
-//                               runShipmentChain si shippingRequired=true (promesa/transferencia)
+//                               runShipmentChain si shippingRequired=true (transferencia/qr)
 // Idempotencia: comprobanteSentAt / shipmentCreatedAt como gatekeepers.
 // Fire-and-forget: fallos de Twilio/Logística no propagan a la respuesta HTTP.
 
@@ -63,7 +63,7 @@ export async function runPostConfirmSideEffects(
   if (intent.metodo === CHECKOUT_PRO_LINK_METODO) {
     await runLinkPaymentPostConfirm(intent);
   } else {
-    // G #1: Notify owner on all confirmed payments (promesa/qr/transferencia),
+    // G #1: Notify owner on all confirmed payments (qr/transferencia),
     // mirroring the checkout_pro_link path. Best-effort, fire-and-forget.
     void notifyOwnerOnPayment(paymentIntentId, intent.businessId).catch((err) => {
       cloudLog({
@@ -71,7 +71,7 @@ export async function runPostConfirmSideEffects(
         component: "System",
         action: "OWNER_PAYMENT_NOTIFY_FAILED",
         a2a_transfer: false,
-        message: `notifyOwnerOnPayment (promesa path) failed: ${err instanceof Error ? err.message : String(err)}`,
+        message: `notifyOwnerOnPayment failed: ${err instanceof Error ? err.message : String(err)}`,
         // Finding #12: businessId at top level for GCL routing filters.
         businessId: intent.businessId,
         data: { paymentIntentId },
@@ -81,7 +81,7 @@ export async function runPostConfirmSideEffects(
     // Comprobante (PDF WPP to customer) — gated by comprobanteSentAt inside.
     await notifyCustomerOnConfirm(paymentIntentId, intent.businessId);
 
-    // Then shipment+tracking — applies to promesa/transferencia/any metodo
+    // Then shipment+tracking — applies to transferencia/qr/any metodo
     // when the sale has shippingRequired. Gated by shipmentCreatedAt for
     // idempotency across retries.
     if (intent.shippingRequired && !intent.shipmentCreatedAt) {

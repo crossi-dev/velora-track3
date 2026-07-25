@@ -1,41 +1,27 @@
 // src/lib/mcp/sales-tools.ts — Stateful money-path MCP tool registrations (Batch 4 + remaining).
 //
-// Registers six tenant-scoped tools on a McpServer instance:
+// Registers three tenant-scoped tools on a McpServer instance:
 //   - register_sale           : creates a full sale (products + qty) with cascade
 //                               (items + inventory.decrement + stock-movement +
 //                               cash-movement + invoice). Idempotent.
 //   - register_movement       : records a cash-register movement (income/expense).
-//   - register_promesa_sale   : creates Sale + Invoice + PaymentIntent as a
-//                               deferred payment (promesa / accounts-receivable).
-//   - confirm_promesa_payment : marks an existing pending PaymentIntent as a
-//                               promesa (deferred payment accepted).
-//   - settle_promesa_payment  : records that the deferred cash arrived for a
-//                               prior promesa (creates real CashMovement).
 //   - return_sale             : reverses the N most-recent sales (stock + cash reversal).
 //                               MONEY/INVENTORY: reuses undoSaleBatchInTransaction.
 //
 // SECURITY: businessId ALWAYS from the closure — NEVER from tool input.
-// Caller-supplied IDs (productId, customerId, paymentIntentId) are scoped by the
+// Caller-supplied IDs (productId, customerId) are scoped by the
 // closure businessId inside every use-case — foreign IDs → not-found / isError.
 //
 // All money mutations reuse canonical use-cases:
 //   register_sale          → createSaleUseCase
 //   register_movement      → createCashMovementUseCase
-//   register_promesa_sale  → registerPromesaSaleUseCase
-//   confirm_promesa_payment→ confirmPromesaPaymentUseCase
-//   settle_promesa_payment → settlePromesaUseCase
 //
-// Handlers extracted to ./_lib/sales-mutations.ts and ./_lib/promesa-mutations.ts
-// to keep each file under the 300-LOC project limit.
+// Handlers extracted to ./_lib/sales-mutations.ts to keep this file under the
+// 300-LOC project limit.
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { SalesBackend } from "./_lib/sales-backend.port";
-import {
-  handleRegisterPromesaSale,
-  handleConfirmPromesa,
-  handleSettlePromesa,
-} from "./_lib/promesa-mutations";
 
 // ── Input schemas (extracted to keep registerSalesTools under 150 LOC) ────────
 
@@ -49,17 +35,10 @@ const SALE_ITEM_SCHEMA = z.object({
   ),
 });
 
-const PROMESA_ITEM_SCHEMA = z.object({
-  productId: z.string().min(1).describe("Product ID (must belong to this business)."),
-  quantity: z.number().int().positive().describe("Units (positive integer)."),
-  unitPriceOverride: z.number().positive().optional()
-    .describe("Override the DB price (optional). When omitted, the DB price is used."),
-});
-
 const REGISTER_SALE_SCHEMA = {
   items: z.array(SALE_ITEM_SCHEMA).min(1).max(500).describe("Line items for the sale. At least one required (max 500)."),
   customerId: z.string().optional().describe("Optional customer ID. Must belong to this business. Omit for anonymous sales."),
-  paymentMethod: z.enum(["efectivo", "transferencia", "mp", "qr", "promesa", "modo"]).optional()
+  paymentMethod: z.enum(["efectivo", "transferencia", "mp", "qr", "modo"]).optional()
     .describe("Payment method. Defaults to 'efectivo' when omitted."),
   requestId: z.string().optional()
     .describe("Optional opaque caller ID. When supplied it is folded into the server-side idempotency key, forcing a distinct sale even when the basket (items + customerId) is identical to a prior call. Use to record two legitimate same-basket sales without dedup collision. The key is always server-derived — this value never bypasses tenant isolation."),
@@ -73,38 +52,14 @@ const REGISTER_MOVEMENT_SCHEMA = {
   date: z.string().optional().describe("ISO 8601 date/datetime. Defaults to now when omitted."),
 };
 
-const REGISTER_PROMESA_SCHEMA = {
-  customerId: z.string().min(1).describe("Customer ID for the promesa. Must belong to this business."),
-  items: z.array(PROMESA_ITEM_SCHEMA).min(1).describe("Line items. At least one required."),
-  expectedAt: z.string().describe("Date when payment is expected (YYYY-MM-DD or any JS-Date-parseable string). Default to 30 days from today."),
-  reason: z.string().optional().describe("Optional human note (e.g. 'Cliente prometió pagar en 30 días')."),
-};
-
-const CONFIRM_PROMESA_SCHEMA = {
-  paymentIntentId: z.string().min(1).describe("PaymentIntent ID to mark as promesa (must belong to this business)."),
-  expectedAt: z.string().describe("Date when cash is expected (YYYY-MM-DD or any JS-Date-parseable string). Default to 30 days from today."),
-  reason: z.string().optional().describe("Optional free-text note (e.g. 'Darío prometió pagar el mes que viene')."),
-};
-
-const SETTLE_PROMESA_SCHEMA = {
-  originalPaymentIntentId: z.string().min(1).describe("PaymentIntent ID that was recorded as a promesa (must belong to this business)."),
-  paymentMethod: z.enum(["transferencia", "efectivo", "mp"]).describe("How the cash arrived: bank transfer, cash, or MercadoPago."),
-  amount: z.number().positive().optional()
-    .describe("Amount in ARS. OPTIONAL — omit to use the original promesa amount from the DB (recommended). Supply only for partial/adjusted payments. Hard ceiling: 2x the original; amounts >5% over log a warning but are accepted."),
-  reason: z.string().optional().describe("Optional note (e.g. 'Darío transfirió el 26/06')."),
-};
-
 // ── Registration helper ───────────────────────────────────────────────────────
 
 /**
- * Registers the six money-path tools on the given server.
+ * Registers the three money-path tools on the given server.
  * Called only when a verified businessId is available from the auth gate.
  *
- * The injected SalesBackend covers the three hardcoded write tools
- * (register_sale, register_movement, return_sale). The promesa tools
- * (register_promesa_sale, confirm_promesa_payment, settle_promesa_payment)
- * continue to use the existing promesa-mutations handlers directly, as they
- * already have their own createPromesaBackend() seam.
+ * The injected SalesBackend covers the three write tools
+ * (register_sale, register_movement, return_sale).
  */
 export function registerSalesTools(server: McpServer, businessId: string, backend: SalesBackend): void {
   server.registerTool(
@@ -172,62 +127,6 @@ export function registerSalesTools(server: McpServer, businessId: string, backen
       }
       return backend.registerMovement({ businessId, ...args });
     },
-  );
-
-  server.registerTool(
-    "register_promesa_sale",
-    {
-      title: "Register promesa sale",
-      description:
-        "Use this when the owner says a customer will pay later (promesa / accounts-receivable). " +
-        "Creates a deferred-payment sale (promesa / accounts-receivable). Atomically creates " +
-        "Sale + SaleItems + inventory decrements + Invoice + PaymentIntent (metodo='promesa'). " +
-        "customerId MUST be a real customer in this business — foreign IDs return isError. " +
-        "productId values MUST belong to this business — foreign IDs return isError. " +
-        "Idempotent: the same (customerId, items, expectedAt) deduplicates. " +
-        "Returns paymentIntentId, saleId, and grandTotal on success. " +
-        "For sales paid via a MercadoPago link, use open_payment_link_wizard instead.",
-      inputSchema: REGISTER_PROMESA_SCHEMA,
-      // Standard MCP tool annotations — https://modelcontextprotocol.io/specification/2025-06-18/schema
-      annotations: { readOnlyHint: false, idempotentHint: true, destructiveHint: true, openWorldHint: false },
-    },
-    (args) => handleRegisterPromesaSale(businessId, args),
-  );
-
-  server.registerTool(
-    "confirm_promesa_payment",
-    {
-      title: "Confirm promesa payment",
-      description:
-        "Use this when a PaymentIntent already exists and the owner says the customer will pay later — marks that PI as a promesa. " +
-        "Do NOT use to create a new promesa sale (use `register_promesa_sale`) or to record cash received (use `settle_promesa_payment`). " +
-        "Marks an existing pending PaymentIntent as a promesa de pago (deferred payment). " +
-        "On success: CashMovement created (transactional). Best-effort (failures logged, not surfaced): " +
-        "WhatsApp receipt, owner notification, Andreani shipment if shipping required. " +
-        "paymentIntentId MUST belong to this business — foreign IDs return isError. " +
-        "Idempotent: an already-confirmed intent returns replayed=true without error.",
-      inputSchema: CONFIRM_PROMESA_SCHEMA,
-      // Standard MCP tool annotations — https://modelcontextprotocol.io/specification/2025-06-18/schema
-      annotations: { readOnlyHint: false, idempotentHint: true, destructiveHint: true, openWorldHint: false },
-    },
-    (args) => handleConfirmPromesa(businessId, args),
-  );
-
-  server.registerTool(
-    "settle_promesa_payment",
-    {
-      title: "Settle promesa payment",
-      description:
-        "Records that the deferred cash from a prior promesa actually arrived. " +
-        "Use when the owner says they received payment for a promesa (e.g. 'ya me pagó'). " +
-        "Creates a real CashMovement (type=in) linked to the original PaymentIntent. " +
-        "originalPaymentIntentId MUST belong to this business — foreign IDs return isError. " +
-        "Idempotent: duplicate calls return replayed=true with the same cashMovementId.",
-      inputSchema: SETTLE_PROMESA_SCHEMA,
-      // Standard MCP tool annotations — https://modelcontextprotocol.io/specification/2025-06-18/schema
-      annotations: { readOnlyHint: false, idempotentHint: true, destructiveHint: true, openWorldHint: false },
-    },
-    (args) => handleSettlePromesa(businessId, args),
   );
 
   server.registerTool(

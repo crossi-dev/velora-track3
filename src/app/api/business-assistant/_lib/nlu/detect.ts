@@ -35,7 +35,6 @@ import { detectBusinessPostalReply } from "./business-postal-reply-fast-path";
 import { normalizeForMatching, normalizeArMoneySlang } from "../shared";
 import { normalizeStockWordNumbers } from "./word-numbers";
 import { detectSaleSendFastPath, detectSaleCreateComposite } from "./detect-wrappers";
-import { PROMESA_KEYWORDS } from "@/lib/adk/velora-shared-decode";
 import type { DeterministicIntent } from "./types";
 export { DETERMINISTIC_HINT_RE, mightBeDeterministicIntent } from "./hint-precheck";
 
@@ -133,45 +132,11 @@ const PRIORITY_TABLE: TableEntry[] = [
     detect: (t) => detectCredentialUpdateIntent(t) },
 ];
 
-// PROMESA bypass: when the OWNER's text contains a promesa keyword
-// (cuenta corriente / cobro diferido / "prometió pagar"), bypass every
-// deterministic fast-path and fall through to the Supervisor LLM, which
-// owns the delegation to call_payments_agent → register_promesa_sale.
-// Without this guard, "vendí X" / "alfajor" / "Andreani" tokens steal the
-// turn before the Supervisor sees the promesa intent. Root cause of the
-// 2026-05-26 fast-path interception bug.
-//
-// OWNER-ONLY (narrowed 2026-05-30): employees cannot register promesa sales
-// (call_payments_agent is owner-only per role-contract.ts). Bypassing for
-// employees was too broad: an employee saying "le vendo en fiado" would skip
-// the owner_only_blocked gate (label "0") and fall silently to the Supervisor
-// instead of getting the warm RBAC-blocked response. The bypass now fires only
-// when ctx.actorRole === "owner".
-// Source (workflow agents — deterministic routing by code, not by LLM):
-//   https://adk.dev/agents/workflow-agents/
-//
-// Both sides are NFKC→NFD→\p{M}-stripped so "prometio pagar"
-// (no accent — e.g. copy-paste from accent-stripping sites, or voice-to-text
-// glitches) matches "prometió pagar" identically.
-// Delegates to normalizeForMatching which is the canonical single source of truth.
-function stripAccents(s: string): string {
-  return normalizeForMatching(s);
-}
-const promesaKeywordPattern = new RegExp(
-  PROMESA_KEYWORDS.map((k) =>
-    stripAccents(k).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-  ).join("|"),
-  "i",
-);
-
 export function detectDeterministicIntent(
   text: string,
   ctx: NluContext,
 ): DeterministicIntent | null {
   if (!text || text.trim().length === 0) return null;
-  // Promesa bypass — owner-only. See comment above promesaKeywordPattern.
-  // stripAccents applied to input so "prometio pagar" matches "prometió pagar".
-  if (ctx.actorRole === "owner" && promesaKeywordPattern.test(stripAccents(text))) return null;
   // Normalize AR money slang BEFORE any detector runs so downstream
   // regex don't need to handle "lucas"/"gambas"/"mangos"/"palos".
   text = normalizeArMoneySlang(text);

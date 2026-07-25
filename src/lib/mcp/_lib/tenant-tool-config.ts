@@ -24,7 +24,6 @@ export interface TenantBackendMap {
   logistica: string | null;
   messaging: string | null;
   payments:  string | null;
-  promesa:   string | null;
   reportes:  string | null;
   sales:     string | null;
   supplier:  string | null;
@@ -50,7 +49,6 @@ export async function resolveTenantBackendMap(
       logistica: true,
       messaging: true,
       payments:  true,
-      promesa:   true,
       supplier:  true,
       ventas:    true,
       // sales and reportes are app-layer fields only — not yet in the DB schema.
@@ -67,7 +65,6 @@ export async function resolveTenantBackendMap(
     logistica: cfg?.logistica ?? null,
     messaging: cfg?.messaging ?? null,
     payments:  cfg?.payments  ?? null,
-    promesa:   cfg?.promesa   ?? null,
     // sales / reportes: no DB column yet — always null (falls back to env var / "velora").
     reportes:  null,
     sales:     null,

@@ -1,7 +1,7 @@
 // src/app/tools/_lib/tool-catalog.ts — Tool catalog data for the landing page + llms.txt.
 //
 // Source of truth: src/lib/mcp/server.ts (header comment) + src/lib/mcp/*-tools.ts files.
-// 40 tools across 12 packs (Pure is always-on; the rest require a verified businessId).
+// 34 tools across 12 packs (Pure is always-on; the rest require a verified businessId).
 // Widget tools (open_*) are registered server-side but omitted from this display catalog.
 // Extracted to keep src/app/tools/page.tsx under the 300-line file limit.
 
@@ -78,13 +78,10 @@ export const TOOL_PACKS: ToolPack[] = [
   },
   {
     pack: "Ventas & Caja",
-    subtitle: "Registro de ventas, movimientos y promesas",
+    subtitle: "Registro de ventas y movimientos",
     tools: [
       { name: "register_sale", desc: "Registra venta completa con items, cliente y método de pago." },
       { name: "register_movement", desc: "Registra movimiento de caja (ingreso, egreso, impuesto, sueldo)." },
-      { name: "register_promesa_sale", desc: "Registra venta con pago diferido (promesa / cuentas a cobrar)." },
-      { name: "confirm_promesa_payment", desc: "Marca un PaymentIntent existente como promesa de pago." },
-      { name: "settle_promesa_payment", desc: "Registra el cobro efectivo de una promesa previa." },
       { name: "return_sale", desc: "Revierte las N ventas más recientes (restaura stock y caja)." },
     ],
   },
@@ -135,4 +132,5 @@ export const TOOL_PACKS: ToolPack[] = [
 ];
 
 export const TOTAL_TOOLS = TOOL_PACKS.reduce((n, p) => n + p.tools.length, 0);
-// Expected: 38 (2+3+1+4+2+6+6+3+3+5+2+1 — wholesale removed, send_sms/send_email removed, ask_velora removed; widget tools (open_*) counted separately in server.ts)
+// Expected: 34 (1+3+1+4+2+6+3+3+3+5+2+1 — wholesale removed, send_sms/send_email removed, ask_velora removed,
+// register_promesa_sale/confirm_promesa_payment/settle_promesa_payment removed (no fiado); widget tools (open_*) counted separately in server.ts)

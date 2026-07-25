@@ -20,7 +20,6 @@
 //   Deviations beyond 50% are REJECTED with PRICE_OUTLIER — unlike the owner chat
 //   path (which soft-warns and uses a confirmation modal), the MCP surface has no
 //   human confirmation step, so the guard must be hard.
-//   Mirror pattern: register-promesa-sale-use-case.ts (unitPriceOverride guard).
 //
 // References:
 //   create-sale.use-case       — src/application/use-cases/create-sale.use-case.ts
