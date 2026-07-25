@@ -212,6 +212,7 @@ export const defaultCopy: LandingCopy = {
     links: [
       { label: "Privacidad", href: "/privacy" },
       { label: "Términos", href: "/terminos" },
+      { label: "Desarrolladores", href: "/developers" },
     ],
     contactEmail: "gestiones@somosvelora.com",
   },
