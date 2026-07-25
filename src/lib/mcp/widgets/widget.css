@@ -28,29 +28,37 @@
 @source "./business-overview.tsx";
 
 @theme inline {
-  --color-surface: var(--color-background-primary, light-dark(#ffffff, #1c1c1e));
-  --color-surface-2: var(--color-background-secondary, light-dark(#f6f6f6, #2c2c2e));
-  --color-ink: var(--color-text-primary, light-dark(#1a1a1a, #ededed));
-  --color-ink-soft: var(--color-text-secondary, light-dark(#6b6b6b, #a0a0a5));
-  --color-line: var(--color-border-primary, light-dark(#e4e4e4, #3a3a3c));
-  --color-accent: var(--color-background-inverse, light-dark(#1a1a1a, #ededed));
-  --color-on-accent: var(--color-text-inverse, light-dark(#ffffff, #1c1c1e));
-  --color-danger-surface: var(--color-background-danger, light-dark(#fdecef, #3a1a1f));
-  --color-danger-ink: var(--color-text-danger, light-dark(#b00020, #ff7a85));
-  --color-success-surface: var(--color-background-success, light-dark(#e7f6ec, #16331f));
-  --color-success-ink: var(--color-text-success, light-dark(#117a3d, #4ade80));
-  /* Fallbacks pinned to Velora's own radius scale (--radius-lg: 14px card /
-     --radius-md: 10px control) instead of arbitrary rem values, so a
-     no-host local preview still reads as Velora, not a generic form. */
-  --radius-card: var(--border-radius-lg, 0.875rem);
-  --radius-control: var(--border-radius-md, 0.625rem);
+  /* Fallback hex values (used only when no host is connected, e.g. local preview)
+   * copied verbatim from the official token table — claude.com/docs/connectors/
+   * building/mcp-apps/design-guidelines#style-variables — not invented. */
+  --color-surface: var(--color-background-primary, light-dark(#ffffff, #30302e));
+  --color-surface-2: var(--color-background-secondary, light-dark(#f5f4ed, #262624));
+  --color-ink: var(--color-text-primary, light-dark(#141413, #faf9f5));
+  --color-ink-soft: var(--color-text-secondary, light-dark(#3d3d3a, #c2c0b6));
+  --color-line: var(--color-border-primary, light-dark(#1f1e1d66, #dedcd166));
+  --color-accent: var(--color-background-inverse, light-dark(#141413, #faf9f5));
+  --color-on-accent: var(--color-text-inverse, light-dark(#ffffff, #141413));
+  --color-danger-surface: var(--color-background-danger, light-dark(#f7ecec, #602a28));
+  --color-danger-ink: var(--color-text-danger, light-dark(#7f2c28, #ee8884));
+  --color-success-surface: var(--color-background-success, light-dark(#e9f1dc, #1b4614));
+  --color-success-ink: var(--color-text-success, light-dark(#265b19, #7ab948));
+  --radius-card: var(--border-radius-lg, 10px);
+  --radius-control: var(--border-radius-md, 8px);
+  --font-body: var(--font-sans, "Anthropic Sans", sans-serif);
 
   /* Velora brand accent — deliberately NOT chameleon-mapped to the host palette.
    * Exact hex from crossi-dev/velora/src/styles/tokens.css (--brand / --tone-on-brand):
    * navy #1B3A6B (light) / #8AB0F0 (dark), on-brand cream #FAF6EE (light) / #02060F (dark).
-   * Used only for the business-panel tab bar so the brand identity persists across hosts. */
+   * Used only for the business-overview tab bar so the brand identity persists across
+   * hosts. Allowed by the doc: "You can use your own brand colors for accents and
+   * identity, but the core UI should use the provided palette."
+   */
   --color-brand: light-dark(#1b3a6b, #8ab0f0);
   --color-on-brand: light-dark(#faf6ee, #02060f);
+}
+
+body {
+  font-family: var(--font-body);
 }
 
 /* Motion: one shared duration + easing for interactive state changes

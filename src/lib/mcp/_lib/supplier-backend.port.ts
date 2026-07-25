@@ -87,7 +87,7 @@ export interface DeleteSupplierOutput {
 // ── listPurchaseRequests ──────────────────────────────────────────────────────
 // Read-only exposure of the existing PurchaseRequest repository (already used by
 // GET /api/purchase-requests and create-purchase-request.use-case) — no new query
-// logic, just a port seam so open_business_panel can reuse it without duplicating
+// logic, just a port seam so open_business_overview can reuse it without duplicating
 // the Prisma read. Note: PurchaseRequest has no status/fulfillment field in the
 // schema today — this returns the request record only (id, number, date, amount).
 
@@ -109,7 +109,7 @@ export interface PurchaseRequestListResult {
  *
  * Every method maps to one MCP tool (create_supplier, create_purchase_request,
  * edit_supplier, delete_supplier), except listPurchaseRequests which backs the
- * open_business_panel aggregate widget (Reposición de stock tab) — READ-ONLY.
+ * open_business_overview aggregate widget (Reposición de stock tab) — READ-ONLY.
  * Throw an Error with a domain code (e.g. "SUPPLIER_NOT_FOUND") for error-path handling —
  * supplier-tools.ts converts thrown errors to MCP isError responses.
  *

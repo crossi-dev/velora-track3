@@ -4,11 +4,14 @@
 // Guidelines: claude.com/docs/connectors/building/mcp-apps/design-guidelines —
 // "Start simple. Reveal complexity only when users need it. The inline card might
 // show a summary; fullscreen mode can offer the detailed view."):
-//   - inline (default): a compact snapshot — caja, today/week sales, pending
-//     cobros count, low-stock list.
+//   - inline (default): a compact snapshot — 4 data points (caja, ventas, cobros
+//     pendientes, stock bajo) and 2 actions at the bottom (Ver caja, Ver panel
+//     completo), per the doc's inline-card limits ("Max data points: 4-5",
+//     "Max actions: 2, placed at the bottom of the card").
 //   - fullscreen: four tabs — Cliente 360, Cerrar el día, Reposición de stock,
 //     Dashboard de ventas — using tabs as fullscreen's documented disclosure
-//     pattern ("collapsible sidebars, tabs, or pagination").
+//     pattern ("collapsible sidebars, tabs, or pagination"). Full lists (low
+//     stock items, cobros detail) live here, not inline.
 // Both modes render from the SAME prefill (one tool call fetches everything up
 // front), so expanding to fullscreen is instant — no second round trip.
 //
@@ -19,9 +22,14 @@
 //
 // Design principles (same as the other Velora widgets):
 //   - Native semantic elements, chameleon theming via useHostStyleVariables/useHostFonts.
-//   - Typography: rem units, ≥ 0.875rem minimum.
+//   - Status colors go through StatusChip (_widget-primitives.tsx), which resolves
+//     the host's --color-background-success/--color-text-success tokens — never a
+//     hardcoded hex, per the doc's "Never hardcode colors" rule.
+//   - Touch targets: min-h-11 (44px) on every tappable control, per the doc's
+//     44x44pt minimum.
 //   - Brand accent (tab bar) uses real Velora navy/cream tokens (--color-brand,
-//     --color-on-brand in widget.css) instead of the generic chameleon fallback.
+//     --color-on-brand in widget.css) instead of the generic chameleon fallback —
+//     explicitly allowed by the doc for "accents and identity."
 //   - Tab bar: equal-width flex items, not horizontal-scroll — a 4th tab hidden
 //     behind silent overflow-x-auto with no scroll affordance is a real mobile bug
 //     (flagged in review); wrapping to two rows on narrow viewports instead.
@@ -34,7 +42,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { Centered, SecondaryButton } from "./_widget-primitives";
+import { Centered, SecondaryButton, StatusChip } from "./_widget-primitives";
 
 // ── Data contract (matches business-overview-render.ts) ─────────────────────────
 
@@ -147,8 +155,6 @@ interface Prefill {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const LOW_STOCK_DISPLAY_CAP = 10;
-
 const TAB_ORDER: TabId[] = ["cliente_360", "cierre_dia", "reposicion_stock", "dashboard_ventas"];
 const TAB_LABELS: Record<TabId, string> = {
   cliente_360: "Cliente 360",
@@ -188,54 +194,32 @@ function VeloraMark(): React.JSX.Element {
   );
 }
 
-function CajaChip({ state }: { state: CajaState }): React.JSX.Element {
-  return (
-    <span
-      className="rounded-full px-3 py-1 text-sm font-medium"
-      style={
-        state === "OPEN"
-          ? { color: "light-dark(#117a3d, #4ade80)", background: "light-dark(#e7f6ec, #16331f)" }
-          : { color: "light-dark(#6b6b6b, #a0a0a5)", background: "light-dark(#ececec, #2c2c2e)" }
-      }
-    >
-      {cajaChipLabel(state)}
-    </span>
-  );
-}
-
 // ── Inline summary ────────────────────────────────────────────────────────────
+// Doc constraints (claude.com/docs/.../design-guidelines#inline-card):
+// "Max data points: 4-5" and "Max actions: 2, placed at the bottom of the card."
+// 4 sections (caja, ventas, cobros pendientes, stock bajo) + 2 actions at the
+// bottom (Ver caja, Ver panel completo). Full lists (low-stock items, cobros
+// detail) live in fullscreen's tabs, not inline.
 
 function InlineSummary({
   data,
   onOpenCaja,
-  onOpenPending,
   onExpand,
   canExpand,
 }: {
   data: Prefill["summary"];
   onOpenCaja: () => void;
-  onOpenPending: () => void;
   onExpand: () => void;
   canExpand: boolean;
 }): React.JSX.Element {
-  const lowStockDisplayed = data.lowStock.slice(0, LOW_STOCK_DISPLAY_CAP);
-  const lowStockOverflow = data.lowStock.length - lowStockDisplayed.length;
-
   return (
     <>
       <SectionCard title="Caja">
         <div className="flex items-center justify-between gap-2">
-          <CajaChip state={data.caja.state} />
+          <StatusChip tone={data.caja.state === "OPEN" ? "success" : "neutral"}>{cajaChipLabel(data.caja.state)}</StatusChip>
           {data.caja.state === "OPEN" && <span className="text-lg font-bold text-ink">{ars(data.caja.expectedCashAmount)}</span>}
           {data.caja.state === "CLOSED" && <span className="text-lg font-bold text-ink">{ars(data.caja.closedCashAmount)}</span>}
         </div>
-        <button
-          type="button"
-          onClick={onOpenCaja}
-          className="w-full rounded-control border border-line bg-surface px-4 py-2 text-base text-ink"
-        >
-          Ver caja
-        </button>
       </SectionCard>
 
       <SectionCard title="Ventas">
@@ -258,44 +242,33 @@ function InlineSummary({
           <span className="text-2xl font-bold text-ink">{data.pendingCount}</span>
           <span className="text-sm text-ink-soft">{data.pendingCount === 0 ? "Sin cobros pendientes" : "esperando pago"}</span>
         </div>
-        {data.pendingCount > 0 && (
-          <button
-            type="button"
-            onClick={onOpenPending}
-            className="w-full rounded-control border border-line bg-surface px-4 py-2 text-base text-ink"
-          >
-            Ver cobros pendientes
-          </button>
-        )}
       </SectionCard>
 
       <SectionCard title="Stock bajo">
-        {lowStockDisplayed.length === 0 ? (
-          <p className="text-sm text-ink-soft">Todo el stock está por encima del mínimo.</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {lowStockDisplayed.map((p) => (
-              <li key={p.id} className="flex items-center justify-between gap-2">
-                <span className="text-sm text-ink">{p.name}</span>
-                <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-sm text-danger-ink">
-                  {p.stock} / {p.reorderThreshold}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-        {lowStockOverflow > 0 && <p className="text-sm text-ink-soft">y {lowStockOverflow} producto{lowStockOverflow !== 1 ? "s" : ""} más</p>}
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-2xl font-bold text-ink">{data.lowStock.length}</span>
+          <span className="text-sm text-ink-soft">{data.lowStock.length === 0 ? "todo por encima del mínimo" : "producto(s) bajo mínimo"}</span>
+        </div>
       </SectionCard>
 
-      {canExpand && (
+      <div className="flex gap-2">
         <button
           type="button"
-          onClick={onExpand}
-          className="w-full rounded-control bg-brand px-4 py-3 text-base font-semibold text-on-brand"
+          onClick={onOpenCaja}
+          className="min-h-11 flex-1 rounded-control border border-line bg-surface px-4 text-base text-ink"
         >
-          Ver panel completo
+          Ver caja
         </button>
-      )}
+        {canExpand && (
+          <button
+            type="button"
+            onClick={onExpand}
+            className="min-h-11 flex-1 rounded-control bg-brand px-4 text-base font-semibold text-on-brand"
+          >
+            Ver panel completo
+          </button>
+        )}
+      </div>
     </>
   );
 }
@@ -437,7 +410,7 @@ function CierreDiaTab({
     <div className="flex flex-col gap-3">
       <SectionCard title="Caja">
         <div className="flex items-center justify-between gap-2">
-          <CajaChip state={data.caja.state} />
+          <StatusChip tone={data.caja.state === "OPEN" ? "success" : "neutral"}>{cajaChipLabel(data.caja.state)}</StatusChip>
           {data.caja.state === "OPEN" && <span className="text-lg font-bold text-ink">{ars(data.caja.expectedCashAmount)}</span>}
           {data.caja.state === "CLOSED" && <span className="text-lg font-bold text-ink">{ars(data.caja.closedCashAmount)}</span>}
         </div>
@@ -678,7 +651,7 @@ function BusinessOverviewWidget(): React.JSX.Element {
             <button
               type="button"
               onClick={() => requestFullscreen(false)}
-              className="shrink-0 rounded-control border border-line bg-surface px-3 py-1.5 text-sm text-ink"
+              className="min-h-11 shrink-0 rounded-control border border-line bg-surface px-4 text-sm text-ink"
             >
               Resumen
             </button>
@@ -693,7 +666,7 @@ function BusinessOverviewWidget(): React.JSX.Element {
                 onClick={() => setActiveTab(tab)}
                 aria-current={activeTab === tab ? "page" : undefined}
                 className={
-                  "min-w-[45%] flex-1 rounded-control px-2 py-2 text-sm font-medium transition-colors " +
+                  "min-h-11 min-w-[45%] flex-1 rounded-control px-2 text-sm font-medium transition-colors " +
                   (activeTab === tab ? "bg-brand text-on-brand" : "text-ink-soft")
                 }
               >
@@ -715,7 +688,6 @@ function BusinessOverviewWidget(): React.JSX.Element {
           <InlineSummary
             data={prefill.summary}
             onOpenCaja={openCajaStatus}
-            onOpenPending={openPendingOrders}
             onExpand={() => requestFullscreen(true)}
             canExpand
           />
