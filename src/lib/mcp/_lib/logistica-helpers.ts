@@ -124,6 +124,85 @@ export function parseOptions(text: string, providerName: string): CourierOption[
   }
 }
 
+// ── Shared quote fan-out ───────────────────────────────────────────────────────
+
+export interface QuoteShippingOptionsInput {
+  originPostalCode: string;
+  destinationPostalCode: string;
+  weightGrams: number;
+  declaredValue?: number;
+}
+
+export interface QuoteShippingOptionsResult {
+  options: CourierOption[];
+  cheapestPriceARS: number | null;
+  /** Number of couriers active for this business, before fan-out. 0 means nothing to quote. */
+  activeCourierCount: number;
+  partialFailures?: Array<{ courier: string; reason: string }>;
+}
+
+/**
+ * Fans out a shipping quote across every active courier for the business and
+ * returns options sorted by price ascending. Shared by `quote_shipping`
+ * (logistica-tools.ts) and `open_shipment_prep` (shipment-prep-render.ts) so
+ * both tools quote shipping the exact same way.
+ */
+export async function quoteShippingOptions(
+  backend: LogisticaBackend,
+  businessId: string,
+  input: QuoteShippingOptionsInput,
+): Promise<QuoteShippingOptionsResult> {
+  const { activeCouriers } = await backend.resolveActiveCouriers({
+    tenantId: businessId,
+    originPostalCode: input.originPostalCode,
+    destinationPostalCode: input.destinationPostalCode,
+    weightGrams: input.weightGrams,
+    declaredValue: input.declaredValue,
+  });
+
+  if (activeCouriers.length === 0) {
+    return { options: [], cheapestPriceARS: null, activeCourierCount: 0 };
+  }
+
+  const settled = await Promise.allSettled(
+    activeCouriers.map(async (courier) => {
+      const adapter = courier.getAdapter();
+      const rpcResponse = await adapter.quote(
+        {
+          originPostalCode: input.originPostalCode,
+          destinationPostalCode: input.destinationPostalCode,
+          weightGrams: input.weightGrams,
+          declaredValue: input.declaredValue ?? 0,
+        },
+        businessId,
+      );
+      const text = extractResultText(rpcResponse) ?? "";
+      return { courier: courier.name, text };
+    }),
+  );
+
+  const allOptions: CourierOption[] = [];
+  const partialFailures: Array<{ courier: string; reason: string }> = [];
+  for (const [i, r] of settled.entries()) {
+    if (r.status === "fulfilled") {
+      allOptions.push(...parseOptions(r.value.text, r.value.courier));
+    } else {
+      // Collect failures so the agent knows a cheaper option may have been skipped.
+      const reason = r.reason instanceof Error ? r.reason.message : String(r.reason);
+      partialFailures.push({ courier: activeCouriers[i]?.name ?? "unknown", reason });
+    }
+  }
+
+  allOptions.sort((a, b) => a.priceARS - b.priceARS);
+
+  return {
+    options: allOptions,
+    cheapestPriceARS: allOptions.length > 0 ? allOptions[0].priceARS : null,
+    activeCourierCount: activeCouriers.length,
+    ...(partialFailures.length > 0 ? { partialFailures } : {}),
+  };
+}
+
 // ── OCA validation ────────────────────────────────────────────────────────────
 
 /**
