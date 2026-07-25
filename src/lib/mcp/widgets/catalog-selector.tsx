@@ -170,9 +170,22 @@ function CatalogSelector(): React.JSX.Element {
   if (!products.length && toolResultReceived) return <Centered>No pudimos cargar el catálogo. Probá de nuevo.</Centered>;
   if (!products.length) return <Centered>Cargando catálogo…</Centered>;
 
+  // Safe areas (claude.com/docs/connectors/building/mcp-apps/design-guidelines
+  // #host-context-for-layout): add hostContext.safeAreaInsets on top of the
+  // base p-5 padding so the chat composer/nav bar never overlaps this widget.
+  const safeArea = app?.getHostContext()?.safeAreaInsets;
+  const safeAreaStyle: React.CSSProperties = safeArea
+    ? {
+        paddingTop: `calc(1.25rem + ${safeArea.top}px)`,
+        paddingRight: `calc(1.25rem + ${safeArea.right}px)`,
+        paddingBottom: `calc(1.25rem + ${safeArea.bottom}px)`,
+        paddingLeft: `calc(1.25rem + ${safeArea.left}px)`,
+      }
+    : {};
+
   if (confirmed) {
     return (
-      <Card title="Selección lista">
+      <Card title="Selección lista" style={safeAreaStyle}>
         {selectedItems.length === 0 ? (
           <p className="text-base text-ink-soft">No seleccionaste ningún producto.</p>
         ) : (
@@ -195,7 +208,7 @@ function CatalogSelector(): React.JSX.Element {
                   >
                     <div className="min-w-0">
                       <div className="truncate text-base text-ink">{p.title}</div>
-                      <div className="text-sm text-ink-soft">
+                      <div className="text-sm tabular-nums text-ink-soft">
                         {qty}× {formatAmount(p.price_range.min)} ={" "}
                         {formatAmount(subtotal)}
                       </div>
@@ -206,7 +219,7 @@ function CatalogSelector(): React.JSX.Element {
             </ul>
             <div className="flex items-center justify-between rounded-control bg-surface-2 p-3">
               <span className="text-base text-ink-soft">Total</span>
-              <span className="text-lg font-semibold text-ink">{formatAmount(grandTotal)}</span>
+              <span className="text-lg font-semibold tabular-nums text-ink">{formatAmount(grandTotal)}</span>
             </div>
             <div className="rounded-control bg-surface-2 p-3 text-sm text-ink-soft">
               <strong className="text-ink">
@@ -232,7 +245,7 @@ function CatalogSelector(): React.JSX.Element {
   }
 
   return (
-    <Card title="Catálogo de productos">
+    <Card title="Catálogo de productos" style={safeAreaStyle}>
       <ul className="flex flex-col gap-2">
         {products.map((p) => {
           const variant = p.variants[0];
@@ -245,7 +258,7 @@ function CatalogSelector(): React.JSX.Element {
             >
               <div className="min-w-0 flex-1">
                 <div className="truncate text-base text-ink">{p.title}</div>
-                <div className="text-sm text-ink-soft">
+                <div className="text-sm tabular-nums text-ink-soft">
                   {formatAmount(p.price_range.min)}
                   {" · "}
                   <span className={inStock ? "text-ink-soft" : "text-danger-ink"}>

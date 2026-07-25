@@ -23,7 +23,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { SecondaryButton, Centered, TONE_CLASSES, type StatusTone } from "./_widget-primitives";
+import { SecondaryButton, Centered, StatusChip, type StatusTone } from "./_widget-primitives";
 import type { UCPOrder, UCPTotal } from "../_lib/ucp-types";
 
 // ── Velora display extensions ─────────────────────────────────────────────────
@@ -163,8 +163,22 @@ function DeliveryReceiptWidget(): React.JSX.Element {
   // Show the WhatsApp send button only when both phone and comprobante pdfUrl are available.
   const canSendWa = !!(detail.customerPhone && comprobante.pdfUrl);
 
+  // Safe areas (claude.com/docs/connectors/building/mcp-apps/design-guidelines
+  // #host-context-for-layout): on mobile the chat composer/nav bar can overlay
+  // this widget's edges. hostContext.safeAreaInsets is in pixels — add it on
+  // top of the base padding rather than replacing it.
+  const safeArea = app?.getHostContext()?.safeAreaInsets;
+  const safeAreaStyle: React.CSSProperties = safeArea
+    ? {
+        paddingTop: `calc(1.25rem + ${safeArea.top}px)`,
+        paddingRight: `calc(1.25rem + ${safeArea.right}px)`,
+        paddingBottom: `calc(1.25rem + ${safeArea.bottom}px)`,
+        paddingLeft: `calc(1.25rem + ${safeArea.left}px)`,
+      }
+    : {};
+
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-5 p-5 text-ink">
+    <main className="mx-auto flex max-w-md flex-col gap-5 p-5 text-ink" style={safeAreaStyle}>
 
       {/* Comprobante block */}
       <section
@@ -193,7 +207,7 @@ function DeliveryReceiptWidget(): React.JSX.Element {
       {/* Customer + total */}
       <section className="flex flex-col gap-1 rounded-control bg-surface-2 px-4 py-3">
         <span className="text-base font-medium text-ink">{detail.customerName}</span>
-        <span className="text-xl font-bold text-ink">{formatARS(total)}</span>
+        <span className="text-xl font-bold tabular-nums text-ink">{formatARS(total)}</span>
       </section>
 
       {/* Line items */}
@@ -209,7 +223,7 @@ function DeliveryReceiptWidget(): React.JSX.Element {
                 <span className="text-base text-ink">
                   {li.quantity}× {li.item.title}
                 </span>
-                <span className="shrink-0 text-base font-medium text-ink">
+                <span className="shrink-0 text-base font-medium tabular-nums text-ink">
                   {formatARS(li.item.price.amount * li.quantity)}
                 </span>
               </li>
@@ -225,9 +239,7 @@ function DeliveryReceiptWidget(): React.JSX.Element {
           <div className="flex flex-col gap-2 rounded-control bg-surface-2 px-4 py-3">
             <div className="flex items-center justify-between gap-2">
               <span className="text-base font-medium text-ink">{envio.carrier}</span>
-              <span className={`rounded-full px-3 py-1 text-sm font-medium ${TONE_CLASSES[envioChip!.tone]}`}>
-                {envioChip!.label}
-              </span>
+              <StatusChip tone={envioChip!.tone}>{envioChip!.label}</StatusChip>
             </div>
             {envio.tracking && (
               <span className="text-sm text-ink-soft">

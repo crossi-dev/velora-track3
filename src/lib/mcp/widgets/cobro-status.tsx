@@ -22,7 +22,7 @@
 // UCP Order spec: https://ucp.dev/latest/specification/order/
 // CSP: no allowUnsafeEval — do NOT add it without a CSP audit.
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
 import type { UCPOrder, UCPTotal } from "../_lib/ucp-types";
@@ -43,6 +43,13 @@ interface DisplayOrder {
 
 interface Prefill {
   order: DisplayOrder | null;
+  /** Server-assigned render timestamp (epoch ms), used ONLY as the widget
+   * instance-supersession election key (claude.com/docs/connectors/building/
+   * mcp-apps/instance-supersession) — NOT a business date. Optional because
+   * cobro-status-render.ts does not emit it yet; guarded with Number.isFinite
+   * below so an unpatched server degrades to "no supersession" instead of
+   * crashing. */
+  createdAt?: number;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -102,6 +109,54 @@ function CobroStatusWidget(): React.JSX.Element {
   const [order, setOrder] = useState<DisplayOrder | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [navErr, setNavErr] = useState<string | null>(null);
+  const [superseded, setSuperseded] = useState(false);
+
+  // Widget instance supersession (claude.com/docs/connectors/building/mcp-apps/
+  // instance-supersession) — cobro-status is a status view the owner can
+  // reasonably re-open mid-conversation to re-check whether a payment came in
+  // (e.g. asking "¿ya pagó Juan?" twice). Only the newest copy should stay
+  // interactive; older copies gray out instead of both silently feeding stale
+  // reads back into Claude's context. Channel is scoped per-conversation by
+  // default (no fixed _meta.ui.domain set on this resource).
+  const instanceIdRef = useRef<string>(crypto.randomUUID());
+  const orderKeyRef = useRef<number | undefined>(undefined);
+  const keyFinalizedRef = useRef(false);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const peersRef = useRef(new Map<string, { orderKey: number; instanceId: string }>());
+
+  useEffect(() => {
+    const channel = new BroadcastChannel("velora-cobro-status-supersede");
+    channelRef.current = channel;
+    const instanceId = instanceIdRef.current;
+
+    function isYounger(other: { orderKey: number; instanceId: string }) {
+      if (!keyFinalizedRef.current || orderKeyRef.current == null) return false;
+      if (other.orderKey !== orderKeyRef.current) return other.orderKey > orderKeyRef.current!;
+      return other.instanceId > instanceId;
+    }
+
+    channel.onmessage = (ev) => {
+      const msg = ev.data as { type?: string; instanceId?: string; orderKey?: number } | undefined;
+      if (!msg?.instanceId || msg.instanceId === instanceId || !keyFinalizedRef.current) return;
+      if (msg.type === "hello") {
+        channel.postMessage({ type: "born", instanceId, orderKey: orderKeyRef.current });
+      }
+      if (Number.isFinite(msg.orderKey)) {
+        peersRef.current.set(msg.instanceId, { orderKey: msg.orderKey!, instanceId: msg.instanceId });
+        setSuperseded([...peersRef.current.values()].some(isYounger));
+      }
+    };
+
+    return () => channel.close();
+  }, []);
+
+  function announceInstance() {
+    const channel = channelRef.current;
+    if (!channel || orderKeyRef.current == null) return;
+    const instanceId = instanceIdRef.current;
+    channel.postMessage({ type: "hello", instanceId, orderKey: orderKeyRef.current });
+    channel.postMessage({ type: "born", instanceId, orderKey: orderKeyRef.current });
+  }
 
   useEffect(() => {
     if (!app) return;
@@ -112,17 +167,22 @@ function CobroStatusWidget(): React.JSX.Element {
       const args = (raw.prefill ?? raw) as Prefill;
       setOrder(args.order ?? null);
       setLoaded(true);
+      if (Number.isFinite(args.createdAt)) {
+        orderKeyRef.current = args.createdAt;
+        keyFinalizedRef.current = true;
+        announceInstance();
+      }
     };
     app.ontoolresult = (params) => apply(params);
   }, [app]);
 
   const onViewReceipt = useCallback(async () => {
-    if (!app || !order) return;
+    if (!app || !order || superseded) return;
     setNavErr(null);
     await app.callServerTool({ name: "open_delivery_receipt", arguments: { paymentIntentId: order.ucp.id } }).catch(() => {
       setNavErr("No se pudo abrir el comprobante. Intentá de nuevo.");
     });
-  }, [app, order]);
+  }, [app, order, superseded]);
 
   if (error) {
     return <Centered>No pudimos abrir el estado del cobro. {error.message}</Centered>;
@@ -138,8 +198,27 @@ function CobroStatusWidget(): React.JSX.Element {
   const total = resolveTotal(detail.ucp.totals);
   const chip = resolveChipConfig(detail.estado);
 
+  // Safe areas (claude.com/docs/connectors/building/mcp-apps/design-guidelines
+  // #host-context-for-layout): on mobile the chat composer/nav bar can overlay
+  // this widget's edges. hostContext.safeAreaInsets is in pixels — add it on
+  // top of the base p-5 padding rather than replacing it.
+  const safeArea = app?.getHostContext()?.safeAreaInsets;
+  const safeAreaStyle: React.CSSProperties = safeArea
+    ? {
+        paddingTop: `calc(1.25rem + ${safeArea.top}px)`,
+        paddingRight: `calc(1.25rem + ${safeArea.right}px)`,
+        paddingBottom: `calc(1.25rem + ${safeArea.bottom}px)`,
+        paddingLeft: `calc(1.25rem + ${safeArea.left}px)`,
+      }
+    : {};
+
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-5 p-5 text-ink">
+    <main className="mx-auto flex max-w-md flex-col gap-5 p-5 text-ink" style={safeAreaStyle}>
+      {superseded && (
+        <div className="flex items-center justify-between gap-2 rounded-control bg-surface-2 p-3 text-sm text-ink-soft" role="status">
+          <span>Esta vista quedó vieja — hay una más nueva en este chat.</span>
+        </div>
+      )}
       {/* BIG status banner */}
       <section
         aria-label="Estado del cobro"
@@ -151,7 +230,7 @@ function CobroStatusWidget(): React.JSX.Element {
       {/* Customer + total */}
       <section className="flex flex-col gap-1 rounded-control bg-surface-2 px-4 py-3">
         <span className="text-base font-medium text-ink">{detail.customerName}</span>
-        <span className="text-xl font-bold text-ink">{formatARS(total)}</span>
+        <span className="text-xl font-bold tabular-nums text-ink">{formatARS(total)}</span>
       </section>
 
       {/* Line items */}
@@ -167,7 +246,7 @@ function CobroStatusWidget(): React.JSX.Element {
                 <span className="text-base text-ink">
                   {li.quantity}× {li.item.title}
                 </span>
-                <span className="shrink-0 text-base font-medium text-ink">
+                <span className="shrink-0 text-base font-medium tabular-nums text-ink">
                   {formatARS(li.item.price.amount * li.quantity)}
                 </span>
               </li>

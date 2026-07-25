@@ -16,6 +16,16 @@
 //   - Chameleon theming: Tailwind v4 mapped to host CSS variables via
 //     ext-apps useHostStyleVariables/useHostFonts.
 //   - Typography: rem units, ≥ 0.875 rem (14 px) minimum per 2026 standards.
+//   - Safe areas (claude.com/docs/connectors/building/mcp-apps/design-guidelines
+//     #host-context-for-layout): on mobile the chat composer/nav bar can overlay
+//     this widget's edges. hostContext.safeAreaInsets is in pixels — add it on
+//     top of the base p-5 padding rather than replacing it.
+//   - Widget instance supersession (claude.com/docs/connectors/building/mcp-apps/
+//     instance-supersession) — this is a dashboard list the owner can reasonably
+//     re-open mid-conversation ("mostrame los cobros pendientes de nuevo"), the
+//     doc's textbook case: if the owner re-asks, only the newest copy of this
+//     widget should stay interactive. Older copies gray out and stop navigating
+//     instead of silently feeding stale reads back into Claude's context.
 //
 // Data contract: structuredContent.prefill.orders from open_pending_orders tool.
 // Each item is { ucp: UCPOrder, customerName: string, createdAt: string, status: "pending" }.
@@ -25,7 +35,7 @@
 // UCP Order spec: https://ucp.dev/latest/specification/order/
 // CSP: no allowUnsafeEval — do NOT add it without a CSP audit.
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
 import type { UCPOrder, UCPLineItem, UCPTotal } from "../_lib/ucp-types";
@@ -43,6 +53,11 @@ interface DisplayOrder {
 
 interface Prefill {
   orders: DisplayOrder[];
+  /** Top-level election key for widget-instance supersession (server wall-clock
+   * ms at prefill time) — same pattern as business-overview-render.ts's
+   * top-level `createdAt`. Optional purely for defensive typing (Number.isFinite
+   * guard in ontoolresult below); pending-orders-render.ts always sets it. */
+  createdAt?: number;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -92,6 +107,54 @@ function PendingOrdersList(): React.JSX.Element {
   const [loaded, setLoaded] = useState(false);
   // Per-card nav error: keyed by paymentIntentId (ucp.id).
   const [navErrors, setNavErrors] = useState<Record<string, string>>({});
+  const [superseded, setSuperseded] = useState(false);
+
+  // Widget instance supersession (claude.com/docs/connectors/building/mcp-apps/
+  // instance-supersession) — this dashboard is exactly the doc's textbook case:
+  // if the owner re-asks "mostrame los cobros pendientes de nuevo" mid-conversation,
+  // only the newest copy of this widget should stay interactive. Older copies gray
+  // out instead of both silently feeding stale reads back into Claude's context.
+  // Channel is scoped per-conversation by default (no fixed _meta.ui.domain set on
+  // this resource).
+  const instanceIdRef = useRef<string>(crypto.randomUUID());
+  const orderKeyRef = useRef<number | undefined>(undefined);
+  const keyFinalizedRef = useRef(false);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const peersRef = useRef(new Map<string, { orderKey: number; instanceId: string }>());
+
+  useEffect(() => {
+    const channel = new BroadcastChannel("velora-pending-orders-supersede");
+    channelRef.current = channel;
+    const instanceId = instanceIdRef.current;
+
+    function isYounger(other: { orderKey: number; instanceId: string }) {
+      if (!keyFinalizedRef.current || orderKeyRef.current == null) return false;
+      if (other.orderKey !== orderKeyRef.current) return other.orderKey > orderKeyRef.current!;
+      return other.instanceId > instanceId;
+    }
+
+    channel.onmessage = (ev) => {
+      const msg = ev.data as { type?: string; instanceId?: string; orderKey?: number } | undefined;
+      if (!msg?.instanceId || msg.instanceId === instanceId || !keyFinalizedRef.current) return;
+      if (msg.type === "hello") {
+        channel.postMessage({ type: "born", instanceId, orderKey: orderKeyRef.current });
+      }
+      if (Number.isFinite(msg.orderKey)) {
+        peersRef.current.set(msg.instanceId, { orderKey: msg.orderKey!, instanceId: msg.instanceId });
+        setSuperseded([...peersRef.current.values()].some(isYounger));
+      }
+    };
+
+    return () => channel.close();
+  }, []);
+
+  function announceInstance() {
+    const channel = channelRef.current;
+    if (!channel || orderKeyRef.current == null) return;
+    const instanceId = instanceIdRef.current;
+    channel.postMessage({ type: "hello", instanceId, orderKey: orderKeyRef.current });
+    channel.postMessage({ type: "born", instanceId, orderKey: orderKeyRef.current });
+  }
 
   useEffect(() => {
     if (!app) return;
@@ -102,6 +165,11 @@ function PendingOrdersList(): React.JSX.Element {
       const args = (raw.prefill ?? raw) as Prefill;
       setOrders(args.orders ?? []);
       setLoaded(true);
+      if (Number.isFinite(args.createdAt)) {
+        orderKeyRef.current = args.createdAt;
+        keyFinalizedRef.current = true;
+        announceInstance();
+      }
     };
     app.ontoolresult = (params) => apply(params);
   }, [app]);
@@ -109,12 +177,12 @@ function PendingOrdersList(): React.JSX.Element {
   // HOP: pending-orders → cobro-status (verified: ucp.id = PaymentIntent id,
   // open_cobro_status accepts paymentIntentId — cobro-status-render.ts inputSchema).
   const onViewStatus = useCallback(async (paymentIntentId: string) => {
-    if (!app) return;
+    if (!app || superseded) return;
     setNavErrors((prev) => ({ ...prev, [paymentIntentId]: "" }));
     await app.callServerTool({ name: "open_cobro_status", arguments: { paymentIntentId } }).catch(() => {
       setNavErrors((prev) => ({ ...prev, [paymentIntentId]: "No se pudo abrir el estado. Intentá de nuevo." }));
     });
-  }, [app]);
+  }, [app, superseded]);
 
   if (error) {
     return <Centered>No pudimos abrir el panel de cobros. {error.message}</Centered>;
@@ -125,8 +193,27 @@ function PendingOrdersList(): React.JSX.Element {
   const displayed = orders.slice(0, DISPLAY_CAP);
   const overflow = orders.length - displayed.length;
 
+  // Safe areas (claude.com/docs/connectors/building/mcp-apps/design-guidelines
+  // #host-context-for-layout): on mobile the chat composer/nav bar can overlay
+  // this widget's edges. hostContext.safeAreaInsets is in pixels — add it on
+  // top of the base p-5 padding rather than replacing it.
+  const safeArea = app?.getHostContext()?.safeAreaInsets;
+  const safeAreaStyle: React.CSSProperties = safeArea
+    ? {
+        paddingTop: `calc(1.25rem + ${safeArea.top}px)`,
+        paddingRight: `calc(1.25rem + ${safeArea.right}px)`,
+        paddingBottom: `calc(1.25rem + ${safeArea.bottom}px)`,
+        paddingLeft: `calc(1.25rem + ${safeArea.left}px)`,
+      }
+    : {};
+
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-4 p-5 text-ink">
+    <main className="mx-auto flex max-w-md flex-col gap-4 p-5 text-ink" style={safeAreaStyle}>
+      {superseded && (
+        <div className="flex items-center justify-between gap-2 rounded-control bg-surface-2 p-3 text-sm text-ink-soft" role="status">
+          <span>Esta vista quedó vieja — hay una más nueva en este chat.</span>
+        </div>
+      )}
       <h1 className="text-xl font-semibold leading-snug">Cobros pendientes</h1>
 
       {displayed.length === 0 ? (
@@ -161,7 +248,7 @@ function PendingOrdersList(): React.JSX.Element {
 
                 {/* Total + status chip row */}
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-base font-semibold text-ink">
+                  <span className="text-base font-semibold tabular-nums text-ink">
                     {formatARS(total)}
                   </span>
                   <span aria-label="Estado del cobro">

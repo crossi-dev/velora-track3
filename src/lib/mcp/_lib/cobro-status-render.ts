@@ -159,7 +159,7 @@ export function registerCobroStatusRenderTool(
                 text: JSON.stringify({ order: null, message: "No encontré ese cobro." }),
               },
             ],
-            structuredContent: { prefill: { order: null } },
+            structuredContent: { prefill: { order: null, createdAt: Date.now() } },
           };
         }
 
@@ -182,7 +182,10 @@ export function registerCobroStatusRenderTool(
               text: JSON.stringify({ order: prefillOrder }),
             },
           ],
-          structuredContent: { prefill: { order: prefillOrder } },
+          // Election key for widget instance supersession (claude.com/docs/connectors/
+          // building/mcp-apps/instance-supersession) — top-level, sibling to `order`,
+          // distinct from order.createdAt (the cobro's own creation date).
+          structuredContent: { prefill: { order: prefillOrder, createdAt: Date.now() } },
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";

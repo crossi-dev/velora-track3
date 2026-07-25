@@ -7,9 +7,12 @@
 
 import React from "react";
 
-export function Card({ title, children }: { title: string; children: React.ReactNode }): React.JSX.Element {
+/** style is optional so widgets can add hostContext.safeAreaInsets padding on
+ *  top of the base p-5 (claude.com/docs/connectors/building/mcp-apps/
+ *  design-guidelines#host-context-for-layout) without duplicating this shell. */
+export function Card({ title, style, children }: { title: string; style?: React.CSSProperties; children: React.ReactNode }): React.JSX.Element {
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-4 p-5 text-ink">
+    <main className="mx-auto flex max-w-md flex-col gap-4 p-5 text-ink" style={style}>
       <h1 className="text-xl font-semibold leading-snug">{title}</h1>
       {children}
     </main>

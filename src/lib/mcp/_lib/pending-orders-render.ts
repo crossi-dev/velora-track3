@@ -94,9 +94,12 @@ export function registerPendingOrdersRenderTool(
           createdAt: po.createdAt.toISOString(),
           status: po.status,
         }));
+        // createdAt: election key for widget instance supersession (claude.com/docs/
+        // connectors/building/mcp-apps/instance-supersession) — top-level, sibling to
+        // `orders`, distinct from each order's own createdAt (its creation date).
         return {
           content: [{ type: "text" as const, text: JSON.stringify({ orders, total: orders.length }) }],
-          structuredContent: { prefill: { orders } },
+          structuredContent: { prefill: { orders, createdAt: Date.now() } },
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";

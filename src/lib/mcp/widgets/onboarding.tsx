@@ -124,8 +124,21 @@ function OnboardingHub(): React.JSX.Element {
   const connectedCount = integrations.filter((i) => i.connected).length;
   const pendingIntegrations = integrations.filter((i) => !i.connected && i.connectUrl);
 
+  // Safe areas (claude.com/docs/connectors/building/mcp-apps/design-guidelines
+  // #host-context-for-layout): add hostContext.safeAreaInsets on top of the
+  // base p-5 padding so the chat composer/nav bar never overlaps this widget.
+  const safeArea = app?.getHostContext()?.safeAreaInsets;
+  const safeAreaStyle: React.CSSProperties = safeArea
+    ? {
+        paddingTop: `calc(1.25rem + ${safeArea.top}px)`,
+        paddingRight: `calc(1.25rem + ${safeArea.right}px)`,
+        paddingBottom: `calc(1.25rem + ${safeArea.bottom}px)`,
+        paddingLeft: `calc(1.25rem + ${safeArea.left}px)`,
+      }
+    : {};
+
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-4 p-5 text-ink">
+    <main className="mx-auto flex max-w-md flex-col gap-4 p-5 text-ink" style={safeAreaStyle}>
       <div className="flex items-start justify-between gap-2">
         <h1 className="text-xl font-semibold leading-snug">Conectá tu negocio</h1>
         <span className="shrink-0 rounded-full border border-line bg-surface-2 px-3 py-1 text-sm font-medium text-ink-soft">

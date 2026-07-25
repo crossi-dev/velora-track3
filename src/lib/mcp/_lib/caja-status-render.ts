@@ -131,7 +131,12 @@ export function registerCajaStatusRenderTool(
     },
     async () => {
       try {
-        const prefill = await resolveCajaPrefill(businessId, backend);
+        const cajaPrefill = await resolveCajaPrefill(businessId, backend);
+        // Election key for widget instance supersession (claude.com/docs/connectors/
+        // building/mcp-apps/instance-supersession) — added here, not inside
+        // resolveCajaPrefill, since that resolver is shared with business-overview
+        // and stays a pure data fetch.
+        const prefill = { ...cajaPrefill, createdAt: Date.now() };
         return {
           content: [{ type: "text" as const, text: JSON.stringify(prefill) }],
           structuredContent: { prefill },

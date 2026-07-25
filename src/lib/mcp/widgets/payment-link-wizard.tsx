@@ -212,9 +212,22 @@ function PaymentLinkWizard(): React.JSX.Element {
   if (!prefill && toolResultReceived) return <Centered>No pudimos cargar los datos del cobro. Probá de nuevo.</Centered>;
   if (!prefill) return <Centered>Esperando los datos del cobro…</Centered>;
 
+  // Safe areas (claude.com/docs/connectors/building/mcp-apps/design-guidelines
+  // #host-context-for-layout): add hostContext.safeAreaInsets on top of the
+  // base p-5 padding so the chat composer/nav bar never overlaps this widget.
+  const safeArea = app?.getHostContext()?.safeAreaInsets;
+  const safeAreaStyle: React.CSSProperties = safeArea
+    ? {
+        paddingTop: `calc(1.25rem + ${safeArea.top}px)`,
+        paddingRight: `calc(1.25rem + ${safeArea.right}px)`,
+        paddingBottom: `calc(1.25rem + ${safeArea.bottom}px)`,
+        paddingLeft: `calc(1.25rem + ${safeArea.left}px)`,
+      }
+    : {};
+
   if (linkUrl) {
     return (
-      <Card title="Link de cobro listo">
+      <Card title="Link de cobro listo" style={safeAreaStyle}>
         <p className="text-sm text-ink-soft">Compartí este link con tu cliente para que pague.</p>
         <div className="rounded-control bg-surface-2 p-3 text-sm break-all text-ink">{linkUrl}</div>
         <PrimaryButton onClick={onCopy}>{copied ? "¡Copiado!" : "Copiar link"}</PrimaryButton>
@@ -231,7 +244,7 @@ function PaymentLinkWizard(): React.JSX.Element {
   }
 
   return (
-    <Card title="Revisá el cobro">
+    <Card title="Revisá el cobro" style={safeAreaStyle}>
       <CustomerField
         customerName={customerName}
         pickingCustomer={pickingCustomer}
@@ -253,7 +266,7 @@ function PaymentLinkWizard(): React.JSX.Element {
             <li key={it.productId} className="flex items-center justify-between gap-3 rounded-control bg-surface-2 p-3">
               <div className="min-w-0">
                 <div className="truncate text-base text-ink">{it.name}</div>
-                <div className="text-sm text-ink-soft">{ars(it.unitPrice)} c/u · {ars(it.quantity * it.unitPrice)}</div>
+                <div className="text-sm tabular-nums text-ink-soft">{ars(it.unitPrice)} c/u · {ars(it.quantity * it.unitPrice)}</div>
               </div>
               <label className="flex items-center gap-1 text-sm text-ink-soft">
                 <span className="sr-only">Cantidad de {it.name}</span>
@@ -272,7 +285,7 @@ function PaymentLinkWizard(): React.JSX.Element {
       </div>
 
       <Field label="Total a cobrar">
-        <span className="text-3xl font-bold leading-tight text-ink">{ars(total)}</span>
+        <span className="text-3xl font-bold leading-tight tabular-nums text-ink">{ars(total)}</span>
       </Field>
 
       <p className="text-sm text-ink-soft">El link vence en 3 días. El total se calcula con los precios de tu catálogo.</p>

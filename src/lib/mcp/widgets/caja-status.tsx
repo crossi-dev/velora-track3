@@ -16,9 +16,22 @@
 // callServerTool wiring (verified against caja-tools.ts inputSchema):
 //   caja_ciclo_caja: { action: "abrir" | "cerrar", monto: number, nota?: string }
 //
+// Safe-area insets (claude.com/docs/connectors/building/mcp-apps/design-guidelines
+// #host-context-for-layout): on mobile the chat composer/nav bar can overlay this
+// widget's edges — hostContext.safeAreaInsets (px) is added on top of the base
+// padding rather than replacing it. Same pattern as business-overview.tsx.
+//
+// Widget instance supersession (claude.com/docs/connectors/building/mcp-apps/
+// instance-supersession): the owner can reasonably re-open this status view mid-
+// conversation ("dale, mostrame la caja de nuevo") — only the newest copy should
+// stay interactive so an older, stale copy can't fire a caja_ciclo_caja mutation
+// (open/close) with numbers Claude has already moved past. Uses its own
+// BroadcastChannel ("velora-caja-status-supersede") — separate from
+// business-overview's channel so the two widgets' elections never cross-talk.
+//
 // CSP: no allowUnsafeEval — do NOT add it without a CSP audit.
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
 import { Card, PrimaryButton, SecondaryButton, Centered, StatusBanner, StatusChip } from "./_widget-primitives";
@@ -27,6 +40,10 @@ type CajaState = "OPEN" | "CLOSED" | "NO_SESSION";
 
 interface Prefill {
   state: CajaState;
+  /** Election key for instance supersession — see caja-status-render.ts. Optional
+   * until the render tool is updated to always set it (server-side dependency;
+   * flagged separately). Guarded with Number.isFinite before use. */
+  createdAt?: number;
   sessionId?: string;
   openedAt?: string;
   openedCashAmount?: number;
@@ -50,11 +67,14 @@ function fmtDate(iso: string | null | undefined): string {
   return isNaN(d.getTime()) ? iso : d.toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-function Row({ label, value }: { label: string; value: React.ReactNode }): React.JSX.Element {
+/** numeric=true marks money/count values (tabular-nums, per business-overview's
+ * fix) so digits don't jitter the layout as they change width; dates/labels
+ * that pass through here (e.g. fmtDate results) leave it unset. */
+function Row({ label, value, numeric }: { label: string; value: React.ReactNode; numeric?: boolean }): React.JSX.Element {
   return (
     <div className="flex items-center justify-between gap-2">
       <dt className="text-sm text-ink-soft">{label}</dt>
-      <dd className="text-sm font-medium text-ink">{value}</dd>
+      <dd className={`text-sm font-medium text-ink ${numeric ? "tabular-nums" : ""}`}>{value}</dd>
     </div>
   );
 }
@@ -98,18 +118,68 @@ function CajaStatusWidget(): React.JSX.Element {
   const [actioning, setActioning] = useState(false);
   const [actionErr, setActionErr] = useState<string | null>(null);
   const [doneBanner, setDoneBanner] = useState<string | null>(null);
+  const [superseded, setSuperseded] = useState(false);
+
+  // Widget instance supersession (see file header) — only the newest copy of
+  // this widget stays interactive; older copies gray out instead of both
+  // silently letting the owner fire caja_ciclo_caja from stale numbers.
+  const instanceIdRef = useRef<string>(crypto.randomUUID());
+  const orderKeyRef = useRef<number | undefined>(undefined);
+  const keyFinalizedRef = useRef(false);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const peersRef = useRef(new Map<string, { orderKey: number; instanceId: string }>());
+
+  useEffect(() => {
+    const channel = new BroadcastChannel("velora-caja-status-supersede");
+    channelRef.current = channel;
+    const instanceId = instanceIdRef.current;
+
+    function isYounger(other: { orderKey: number; instanceId: string }) {
+      if (!keyFinalizedRef.current || orderKeyRef.current == null) return false;
+      if (other.orderKey !== orderKeyRef.current) return other.orderKey > orderKeyRef.current!;
+      return other.instanceId > instanceId;
+    }
+
+    channel.onmessage = (ev) => {
+      const msg = ev.data as { type?: string; instanceId?: string; orderKey?: number } | undefined;
+      if (!msg?.instanceId || msg.instanceId === instanceId || !keyFinalizedRef.current) return;
+      if (msg.type === "hello") {
+        channel.postMessage({ type: "born", instanceId, orderKey: orderKeyRef.current });
+      }
+      if (Number.isFinite(msg.orderKey)) {
+        peersRef.current.set(msg.instanceId, { orderKey: msg.orderKey!, instanceId: msg.instanceId });
+        setSuperseded([...peersRef.current.values()].some(isYounger));
+      }
+    };
+
+    return () => channel.close();
+  }, []);
+
+  function announceInstance() {
+    const channel = channelRef.current;
+    if (!channel || orderKeyRef.current == null) return;
+    const instanceId = instanceIdRef.current;
+    channel.postMessage({ type: "hello", instanceId, orderKey: orderKeyRef.current });
+    channel.postMessage({ type: "born", instanceId, orderKey: orderKeyRef.current });
+  }
 
   useEffect(() => {
     if (!app) return;
     app.ontoolresult = (params) => {
       setReceived(true);
       const raw = (params.structuredContent ?? params.arguments ?? {}) as { prefill?: Prefill } & Prefill;
-      setPrefill((raw.prefill ?? raw) as Prefill);
+      const data = (raw.prefill ?? raw) as Prefill;
+      setPrefill(data);
+      if (Number.isFinite(data.createdAt)) {
+        orderKeyRef.current = data.createdAt;
+        keyFinalizedRef.current = true;
+        announceInstance();
+      }
     };
   }, [app]);
 
   const doAction = useCallback(async (monto: number) => {
-    if (!app || !actionMode) return;
+    if (!app || !actionMode || superseded) return;
     setActioning(true); setActionErr(null);
     try {
       // Verified against caja-tools.ts: action: z.enum(["abrir","cerrar"]), monto: z.number().finite().min(0)
@@ -132,9 +202,26 @@ function CajaStatusWidget(): React.JSX.Element {
   if (!prefill && received) return <Centered>No pudimos cargar el estado de la caja. Probá de nuevo.</Centered>;
   if (!prefill) return <Centered>Cargando estado de caja…</Centered>;
 
+  const safeArea = app?.getHostContext()?.safeAreaInsets;
+  const safeAreaStyle: React.CSSProperties = safeArea
+    ? {
+        paddingTop: `calc(1.25rem + ${safeArea.top}px)`,
+        paddingRight: `calc(1.25rem + ${safeArea.right}px)`,
+        paddingBottom: `calc(1.25rem + ${safeArea.bottom}px)`,
+        paddingLeft: `calc(1.25rem + ${safeArea.left}px)`,
+      }
+    : {};
+
+  const supersededBanner = superseded && (
+    <div className="rounded-control bg-surface-2 p-3 text-sm text-ink-soft" role="status">
+      Esta vista quedó vieja — hay una más nueva en este chat.
+    </div>
+  );
+
   if (doneBanner) {
     return (
-      <Card title="Estado de caja">
+      <Card title="Estado de caja" style={safeAreaStyle}>
+        {supersededBanner}
         <StatusBanner tone="success">{doneBanner}</StatusBanner>
         <p className="text-center text-sm text-ink-soft">Refrescá el estado para ver los datos actualizados.</p>
       </Card>
@@ -144,12 +231,13 @@ function CajaStatusWidget(): React.JSX.Element {
   if (actionMode) {
     const isAbrir = actionMode === "abrir";
     return (
-      <Card title={isAbrir ? "Abrir caja" : "Cerrar caja"}>
+      <Card title={isAbrir ? "Abrir caja" : "Cerrar caja"} style={safeAreaStyle}>
+        {supersededBanner}
         <MontoForm
           label={isAbrir ? "Fondo inicial (ARS)" : "Efectivo contado (ARS)"}
           defaultValue={(!isAbrir && prefill.expectedCashAmount != null) ? String(prefill.expectedCashAmount) : "0"}
           onSubmit={doAction} onCancel={() => { setActionMode(null); setActionErr(null); }}
-          submitting={actioning} errMsg={actionErr}
+          submitting={actioning || superseded} errMsg={actionErr}
         />
         {!isAbrir && prefill.state === "OPEN" && (
           <p className="text-sm text-ink-soft">Efectivo esperado: {ars(prefill.expectedCashAmount)}</p>
@@ -160,50 +248,53 @@ function CajaStatusWidget(): React.JSX.Element {
 
   if (prefill.state === "NO_SESSION") {
     return (
-      <Card title="Estado de caja">
+      <Card title="Estado de caja" style={safeAreaStyle}>
+        {supersededBanner}
         <div className="flex items-center justify-center rounded-control bg-surface-2 px-4 py-3 text-base text-ink-soft">Sin historial de caja</div>
         <p className="text-sm text-ink-soft">Aún no se registraron turnos en esta caja.</p>
-        <PrimaryButton onClick={() => { setActionMode("abrir"); setActionErr(null); }}>Abrir caja</PrimaryButton>
+        <PrimaryButton disabled={superseded} onClick={() => { setActionMode("abrir"); setActionErr(null); }}>Abrir caja</PrimaryButton>
       </Card>
     );
   }
 
   if (prefill.state === "CLOSED") {
     return (
-      <Card title="Estado de caja">
+      <Card title="Estado de caja" style={safeAreaStyle}>
+        {supersededBanner}
         <section aria-label="Estado del turno" className="flex items-center justify-center rounded-control bg-surface-2 px-4 py-3 text-base font-semibold text-ink-soft">Cerrada</section>
         <dl className="flex flex-col gap-2 rounded-control bg-surface-2 px-4 py-3">
           <Row label="Cerrada" value={fmtDate(prefill.closedAt)} />
-          <Row label="Efectivo contado" value={ars(prefill.closedCashAmount)} />
+          <Row label="Efectivo contado" value={ars(prefill.closedCashAmount)} numeric />
           {prefill.variance != null && (
-            <Row label="Diferencia" value={
+            <Row label="Diferencia" numeric value={
               <span className={prefill.variance !== 0 ? "text-danger-ink" : undefined}>{ars(prefill.variance)}</span>
             } />
           )}
         </dl>
-        <PrimaryButton onClick={() => { setActionMode("abrir"); setActionErr(null); }}>Abrir caja</PrimaryButton>
+        <PrimaryButton disabled={superseded} onClick={() => { setActionMode("abrir"); setActionErr(null); }}>Abrir caja</PrimaryButton>
       </Card>
     );
   }
 
   // OPEN state
   return (
-    <Card title="Estado de caja">
+    <Card title="Estado de caja" style={safeAreaStyle}>
+      {supersededBanner}
       <section aria-label="Saldo actual" className="flex flex-col items-center gap-1 rounded-control bg-surface-2 px-4 py-4">
         <span className="text-sm text-ink-soft">Efectivo esperado</span>
-        <span className="text-4xl font-bold text-ink">{ars(prefill.expectedCashAmount)}</span>
+        <span className="text-4xl font-bold tabular-nums text-ink">{ars(prefill.expectedCashAmount)}</span>
         <span className="mt-1">
           <StatusChip tone="success">Turno abierto</StatusChip>
         </span>
       </section>
       <dl className="flex flex-col gap-2 rounded-control bg-surface-2 px-4 py-3">
         <Row label="Abierta" value={fmtDate(prefill.openedAt)} />
-        <Row label="Fondo inicial" value={ars(prefill.openedCashAmount)} />
-        <Row label="Ingresos" value={ars(prefill.totalInflows)} />
-        <Row label="Egresos" value={prefill.totalOutflows != null ? ars(-Math.abs(prefill.totalOutflows)) : "—"} />
-        {prefill.movementCount != null && <Row label="Movimientos" value={String(prefill.movementCount)} />}
+        <Row label="Fondo inicial" value={ars(prefill.openedCashAmount)} numeric />
+        <Row label="Ingresos" value={ars(prefill.totalInflows)} numeric />
+        <Row label="Egresos" value={prefill.totalOutflows != null ? ars(-Math.abs(prefill.totalOutflows)) : "—"} numeric />
+        {prefill.movementCount != null && <Row label="Movimientos" value={String(prefill.movementCount)} numeric />}
       </dl>
-      <SecondaryButton onClick={() => { setActionMode("cerrar"); setActionErr(null); }}>Cerrar caja</SecondaryButton>
+      <SecondaryButton disabled={superseded} onClick={() => { setActionMode("cerrar"); setActionErr(null); }}>Cerrar caja</SecondaryButton>
     </Card>
   );
 }

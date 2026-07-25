@@ -20,7 +20,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { Card, Centered } from "./_widget-primitives";
+import { Card, Centered, StatusChip } from "./_widget-primitives";
 
 // ── Data contract (matches shipment-prep-render.ts) ──────────────────────────
 
@@ -104,8 +104,21 @@ function ShipmentPrepWidget(): React.JSX.Element {
   const { items, totalWeightGrams, hasRealWeightData, shipping } = prefill;
   const anyInsufficientStock = items.some((it) => !it.found || !it.sufficientStock);
 
+  // Safe areas (claude.com/docs/connectors/building/mcp-apps/design-guidelines
+  // #host-context-for-layout): add hostContext.safeAreaInsets on top of the
+  // base p-5 padding so the chat composer/nav bar never overlaps this widget.
+  const safeArea = app?.getHostContext()?.safeAreaInsets;
+  const safeAreaStyle: React.CSSProperties = safeArea
+    ? {
+        paddingTop: `calc(1.25rem + ${safeArea.top}px)`,
+        paddingRight: `calc(1.25rem + ${safeArea.right}px)`,
+        paddingBottom: `calc(1.25rem + ${safeArea.bottom}px)`,
+        paddingLeft: `calc(1.25rem + ${safeArea.left}px)`,
+      }
+    : {};
+
   return (
-    <Card title="Preparar envío">
+    <Card title="Preparar envío" style={safeAreaStyle}>
       {/* Items block */}
       <section aria-label="Productos">
         <h2 className="mb-2 text-sm font-medium text-ink-soft">Productos</h2>
@@ -119,16 +132,14 @@ function ShipmentPrepWidget(): React.JSX.Element {
                 <div className="truncate text-base text-ink">
                   {it.quantity}× {it.found ? it.name : `Producto ${it.productId}`}
                 </div>
-                <div className="text-sm text-ink-soft">
+                <div className="text-sm tabular-nums text-ink-soft">
                   {it.found && it.unitPrice !== null ? formatARS(it.unitPrice * it.quantity) : "Precio no disponible"}
                 </div>
               </div>
-              <span
-                className={`shrink-0 rounded-full px-3 py-1 text-sm font-medium ${
-                  it.found && it.sufficientStock ? "bg-surface-2 text-ink-soft" : "bg-danger-surface text-danger-ink"
-                }`}
-              >
-                {!it.found ? "No encontrado" : it.sufficientStock ? `Stock: ${it.stock}` : `Sin stock suficiente (${it.stock ?? 0})`}
+              <span className="shrink-0">
+                <StatusChip tone={it.found && it.sufficientStock ? "neutral" : "danger"}>
+                  {!it.found ? "No encontrado" : it.sufficientStock ? `Stock: ${it.stock}` : `Sin stock suficiente (${it.stock ?? 0})`}
+                </StatusChip>
               </span>
             </li>
           ))}
@@ -144,7 +155,7 @@ function ShipmentPrepWidget(): React.JSX.Element {
       <section aria-label="Peso del paquete" className="rounded-control bg-surface-2 px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm text-ink-soft">Peso estimado del paquete</span>
-          <span className="text-base font-semibold text-ink">{formatWeight(totalWeightGrams)}</span>
+          <span className="text-base font-semibold tabular-nums text-ink">{formatWeight(totalWeightGrams)}</span>
         </div>
         {!hasRealWeightData && (
           <p className="mt-1 text-sm text-ink-soft">
@@ -177,7 +188,7 @@ function ShipmentPrepWidget(): React.JSX.Element {
                     {opt.provider} · {opt.estimatedDays > 0 ? `${opt.estimatedDays} días` : "plazo no informado"}
                   </div>
                 </div>
-                <span className="shrink-0 text-base font-semibold text-ink">
+                <span className="shrink-0 text-base font-semibold tabular-nums text-ink">
                   {formatARS(opt.priceARS)}
                   {shipping.cheapestPriceARS === opt.priceARS && (
                     <span className="ml-2 rounded-full bg-surface-2 px-2 py-0.5 text-sm font-medium text-ink-soft">

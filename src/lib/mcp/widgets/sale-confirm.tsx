@@ -136,11 +136,25 @@ function SaleConfirmWidget(): React.JSX.Element {
     return <Centered>No pudimos cargar los datos de la venta. Probá de nuevo.</Centered>;
   if (!prefill) return <Centered>Esperando los datos de la venta…</Centered>;
 
+  // Safe areas (claude.com/docs/connectors/building/mcp-apps/design-guidelines
+  // #host-context-for-layout): on mobile the chat composer/nav bar can overlay
+  // this widget's edges. hostContext.safeAreaInsets is in pixels — add it on
+  // top of the base padding rather than replacing it.
+  const safeArea = app?.getHostContext()?.safeAreaInsets;
+  const safeAreaStyle: React.CSSProperties = safeArea
+    ? {
+        paddingTop: `calc(1.25rem + ${safeArea.top}px)`,
+        paddingRight: `calc(1.25rem + ${safeArea.right}px)`,
+        paddingBottom: `calc(1.25rem + ${safeArea.bottom}px)`,
+        paddingLeft: `calc(1.25rem + ${safeArea.left}px)`,
+      }
+    : {};
+
   // ── Confirmation screen ───────────────────────────────────────────────────
 
   if (confirmed) {
     return (
-      <Card title="Venta registrada ✓">
+      <Card title="Venta registrada ✓" style={safeAreaStyle}>
         <p className="text-base text-ink-soft">
           {prefill.customerName !== "Consumidor final"
             ? `Venta para ${prefill.customerName} registrada correctamente.`
@@ -148,7 +162,7 @@ function SaleConfirmWidget(): React.JSX.Element {
         </p>
         <div className="flex items-center justify-between rounded-control bg-success-surface px-4 py-3 text-success-ink">
           <span className="text-base font-medium">Total cobrado</span>
-          <span className="text-xl font-bold">{ars(prefill.totalARS)}</span>
+          <span className="text-xl font-bold tabular-nums">{ars(prefill.totalARS)}</span>
         </div>
         {saleId && (
           <p className="text-sm text-ink-soft">ID de venta: {saleId}</p>
@@ -166,7 +180,7 @@ function SaleConfirmWidget(): React.JSX.Element {
   // ── Preview screen ────────────────────────────────────────────────────────
 
   return (
-    <Card title="Confirmar venta">
+    <Card title="Confirmar venta" style={safeAreaStyle}>
       {/* Customer */}
       <Field label="Cliente">
         <span className="text-base font-medium text-ink">{prefill.customerName}</span>
@@ -183,12 +197,12 @@ function SaleConfirmWidget(): React.JSX.Element {
             >
               <div className="min-w-0">
                 <div className="truncate text-base text-ink">{it.name}</div>
-                <div className="text-sm text-ink-soft">
+                <div className="text-sm tabular-nums text-ink-soft">
                   {ars(it.unitPrice)} c/u
                 </div>
               </div>
               <div className="shrink-0 text-right">
-                <div className="text-base font-medium text-ink">{ars(it.quantity * it.unitPrice)}</div>
+                <div className="text-base font-medium tabular-nums text-ink">{ars(it.quantity * it.unitPrice)}</div>
                 <div className="text-sm text-ink-soft">× {it.quantity}</div>
               </div>
             </li>
@@ -198,7 +212,7 @@ function SaleConfirmWidget(): React.JSX.Element {
 
       {/* Total */}
       <Field label="Total a cobrar">
-        <span className="text-3xl font-bold leading-tight text-ink">{ars(prefill.totalARS)}</span>
+        <span className="text-3xl font-bold leading-tight tabular-nums text-ink">{ars(prefill.totalARS)}</span>
       </Field>
 
       <p className="text-sm text-ink-soft">
