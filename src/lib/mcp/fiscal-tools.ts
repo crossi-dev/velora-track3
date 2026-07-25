@@ -25,6 +25,7 @@ import { z } from "zod";
 import type { TipoComprobante } from "@/app/api/agents/fiscal/jsonrpc/_lib/arca-real/types";
 import type { FiscalBackend } from "./_lib/fiscal-backend.port";
 import { createFiscalBackend } from "./_lib/fiscal-backend.factory";
+import { errResponse } from "./_lib/mcp-responses";
 
 // ── Input schema for emit_invoice ─────────────────────────────────────────────
 
@@ -123,10 +124,7 @@ export function registerFiscalTools(
           : msg.startsWith("FISCAL_MISCONFIGURED") ? "FISCAL_MISCONFIGURED"
           : msg.startsWith("EMIT_IN_FLIGHT") ? "EMIT_IN_FLIGHT"
           : "EMIT_FAILED";
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify({ code, message: msg }) }],
-          isError: true,
-        };
+        return errResponse(code, msg);
       }
     },
   );
@@ -206,10 +204,7 @@ export function registerFiscalTools(
           : msg.startsWith("FISCAL_MISCONFIGURED") ? "FISCAL_MISCONFIGURED"
           : msg.startsWith("EMIT_IN_FLIGHT") ? "EMIT_IN_FLIGHT"
           : "EMIT_FAILED";
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify({ code, message: msg }) }],
-          isError: true,
-        };
+        return errResponse(code, msg);
       }
     },
   );

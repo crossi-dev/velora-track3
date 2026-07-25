@@ -200,19 +200,20 @@ export function registerLogisticaTools(
       });
       if (!courierEntry) {
         return errResponse(
+          "COURIER_NOT_FOUND",
           `Courier desconocido: '${args.provider}'. Usá quote_shipping para obtener un provider válido.`,
         );
       }
       // Mirror ADK guard (handle-logistica-rpc.ts ~L231-233): inactive couriers must not bypass encajonamiento.
       if (!courierEntry.active) {
-        return errResponse(`Courier '${args.provider}' is not enabled for this business`);
+        return errResponse("COURIER_NOT_ENABLED", `Courier '${args.provider}' is not enabled for this business`);
       }
 
       // OCA requires addressNumber and province — reject early with a clear message rather than
       // letting the adapter call fail with an opaque upstream error.
       if (args.provider === "oca") {
         const ocaErr = checkOcaRequiredFields(args.customerAddressNumber, args.customerProvince);
-        if (ocaErr) return errResponse(ocaErr);
+        if (ocaErr) return errResponse("VALIDATION_ERROR", ocaErr);
       }
 
       const adapter = courierEntry.getAdapter();
@@ -239,7 +240,7 @@ export function registerLogisticaTools(
       const text = extractResultText(rpcResponse);
       if (text === null) {
         const errorBody = (rpcResponse as { error?: { message?: string } }).error;
-        return errResponse(errorBody?.message ?? "Error interno del courier");
+        return errResponse("CREATE_SHIPMENT_ERROR", errorBody?.message ?? "Error interno del courier");
       }
 
       return { content: [{ type: "text" as const, text }] };
@@ -278,6 +279,7 @@ export function registerLogisticaTools(
       if (!courierEntry) {
         const validNames = COURIER_REGISTRY.map((c) => `'${c.name}'`).join(", ");
         return errResponse(
+          "COURIER_NOT_FOUND",
           `Courier desconocido: '${args.provider}'. Valores válidos: ${validNames}.`,
         );
       }
@@ -288,7 +290,7 @@ export function registerLogisticaTools(
       const text = extractResultText(rpcResponse);
       if (text === null) {
         const errorBody = (rpcResponse as { error?: { message?: string } }).error;
-        return errResponse(errorBody?.message ?? "Error interno del courier");
+        return errResponse("TRACK_SHIPMENT_ERROR", errorBody?.message ?? "Error interno del courier");
       }
 
       return { content: [{ type: "text" as const, text }] };

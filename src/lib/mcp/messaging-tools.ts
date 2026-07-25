@@ -22,14 +22,7 @@ import { z } from "zod";
 import { type WhatsAppTemplateComponent } from "@/lib/whatsapp";
 import type { MessagingBackend } from "./_lib/messaging-backend.port";
 import { createMessagingBackend } from "./_lib/messaging-backend.factory";
-
-// ── Shared error response builder ─────────────────────────────────────────────
-function errResponse(code: string, message: string) {
-  return {
-    content: [{ type: "text" as const, text: JSON.stringify({ code, message }) }],
-    isError: true,
-  };
-}
+import { errResponse } from "./_lib/mcp-responses";
 
 // ── Private registrars ────────────────────────────────────────────────────────
 

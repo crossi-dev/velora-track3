@@ -24,6 +24,7 @@
 import type { PromesaBackend, SettlePaymentMethod } from "./promesa-backend.port";
 import type { RegisterPromesaSaleItem } from "@/app/api/payment-intents/_lib/register-promesa-sale-use-case";
 import { createPromesaBackend } from "./promesa-backend.factory";
+import { errResponse } from "./mcp-responses";
 
 // ── MCP actor constant (shared with sales-mutations.ts) ───────────────────────
 export const MCP_ACTOR_USER_ID = "mcp-system";
@@ -31,13 +32,6 @@ export const MCP_ACTOR_USER_ID = "mcp-system";
 // ── Shared error response helper ──────────────────────────────────────────────
 
 type McpToolResponse = { content: { type: "text"; text: string }[]; isError?: boolean };
-
-export function errResponse(code: string, message: string): McpToolResponse {
-  return {
-    content: [{ type: "text" as const, text: JSON.stringify({ code, message }) }],
-    isError: true,
-  };
-}
 
 // ── register_promesa_sale ──────────────────────────────────────────────────────
 

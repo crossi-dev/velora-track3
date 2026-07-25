@@ -362,8 +362,8 @@ describe("create_shipment tool", () => {
       });
       const result = asToolResult(raw);
       expect(result.isError).toBe(true);
-      const parsed = JSON.parse(result.content[0].text) as { error: string };
-      expect(parsed.error).toMatch(/desconocido/i);
+      const parsed = JSON.parse(result.content[0].text) as { code: string; message: string };
+      expect(parsed.message).toMatch(/desconocido/i);
     } finally {
       await cleanup();
     }
@@ -394,9 +394,9 @@ describe("create_shipment tool", () => {
       });
       const result = asToolResult(raw);
       expect(result.isError).toBe(true);
-      const parsed = JSON.parse(result.content[0].text) as { error: string };
-      expect(typeof parsed.error).toBe("string");
-      expect(parsed.error.length).toBeGreaterThan(0);
+      const parsed = JSON.parse(result.content[0].text) as { code: string; message: string };
+      expect(typeof parsed.message).toBe("string");
+      expect(parsed.message.length).toBeGreaterThan(0);
     } finally {
       await cleanup();
     }
@@ -486,8 +486,8 @@ describe("track_shipment tool", () => {
       });
       const result = asToolResult(raw);
       expect(result.isError).toBe(true);
-      const parsed = JSON.parse(result.content[0].text) as { error: string };
-      expect(parsed.error).toMatch(/desconocido/i);
+      const parsed = JSON.parse(result.content[0].text) as { code: string; message: string };
+      expect(parsed.message).toMatch(/desconocido/i);
     } finally {
       await cleanup();
     }
@@ -509,8 +509,8 @@ describe("track_shipment tool", () => {
       });
       const result = asToolResult(raw);
       expect(result.isError).toBe(true);
-      const parsed = JSON.parse(result.content[0].text) as { error: string };
-      expect(typeof parsed.error).toBe("string");
+      const parsed = JSON.parse(result.content[0].text) as { code: string; message: string };
+      expect(typeof parsed.message).toBe("string");
     } finally {
       await cleanup();
     }

@@ -30,6 +30,7 @@ import { prismaIdempotencyAdapter } from "@/infrastructure/persistence/prisma-id
 import { getServerActionMeta } from "@/app/api/_lib/mutation-contract";
 import { undoSaleBatchInTransaction } from "@/app/api/undo/_lib/undo-sale";
 import { createHash } from "crypto";
+import { errResponse } from "./mcp-responses";
 
 // ── Action meta ───────────────────────────────────────────────────────────────
 
@@ -55,13 +56,6 @@ function buildReturnSaleIdemKey(businessId: string, saleIds: string[]): string {
 // ── Tool response type ─────────────────────────────────────────────────────────
 
 type McpToolResponse = { content: { type: "text"; text: string }[]; isError?: boolean };
-
-function errResponse(code: string, message: string): McpToolResponse {
-  return {
-    content: [{ type: "text" as const, text: JSON.stringify({ code, message }) }],
-    isError: true,
-  };
-}
 
 // ── handleReturnSale ──────────────────────────────────────────────────────────
 

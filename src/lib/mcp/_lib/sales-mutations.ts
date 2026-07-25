@@ -40,6 +40,7 @@ import { getServerActionMeta } from "@/app/api/_lib/mutation-contract";
 import { normalizeCustomerName, CONSUMIDOR_FINAL_NAME } from "@/infrastructure/shared/sale-customer";
 import { resolveCatalogPrices } from "./sale-price-guard";
 import { createHash } from "crypto";
+import { errResponse } from "./mcp-responses";
 
 // ── Action metas (from canonical mutation contract) ────────────────────────────
 
@@ -90,13 +91,6 @@ export function buildSaleIdemKey(
     .join("|");
   const raw = `${businessId}|${customerId ?? ""}|${sortedItems}|${requestId ?? ""}`;
   return "mcp-sale-" + createHash("sha256").update(raw).digest("hex").slice(0, 24);
-}
-
-export function errResponse(code: string, message: string) {
-  return {
-    content: [{ type: "text" as const, text: JSON.stringify({ code, message }) }],
-    isError: true,
-  };
 }
 
 // ── Tool response type ─────────────────────────────────────────────────────────

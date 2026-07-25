@@ -14,15 +14,7 @@ import type { LogisticaBackend } from "./logistica-backend.port";
 import { prisma } from "@/lib/prisma";
 import { COURIER_REGISTRY } from "@/app/api/agents/logistica/jsonrpc/_lib/courier-registry";
 import type { CourierEntry } from "@/app/api/agents/logistica/jsonrpc/_lib/courier-registry";
-
-// ── Shared error response builder ─────────────────────────────────────────────
-
-export function errResponse(message: string) {
-  return {
-    content: [{ type: "text" as const, text: JSON.stringify({ error: message }) }],
-    isError: true,
-  };
-}
+export { errResponse } from "./mcp-responses";
 
 // ── Active courier resolution ─────────────────────────────────────────────────
 
@@ -161,7 +153,7 @@ export function checkOcaRequiredFields(
  */
 export function registerPackageProfileTool(
   server: McpServer,
-  errResponseFn: (msg: string) => { content: Array<{ type: "text"; text: string }>; isError: boolean },
+  errResponseFn: (code: string, message: string) => { content: Array<{ type: "text"; text: string }>; isError: boolean },
   businessId: string,
   backend: LogisticaBackend,
 ): void {
@@ -216,7 +208,7 @@ export function registerPackageProfileTool(
         return { content: [{ type: "text" as const, text: JSON.stringify(profile) }] };
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
-        return errResponseFn(`Error computing package profile: ${message}`);
+        return errResponseFn("PACKAGE_PROFILE_ERROR", `Error computing package profile: ${message}`);
       }
     },
   );
