@@ -2,9 +2,11 @@
 // developer-facing /developers page.
 //
 // Source of truth: the live `com.somosvelora/velora` MCP connector tool
-// list (61 tools total). Pack groupings below are this page's own display
-// organization — the tool names, count, and the 8 open_* widget tools are
-// verified against the connector's real tool list, not invented.
+// list. Pack groupings below are this page's own display organization —
+// the tool names, count, and the open_* widget tools are verified against
+// the connector's real tool list (tests/vitest/mcp/fiscal-mcp-server.test.ts),
+// not invented. There is no fiado/promesa (buy-now-pay-later) flow in this
+// business — Velora's sales are cash-or-MercadoPago only.
 
 export interface ToolEntry {
   name: string;
@@ -39,9 +41,6 @@ export const TOOL_PACKS: ToolPack[] = [
       { name: "connect_mercadopago" },
       { name: "create_tracked_payment_link" },
       { name: "get_payment_intent_status" },
-      { name: "confirm_promesa_payment" },
-      { name: "settle_promesa_payment" },
-      { name: "register_promesa_sale" },
     ],
   },
   {
@@ -124,7 +123,7 @@ export const TOOL_PACKS: ToolPack[] = [
   },
   {
     pack: "Widgets interactivos (MCP Apps)",
-    subtitle: "8 tools que abren un widget gráfico en el chat",
+    subtitle: "10 tools que abren un widget gráfico en el chat",
     tools: [
       { name: "open_catalog_selector" },
       { name: "open_sale_confirm" },
@@ -134,6 +133,8 @@ export const TOOL_PACKS: ToolPack[] = [
       { name: "open_pending_orders" },
       { name: "open_delivery_receipt" },
       { name: "open_onboarding" },
+      { name: "open_business_overview" },
+      { name: "open_shipment_prep" },
     ],
   },
 ];
