@@ -39,7 +39,7 @@
 //
 // CSP: no allowUnsafeEval — do NOT add it without a CSP audit.
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
 import { Centered, SecondaryButton, StatusChip } from "./_widget-primitives";
@@ -141,6 +141,7 @@ type Cliente360Data =
     };
 
 interface Prefill {
+  createdAt: number;
   startInFullscreen: boolean;
   defaultTab: TabId;
   summary: {
@@ -604,6 +605,53 @@ function BusinessOverviewWidget(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<TabId>("cierre_dia");
   const [navError, setNavError] = useState<string | null>(null);
   const [clienteQuery, setClienteQuery] = useState("");
+  const [superseded, setSuperseded] = useState(false);
+
+  // Widget instance supersession (claude.com/docs/connectors/building/mcp-apps/
+  // instance-supersession) — this is a dashboard, the doc's textbook case: if the
+  // owner re-asks "veamos mi negocio" mid-conversation, only the newest copy of
+  // this widget should stay interactive. Older copies gray out instead of both
+  // silently feeding stale reads back into Claude's context. Channel is scoped
+  // per-conversation by default (no fixed _meta.ui.domain set on this resource).
+  const instanceIdRef = useRef<string>(crypto.randomUUID());
+  const orderKeyRef = useRef<number | undefined>(undefined);
+  const keyFinalizedRef = useRef(false);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const peersRef = useRef(new Map<string, { orderKey: number; instanceId: string }>());
+
+  useEffect(() => {
+    const channel = new BroadcastChannel("velora-business-overview-supersede");
+    channelRef.current = channel;
+    const instanceId = instanceIdRef.current;
+
+    function isYounger(other: { orderKey: number; instanceId: string }) {
+      if (!keyFinalizedRef.current || orderKeyRef.current == null) return false;
+      if (other.orderKey !== orderKeyRef.current) return other.orderKey > orderKeyRef.current!;
+      return other.instanceId > instanceId;
+    }
+
+    channel.onmessage = (ev) => {
+      const msg = ev.data as { type?: string; instanceId?: string; orderKey?: number } | undefined;
+      if (!msg?.instanceId || msg.instanceId === instanceId || !keyFinalizedRef.current) return;
+      if (msg.type === "hello") {
+        channel.postMessage({ type: "born", instanceId, orderKey: orderKeyRef.current });
+      }
+      if (Number.isFinite(msg.orderKey)) {
+        peersRef.current.set(msg.instanceId, { orderKey: msg.orderKey!, instanceId: msg.instanceId });
+        setSuperseded([...peersRef.current.values()].some(isYounger));
+      }
+    };
+
+    return () => channel.close();
+  }, []);
+
+  function announceInstance() {
+    const channel = channelRef.current;
+    if (!channel || orderKeyRef.current == null) return;
+    const instanceId = instanceIdRef.current;
+    channel.postMessage({ type: "hello", instanceId, orderKey: orderKeyRef.current });
+    channel.postMessage({ type: "born", instanceId, orderKey: orderKeyRef.current });
+  }
 
   useEffect(() => {
     if (!app) return;
@@ -614,6 +662,11 @@ function BusinessOverviewWidget(): React.JSX.Element {
       setPrefill(data);
       setActiveTab(data.defaultTab);
       if (data.startInFullscreen) setFullscreen(true);
+      if (Number.isFinite(data.createdAt)) {
+        orderKeyRef.current = data.createdAt;
+        keyFinalizedRef.current = true;
+        announceInstance();
+      }
     };
   }, [app]);
 
@@ -640,7 +693,7 @@ function BusinessOverviewWidget(): React.JSX.Element {
   }
 
   async function openCajaStatus() {
-    if (!app) return;
+    if (!app || superseded) return;
     setNavError(null);
     await app.callServerTool({ name: "open_caja_status", arguments: {} }).catch(() => {
       setNavError("No se pudo abrir el estado de caja. Intentá de nuevo.");
@@ -648,7 +701,7 @@ function BusinessOverviewWidget(): React.JSX.Element {
   }
 
   async function openPendingOrders() {
-    if (!app) return;
+    if (!app || superseded) return;
     setNavError(null);
     await app.callServerTool({ name: "open_pending_orders", arguments: {} }).catch(() => {
       setNavError("No se pudieron abrir los cobros pendientes. Intentá de nuevo.");
@@ -656,7 +709,7 @@ function BusinessOverviewWidget(): React.JSX.Element {
   }
 
   async function searchCliente() {
-    if (!app || !clienteQuery.trim()) return;
+    if (!app || superseded || !clienteQuery.trim()) return;
     setNavError(null);
     await app
       .callServerTool({ name: "open_business_overview", arguments: { customerName: clienteQuery.trim(), defaultTab: "cliente_360" } })
@@ -683,8 +736,27 @@ function BusinessOverviewWidget(): React.JSX.Element {
   }
   if (!prefill) return <InlineSkeleton />;
 
+  // Safe areas (claude.com/docs/connectors/building/mcp-apps/design-guidelines
+  // #host-context-for-layout): on mobile the chat composer/nav bar can overlay
+  // this widget's edges. hostContext.safeAreaInsets is in pixels — add it on
+  // top of the base p-5 padding rather than replacing it.
+  const safeArea = app?.getHostContext()?.safeAreaInsets;
+  const safeAreaStyle: React.CSSProperties = safeArea
+    ? {
+        paddingTop: `calc(1.25rem + ${safeArea.top}px)`,
+        paddingRight: `calc(1.25rem + ${safeArea.right}px)`,
+        paddingBottom: `calc(1.25rem + ${safeArea.bottom}px)`,
+        paddingLeft: `calc(1.25rem + ${safeArea.left}px)`,
+      }
+    : {};
+
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-4 p-5 text-ink">
+    <main className="mx-auto flex max-w-md flex-col gap-4 p-5 text-ink" style={safeAreaStyle}>
+      {superseded && (
+        <div className="flex items-center justify-between gap-2 rounded-control bg-surface-2 p-3 text-sm text-ink-soft" role="status">
+          <span>Esta vista quedó vieja — hay una más nueva en este chat.</span>
+        </div>
+      )}
       {fullscreen ? (
         <>
           <header className="flex items-center justify-between gap-2">

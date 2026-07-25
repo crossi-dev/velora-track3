@@ -269,7 +269,19 @@ export function registerBusinessOverviewRenderTool(
 
         const supplierNameById = new Map<string, string>((suppliers as ListSuppliersResult[]).map((s) => [s.id, s.name]));
 
+        // Election key for widget instance supersession (claude.com/docs/connectors/
+        // building/mcp-apps/instance-supersession) — this is a dashboard, the doc's own
+        // textbook case for it: if the owner re-asks "veamos mi negocio" mid-conversation,
+        // the OLDER widget copy should gray itself out instead of both silently feeding
+        // stale numbers back into Claude's context. No durable per-record counter exists
+        // for "a business snapshot" (unlike a cart/order row), so createdAt (server wall-
+        // clock) alone is the key; seq is intentionally omitted rather than faked with a
+        // per-process counter that wouldn't survive Cloud Run's stateless multi-instance
+        // scaling (the doc explicitly warns against that stand-in for production).
+        const createdAt = Date.now();
+
         const prefill = {
+          createdAt,
           startInFullscreen: !!customerName || !!defaultTab,
           defaultTab: (defaultTab ?? (customerName ? "cliente_360" : "cierre_dia")) as TabId,
           summary: {
