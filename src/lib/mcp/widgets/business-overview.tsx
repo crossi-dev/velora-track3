@@ -174,9 +174,12 @@ function cajaChipLabel(state: CajaState): string {
   return "Sin turno";
 }
 
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }): React.JSX.Element {
+/** hero=true marks the ONE card the owner's eye should land on first (the caja
+ *  balance) with a brand-accent left border — uses --color-brand, the same
+ *  allowed "accent and identity" carve-out as the tab bar, not a new token. */
+function SectionCard({ title, children, hero }: { title: string; children: React.ReactNode; hero?: boolean }): React.JSX.Element {
   return (
-    <section className="flex flex-col gap-2 rounded-control bg-surface-2 p-4">
+    <section className={`flex flex-col gap-2 rounded-control bg-surface-2 p-4 ${hero ? "border-l-4 border-brand" : ""}`}>
       <h2 className="text-sm font-semibold text-ink-soft">{title}</h2>
       {children}
     </section>
@@ -185,9 +188,9 @@ function SectionCard({ title, children }: { title: string; children: React.React
 
 /** Inline Velora mark (crossi-dev/velora public/velora-mark.svg) — every Velora
  *  product carries the mark. No external asset load (CSP-safe). */
-function VeloraMark(): React.JSX.Element {
+function VeloraMark({ size = 24 }: { size?: number }): React.JSX.Element {
   return (
-    <svg width="24" height="24" viewBox="0 0 64 64" fill="none" role="img" aria-label="Velora">
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" role="img" aria-label="Velora">
       <rect x="4" y="4" width="56" height="56" rx="14" fill="#1B3A6B" />
       <path d="M20 44V20M20 44L44 20M44 20V34" stroke="#FAF6EE" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
@@ -214,24 +217,24 @@ function InlineSummary({
 }): React.JSX.Element {
   return (
     <>
-      <SectionCard title="Caja">
+      <SectionCard title="Caja" hero>
         <div className="flex items-center justify-between gap-2">
           <StatusChip tone={data.caja.state === "OPEN" ? "success" : "neutral"}>{cajaChipLabel(data.caja.state)}</StatusChip>
-          {data.caja.state === "OPEN" && <span className="text-lg font-bold text-ink">{ars(data.caja.expectedCashAmount)}</span>}
-          {data.caja.state === "CLOSED" && <span className="text-lg font-bold text-ink">{ars(data.caja.closedCashAmount)}</span>}
+          {data.caja.state === "OPEN" && <span className="text-lg font-bold tabular-nums text-ink">{ars(data.caja.expectedCashAmount)}</span>}
+          {data.caja.state === "CLOSED" && <span className="text-lg font-bold tabular-nums text-ink">{ars(data.caja.closedCashAmount)}</span>}
         </div>
       </SectionCard>
 
       <SectionCard title="Ventas">
         <div className="flex items-center justify-between gap-2">
           <dt className="text-sm text-ink-soft">Hoy</dt>
-          <dd className="text-sm font-medium text-ink">
+          <dd className="text-sm font-medium tabular-nums text-ink">
             {data.ventasHoy.saleCount} venta{data.ventasHoy.saleCount !== 1 ? "s" : ""} · {data.ventasHoy.totalRevenueFormatted || ars(data.ventasHoy.totalRevenue)}
           </dd>
         </div>
         <div className="flex items-center justify-between gap-2">
           <dt className="text-sm text-ink-soft">Esta semana</dt>
-          <dd className="text-sm font-medium text-ink">
+          <dd className="text-sm font-medium tabular-nums text-ink">
             {data.ventasSemana.saleCount} venta{data.ventasSemana.saleCount !== 1 ? "s" : ""} · {data.ventasSemana.totalRevenueFormatted || ars(data.ventasSemana.totalRevenue)}
           </dd>
         </div>
@@ -239,15 +242,19 @@ function InlineSummary({
 
       <SectionCard title="Cobros pendientes">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-2xl font-bold text-ink">{data.pendingCount}</span>
-          <span className="text-sm text-ink-soft">{data.pendingCount === 0 ? "Sin cobros pendientes" : "esperando pago"}</span>
+          <span className="text-2xl font-bold tabular-nums text-ink">{data.pendingCount}</span>
+          <span className={`text-sm ${data.pendingCount === 0 ? "text-success-ink" : "text-ink-soft"}`}>
+            {data.pendingCount === 0 ? "Al día, sin nada pendiente" : "esperando pago"}
+          </span>
         </div>
       </SectionCard>
 
       <SectionCard title="Stock bajo">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-2xl font-bold text-ink">{data.lowStock.length}</span>
-          <span className="text-sm text-ink-soft">{data.lowStock.length === 0 ? "todo por encima del mínimo" : "producto(s) bajo mínimo"}</span>
+          <span className="text-2xl font-bold tabular-nums text-ink">{data.lowStock.length}</span>
+          <span className={`text-sm ${data.lowStock.length === 0 ? "text-success-ink" : "text-ink-soft"}`}>
+            {data.lowStock.length === 0 ? "Todo por encima del mínimo" : "producto(s) bajo mínimo"}
+          </span>
         </div>
       </SectionCard>
 
@@ -352,7 +359,7 @@ function ClienteTab({
                   <span className="text-sm text-ink-soft">
                     {data.historial.lifetimeOrderCount} compra{data.historial.lifetimeOrderCount !== 1 ? "s" : ""} en total
                   </span>
-                  <span className="text-base font-semibold text-ink">{data.historial.lifetimeTotalSpent}</span>
+                  <span className="text-base font-semibold tabular-nums text-ink">{data.historial.lifetimeTotalSpent}</span>
                 </div>
                 {data.historial.recentOrders.length > 0 ? (
                   <ul className="flex flex-col gap-2">
@@ -360,7 +367,7 @@ function ClienteTab({
                       <li key={idx} className="rounded-control bg-surface p-3">
                         <div className="flex items-center justify-between gap-2 text-sm">
                           <span className="text-ink-soft">{o.date}</span>
-                          <span className="font-medium text-ink">{o.total}</span>
+                          <span className="font-medium tabular-nums text-ink">{o.total}</span>
                         </div>
                         <div className="mt-1 truncate text-sm text-ink-soft">{o.items.map((it) => `${it.qty}× ${it.product}`).join(", ")}</div>
                       </li>
@@ -385,7 +392,7 @@ function ClienteTab({
                     <span className="text-sm text-ink">
                       {po.itemCount} ítem{po.itemCount !== 1 ? "s" : ""}
                     </span>
-                    <span className="text-sm font-medium text-ink">{ars(po.totalARS)}</span>
+                    <span className="text-sm font-medium tabular-nums text-ink">{ars(po.totalARS)}</span>
                   </li>
                 ))}
               </ul>
@@ -408,27 +415,29 @@ function CierreDiaTab({
 }): React.JSX.Element {
   return (
     <div className="flex flex-col gap-3">
-      <SectionCard title="Caja">
+      <SectionCard title="Caja" hero>
         <div className="flex items-center justify-between gap-2">
           <StatusChip tone={data.caja.state === "OPEN" ? "success" : "neutral"}>{cajaChipLabel(data.caja.state)}</StatusChip>
-          {data.caja.state === "OPEN" && <span className="text-lg font-bold text-ink">{ars(data.caja.expectedCashAmount)}</span>}
-          {data.caja.state === "CLOSED" && <span className="text-lg font-bold text-ink">{ars(data.caja.closedCashAmount)}</span>}
+          {data.caja.state === "OPEN" && <span className="text-lg font-bold tabular-nums text-ink">{ars(data.caja.expectedCashAmount)}</span>}
+          {data.caja.state === "CLOSED" && <span className="text-lg font-bold tabular-nums text-ink">{ars(data.caja.closedCashAmount)}</span>}
         </div>
         <SecondaryButton onClick={onOpenCaja}>Ver / cerrar caja</SecondaryButton>
       </SectionCard>
 
       <SectionCard title="Ventas de hoy">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-2xl font-bold text-ink">{data.ventasHoy.saleCount}</span>
+          <span className="text-2xl font-bold tabular-nums text-ink">{data.ventasHoy.saleCount}</span>
           <span className="text-sm text-ink-soft">venta{data.ventasHoy.saleCount !== 1 ? "s" : ""}</span>
         </div>
-        <div className="text-base font-semibold text-ink">{data.ventasHoy.totalRevenueFormatted}</div>
+        <div className="text-base font-semibold tabular-nums text-ink">{data.ventasHoy.totalRevenueFormatted}</div>
       </SectionCard>
 
       <SectionCard title="Cobros pendientes">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-2xl font-bold text-ink">{data.pendingCount}</span>
-          <span className="text-sm text-ink-soft">{data.pendingCount === 0 ? "Sin cobros pendientes" : "esperando pago"}</span>
+          <span className="text-2xl font-bold tabular-nums text-ink">{data.pendingCount}</span>
+          <span className={`text-sm ${data.pendingCount === 0 ? "text-success-ink" : "text-ink-soft"}`}>
+            {data.pendingCount === 0 ? "Al día, sin nada pendiente" : "esperando pago"}
+          </span>
         </div>
         {data.pendingCount > 0 && <SecondaryButton onClick={onOpenPending}>Ver cobros pendientes</SecondaryButton>}
       </SectionCard>
@@ -485,7 +494,7 @@ function StockTab({ data }: { data: Prefill["reposicionStock"] }): React.JSX.Ele
                   </div>
                   <div className="text-sm text-ink-soft">{new Date(pr.issuedAt).toLocaleDateString("es-AR")}</div>
                 </div>
-                <span className="shrink-0 text-sm font-medium text-ink">{ars(pr.totalAmount)}</span>
+                <span className="shrink-0 text-sm font-medium tabular-nums text-ink">{ars(pr.totalAmount)}</span>
               </li>
             ))}
           </ul>
@@ -503,28 +512,28 @@ function DashboardTab({ data }: { data: Prefill["dashboardVentas"] }): React.JSX
           <>
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm text-ink-soft">Ingresos</span>
-              <span className="text-sm font-medium text-ink">{data.margen.revenueFormatted}</span>
+              <span className="text-sm font-medium tabular-nums text-ink">{data.margen.revenueFormatted}</span>
             </div>
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm text-ink-soft">Costo</span>
-              <span className="text-sm font-medium text-ink">{data.margen.costFormatted}</span>
+              <span className="text-sm font-medium tabular-nums text-ink">{data.margen.costFormatted}</span>
             </div>
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm text-ink-soft">Margen</span>
-              <span className="text-base font-semibold text-ink">
+              <span className="text-base font-semibold tabular-nums text-ink">
                 {data.margen.marginFormatted} ({data.margen.marginPercent}%)
               </span>
             </div>
             <p className="text-sm text-ink-soft">{data.margen.costCoverage}</p>
           </>
         ) : (
-          <p className="text-sm text-ink-soft">Sin ventas este mes.</p>
+          <p className="text-sm text-ink-soft">Todavía no hay ventas este mes para calcular margen.</p>
         )}
       </SectionCard>
 
       <SectionCard title="Ranking de productos">
         {data.ranking.length === 0 ? (
-          <p className="text-sm text-ink-soft">Sin ventas este mes.</p>
+          <p className="text-sm text-ink-soft">Ningún producto vendido todavía este mes.</p>
         ) : (
           <ol className="flex flex-col gap-2">
             {data.ranking.map((r) => (
@@ -532,7 +541,7 @@ function DashboardTab({ data }: { data: Prefill["dashboardVentas"] }): React.JSX
                 <span className="text-sm text-ink">
                   #{r.rank} {r.product}
                 </span>
-                <span className="text-sm text-ink-soft">{r.unitsSold} u.</span>
+                <span className="text-sm tabular-nums text-ink-soft">{r.unitsSold} u.</span>
               </li>
             ))}
           </ol>
@@ -541,13 +550,13 @@ function DashboardTab({ data }: { data: Prefill["dashboardVentas"] }): React.JSX
 
       <SectionCard title="Ventas por empleado">
         {data.porEmpleado.length === 0 ? (
-          <p className="text-sm text-ink-soft">Sin ventas este mes.</p>
+          <p className="text-sm text-ink-soft">Sin ventas repartidas por empleado todavía este mes.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {data.porEmpleado.map((e) => (
               <li key={e.employee} className="flex items-center justify-between gap-2">
                 <span className="text-sm text-ink">{e.employee}</span>
-                <span className="text-sm text-ink-soft">
+                <span className="text-sm tabular-nums text-ink-soft">
                   {e.totalRevenueFormatted} ({e.saleCount})
                 </span>
               </li>
@@ -646,7 +655,7 @@ function BusinessOverviewWidget(): React.JSX.Element {
           <header className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <VeloraMark />
-              <h1 className="text-xl font-semibold leading-snug">Panel del negocio</h1>
+              <h1 className="text-xl font-semibold leading-snug">Tu negocio, en detalle</h1>
             </div>
             <button
               type="button"
@@ -684,7 +693,10 @@ function BusinessOverviewWidget(): React.JSX.Element {
         </>
       ) : (
         <>
-          <h1 className="text-xl font-semibold leading-snug">Resumen del negocio</h1>
+          <div className="flex items-center gap-2">
+            <VeloraMark size={20} />
+            <h1 className="text-xl font-semibold leading-snug">Tu negocio, al día</h1>
+          </div>
           <InlineSummary
             data={prefill.summary}
             onOpenCaja={openCajaStatus}
