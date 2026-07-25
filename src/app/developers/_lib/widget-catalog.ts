@@ -1,4 +1,4 @@
-// src/app/developers/_lib/widget-catalog.ts — The 8 MCP Apps widgets exposed
+// src/app/developers/_lib/widget-catalog.ts — The 10 MCP Apps widgets exposed
 // by the velora-mcp server. Each widget is backed by a real `open_*` tool
 // (see tool-catalog.ts, "Widgets interactivos" pack). Per the MCP Apps spec,
 // only one widget renders inline in the chat at a time — never several at once.
@@ -49,5 +49,15 @@ export const WIDGETS: WidgetEntry[] = [
     tool: "open_onboarding",
     title: "Onboarding / conexiones",
     body: "Guía para conectar ARCA, MercadoPago, WhatsApp y couriers desde el chat.",
+  },
+  {
+    tool: "open_shipment_prep",
+    title: "Preparar envío",
+    body: "Stock disponible y cotización de envío juntos en una sola pantalla, antes de despachar.",
+  },
+  {
+    tool: "open_business_overview",
+    title: "Resumen del negocio",
+    body: "El pantallazo rápido al escribir 'veamos mi negocio': caja, ventas del día, cobros pendientes y stock bajo.",
   },
 ];

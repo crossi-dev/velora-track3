@@ -14,6 +14,7 @@
  * repo the oxide scanner walks the whole tree and hangs. We scan ONLY this widget
  * via the explicit @source below (verified 2026-06-07). */
 @import "tailwindcss" source(none);
+@source "./_widget-primitives.tsx";
 @source "./payment-link-wizard.tsx";
 @source "./customer-field.tsx";
 @source "./catalog-selector.tsx";
@@ -21,6 +22,8 @@
 @source "./cobro-status.tsx";
 @source "./delivery-receipt.tsx";
 @source "./onboarding.tsx";
+@source "./sale-confirm.tsx";
+@source "./caja-status.tsx";
 @source "./shipment-prep.tsx";
 @source "./business-overview.tsx";
 
