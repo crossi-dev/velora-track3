@@ -89,6 +89,14 @@ export function isTransportError(err: unknown): boolean {
 // across LLM retries without changing economic identity).
 // puntoVenta INCLUDED (C-1 fix): different AFIP series MUST NOT share a key.
 // amountARS.toFixed(2) canonicalises floating-point representation.
+//
+// requestId (optional) is folded in last, mirroring register_sale's buildSaleIdemKey:
+// without it, two GENUINELY DISTINCT invoices sharing the same economic parameters
+// (same customer, amount, tipo, punto de venta — e.g. two identical walk-in sales,
+// or the same recurring monthly retainer) would derive the SAME key and the second
+// call would silently return the first invoice's CAE as a "replay" — no second AFIP
+// emission, no error, just a stale CAE. A genuine retry omits requestId (or reuses
+// the same one) so it still dedupes correctly; a new economic invoice gets a fresh one.
 
 export function deriveEmitInvoiceKey(
   tenantId: string,
@@ -96,9 +104,10 @@ export function deriveEmitInvoiceKey(
   customerCuit: string,
   amountARS: number,
   puntoVenta: string,
+  requestId?: string,
 ): string {
   const hash = createHash("sha256")
-    .update([tenantId, tipo, customerCuit, amountARS.toFixed(2), puntoVenta].join("|"))
+    .update([tenantId, tipo, customerCuit, amountARS.toFixed(2), puntoVenta, requestId ?? ""].join("|"))
     .digest("hex");
   return `fiscal.emit_invoice:${hash}`;
 }
@@ -111,6 +120,7 @@ export function deriveEmitNotaKey(
   amountARS: number,
   cbteAsoc: CbteAsocInput,
   puntoVenta: string,
+  requestId?: string,
 ): string {
   const hash = createHash("sha256")
     .update(
@@ -124,6 +134,7 @@ export function deriveEmitNotaKey(
         String(cbteAsoc.ptoVta),
         String(cbteAsoc.nro),
         puntoVenta,
+        requestId ?? "",
       ].join("|"),
     )
     .digest("hex");

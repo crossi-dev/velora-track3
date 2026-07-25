@@ -34,6 +34,11 @@ export interface EmitInvoiceInput {
   amountARS: number;
   tipo: "A" | "B" | "C";
   concept: string;
+  /** Optional caller-supplied nonce folded into the idempotency key (mirrors
+   *  register_sale's requestId) — without it, two economically-identical but
+   *  genuinely distinct invoices within the 30-day retention window would
+   *  silently collapse into one AFIP emission. */
+  requestId?: string;
 }
 
 export type EmitInvoiceOutput = EmitInvoiceToolResult;
@@ -54,6 +59,9 @@ export interface EmitNotaInput {
   kind: "credito" | "debito";
   cbteAsoc: CbteAsocInput;
   concept: string;
+  /** Optional caller-supplied nonce folded into the idempotency key — same
+   *  rationale as EmitInvoiceInput.requestId. */
+  requestId?: string;
 }
 
 export type EmitNotaOutput = EmitInvoiceToolResult;

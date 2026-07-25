@@ -71,7 +71,7 @@ export class VeloraFiscalAdapter implements FiscalBackend {
   }
 
   async emitInvoice(input: EmitInvoiceInput): Promise<EmitInvoiceOutput> {
-    const { tenantId: businessId, amountARS, tipo, concept } = input;
+    const { tenantId: businessId, amountARS, tipo, concept, requestId } = input;
     // #1 FIX: strip non-digits from customerCuit so AFIP never sees "20-12345678-9".
     // The description claims "hyphens and spaces stripped" — this makes it true.
     const customerCuit = input.customerCuit?.replace(/\D/g, "") ?? input.customerCuit;
@@ -92,7 +92,7 @@ export class VeloraFiscalAdapter implements FiscalBackend {
     const condicionIva = businessRow?.ivaCondition ?? null;
     const canonicalTipo = resolveInvoiceType(tipo, condicionIva);
     const puntoVenta = await resolvePuntoVenta(businessId);
-    const idempotencyKey = deriveEmitInvoiceKey(businessId, canonicalTipo, customerCuit, amountARS, puntoVenta);
+    const idempotencyKey = deriveEmitInvoiceKey(businessId, canonicalTipo, customerCuit, amountARS, puntoVenta, requestId);
 
     return withEmitIdempotency(
       businessId,
@@ -140,7 +140,7 @@ export class VeloraFiscalAdapter implements FiscalBackend {
   }
 
   async emitNota(input: EmitNotaInput): Promise<EmitNotaOutput> {
-    const { tenantId: businessId, amountARS, tipo, kind, cbteAsoc, concept } = input;
+    const { tenantId: businessId, amountARS, tipo, kind, cbteAsoc, concept, requestId } = input;
     // #1 FIX: strip non-digits from customerCuit (same as emitInvoice).
     const customerCuit = input.customerCuit?.replace(/\D/g, "") ?? input.customerCuit;
 
@@ -164,6 +164,7 @@ export class VeloraFiscalAdapter implements FiscalBackend {
       amountARS,
       cbteAsoc,
       puntoVenta,
+      requestId,
     );
 
     return withEmitIdempotency(

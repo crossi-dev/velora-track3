@@ -41,6 +41,17 @@ const EmitInvoiceInputSchema = {
         "B = consumidor final, C = monotributo.",
     ),
   concept: z.string().optional().describe("Items or concept description (optional)."),
+  requestId: z
+    .string()
+    .optional()
+    .describe(
+      "Optional nonce to distinguish this call from another economically-identical " +
+        "emission (same customerCuit/amountARS/tipo) within the same business. Generate " +
+        "a fresh value (e.g. a UUID) for each genuinely NEW invoice — omit it, or reuse " +
+        "the SAME value, only when retrying an emission you already attempted. Without " +
+        "this, two real invoices with identical amounts to the same customer would " +
+        "silently collapse into one AFIP emission.",
+    ),
 };
 
 // ── Registration helper ───────────────────────────────────────────────────────
@@ -108,6 +119,7 @@ export function registerFiscalTools(
           amountARS: args.amountARS,
           tipo: args.tipo,
           concept: resolvedConcept,
+          requestId: args.requestId,
         });
         return {
           content: [{ type: "text" as const, text: JSON.stringify(result) }],
@@ -172,6 +184,14 @@ export function registerFiscalTools(
           })
           .describe("AFIP-required reference to the original invoice being credited or debited."),
         concept: z.string().optional().describe("Items or concept description (optional)."),
+        requestId: z
+          .string()
+          .optional()
+          .describe(
+            "Optional nonce to distinguish this call from another economically-identical " +
+              "nota (same customerCuit/amountARS/tipo/associatedInvoice) — generate a fresh " +
+              "value for each genuinely NEW nota, omit or reuse it only when retrying.",
+          ),
       },
       // Spec ToolAnnotations: https://modelcontextprotocol.io/specification/2025-06-18/schema
       annotations: { readOnlyHint: false, idempotentHint: false, destructiveHint: true, openWorldHint: true },
@@ -193,6 +213,7 @@ export function registerFiscalTools(
             nro: args.associatedInvoice.nro,
           },
           concept: resolvedConcept,
+          requestId: args.requestId,
         });
         return {
           content: [{ type: "text" as const, text: JSON.stringify(result) }],
