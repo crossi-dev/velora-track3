@@ -6,7 +6,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { LogisticaBackend } from "./_lib/logistica-backend.port";
 import { createLogisticaBackend } from "./_lib/logistica-backend.factory";
-import { extractResultText, parseOptions, registerPackageProfileTool, checkOcaRequiredFields, errResponse } from "./_lib/logistica-helpers";
+import { extractResultText, registerPackageProfileTool, checkOcaRequiredFields, errResponse, quoteShippingOptions } from "./_lib/logistica-helpers";
 import { COURIER_REGISTRY } from "@/app/api/agents/logistica/jsonrpc/_lib/courier-registry";
 
 /**
@@ -50,75 +50,30 @@ export function registerLogisticaTools(
       annotations: { readOnlyHint: true, idempotentHint: true, destructiveHint: false, openWorldHint: true },
     },
     async (args) => {
-      const { activeCouriers } = await backend.resolveActiveCouriers({
-        tenantId: businessId,
+      const result = await quoteShippingOptions(backend, businessId, {
         originPostalCode: args.originPostalCode,
         destinationPostalCode: args.destinationPostalCode,
         weightGrams: args.weightGrams,
         declaredValue: args.declaredValue,
       });
 
-      if (activeCouriers.length === 0) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify({
-                options: [],
-                cheapestPriceARS: null,
-                originPostalCode: args.originPostalCode,
-                destinationPostalCode: args.destinationPostalCode,
-                weightGrams: args.weightGrams,
-                message:
-                  "No hay couriers activos para este negocio. El dueño debe conectar un courier en Configuración.",
-              }),
-            },
-          ],
-        };
-      }
-
-      const settled = await Promise.allSettled(
-        activeCouriers.map(async (courier) => {
-          const adapter = courier.getAdapter();
-          const rpcResponse = await adapter.quote(
-            {
-              originPostalCode: args.originPostalCode,
-              destinationPostalCode: args.destinationPostalCode,
-              weightGrams: args.weightGrams,
-              declaredValue: args.declaredValue ?? 0,
-            },
-            businessId,
-          );
-          const text = extractResultText(rpcResponse) ?? "";
-          return { courier: courier.name, text };
-        }),
-      );
-
-      const allOptions: ReturnType<typeof parseOptions> = [];
-      const partialFailures: Array<{ courier: string; reason: string }> = [];
-      for (const [i, r] of settled.entries()) {
-        if (r.status === "fulfilled") {
-          allOptions.push(...parseOptions(r.value.text, r.value.courier));
-        } else {
-          // Collect failures so the agent knows a cheaper option may have been skipped.
-          const reason = r.reason instanceof Error ? r.reason.message : String(r.reason);
-          partialFailures.push({ courier: activeCouriers[i]?.name ?? "unknown", reason });
-        }
-      }
-
-      allOptions.sort((a, b) => a.priceARS - b.priceARS);
-
       return {
         content: [
           {
             type: "text" as const,
             text: JSON.stringify({
-              options: allOptions,
-              cheapestPriceARS: allOptions.length > 0 ? allOptions[0].priceARS : null,
+              options: result.options,
+              cheapestPriceARS: result.cheapestPriceARS,
               originPostalCode: args.originPostalCode,
               destinationPostalCode: args.destinationPostalCode,
               weightGrams: args.weightGrams,
-              ...(partialFailures.length > 0 ? { partialFailures } : {}),
+              ...(result.activeCourierCount === 0
+                ? {
+                    message:
+                      "No hay couriers activos para este negocio. El dueño debe conectar un courier en Configuración.",
+                  }
+                : {}),
+              ...(result.partialFailures ? { partialFailures: result.partialFailures } : {}),
             }),
           },
         ],

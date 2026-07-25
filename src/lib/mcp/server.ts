@@ -1,6 +1,6 @@
 // src/lib/mcp/server.ts — Velora MCP server factory.
 //
-// Exposes 14 tool packs (51 tools, 50 live in prod — connect_tiendanube hidden until
+// Exposes 14 tool packs (52 tools, 51 live in prod — connect_tiendanube hidden until
 // TIENDANUBE_CLIENT_ID and TIENDANUBE_CLIENT_SECRET env vars are configured) over the
 // Model Context Protocol:
 //   Pure (always-on):
@@ -12,6 +12,8 @@
 //                            open_cobro_status, open_delivery_receipt
 //   - logistica pack       : quote_shipping, create_shipment, track_shipment, get_package_profile
 //   - ventas pack          : query_catalog, open_catalog_selector
+//   - ventas + logistica   : open_shipment_prep (combined stock + shipping-quote widget;
+//                            registers only when both packs are selected)
 //   - customer pack        : find_customer, upsert_customer, delete_customer
 //   - messaging pack       : send_whatsapp_text, send_whatsapp_template
 //   - catalog pack         : create_product, edit_product, stock_load, adjust_stock,
@@ -56,6 +58,7 @@ import { registerOnboardingTools } from "./onboarding-tools";
 import { registerOnboardingRenderTool } from "./_lib/onboarding-render";
 import { registerSaleConfirmRenderTool } from "./_lib/sale-confirm-render";
 import { registerCajaStatusRenderTool } from "./_lib/caja-status-render";
+import { registerShipmentPrepRenderTool } from "./_lib/shipment-prep-render";
 import { resolveTenantBackendMap } from "./_lib/tenant-tool-config";
 import { createCatalogBackend } from "./_lib/catalog-backend.factory";
 import { createCustomerBackend } from "./_lib/customer-backend.factory";
@@ -161,6 +164,17 @@ export async function buildVeloraMcpServer(businessId?: string, packs?: string[]
     if (wants("payments")) registerPaymentsTools(server, businessId, createPaymentsBackend(map.payments));
     if (wants("logistica")) registerLogisticaTools(server, businessId, createLogisticaBackend(map.logistica));
     if (wants("ventas")) registerVentasTools(server, businessId, createVentasBackend(map.ventas));
+    // open_shipment_prep needs BOTH backends (catalog stock/weight + shipping quote) — one
+    // widget combining two domains, per MCP Apps' one-tool-to-one-widget constraint. Only
+    // registers when both packs are selected (pack-scoped connector filtering still applies).
+    if (wants("ventas") && wants("logistica")) {
+      registerShipmentPrepRenderTool(
+        server,
+        businessId,
+        createVentasBackend(map.ventas),
+        createLogisticaBackend(map.logistica),
+      );
+    }
     if (wants("customer")) registerCustomerTools(server, businessId, createCustomerBackend(map.customer));
     if (wants("messaging")) registerMessagingTools(server, businessId, createMessagingBackend(map.messaging));
     if (wants("catalog")) registerCatalogTools(server, businessId, createCatalogBackend(map.catalog));
