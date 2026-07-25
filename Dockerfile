@@ -28,6 +28,12 @@ ENV SKIP_ENV_VALIDATION=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
+# Regenerate the MCP App widget HTML bundles (src/lib/mcp/widgets/generated/*.html.ts)
+# from their .tsx + widget.css sources before the Next.js build reads them as plain
+# string imports. Without this step, a widget source edit that wasn't manually
+# rebuilt and committed would silently ship stale widget HTML to production with
+# no build-time error.
+RUN node scripts/build-widget.mjs
 # --webpack opts out of Turbopack for the production build. Next.js 16 defaults
 # next build to Turbopack, which requires the @next/swc-linux-x64-gnu native
 # binding. That binding is compiled for glibc ("gnu"), but this image uses

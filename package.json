@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "rimraf .next/dev/lock && next dev --hostname 0.0.0.0",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && node scripts/build-widget.mjs && next build",
+    "build:widget": "node scripts/build-widget.mjs",
     "start": "next start",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
