@@ -39,6 +39,7 @@ export const defaultCopy: LandingCopy = {
     cta: "Empezá gratis",
   },
   hero: {
+    eyebrow: "Hacemos productos MCP con UI real — este es nuestro flagship",
     wordmark: "VELORA",
     verb: "Vendé sin estar.",
     tagline:
@@ -170,7 +171,7 @@ export const defaultCopy: LandingCopy = {
     items: [
       {
         q: "¿Qué es Velora?",
-        a: "Una plataforma de comercio agéntico: agentes de IA que venden, cobran, facturan y despachan de punta a punta, interoperan agente a agente, y se operan desde tu Claude, ChatGPT o Gemini — o desde la Velora App.",
+        a: "Hacemos productos MCP con UI real — Velora es nuestro flagship: una plataforma de comercio agéntico donde agentes de IA venden, cobran, facturan y despachan de punta a punta, interoperan agente a agente, y se operan desde tu Claude, ChatGPT o Gemini — o desde la Velora App.",
       },
       {
         q: "¿Desde dónde puedo usar Velora?",

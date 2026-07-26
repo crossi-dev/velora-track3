@@ -15,6 +15,7 @@ export const defaultCopyEn: LandingCopy = {
     cta: "Start free",
   },
   hero: {
+    eyebrow: "We build MCP products with real UI — this is our flagship",
     wordmark: "VELORA",
     verb: "Sell without being there.",
     tagline:
@@ -146,7 +147,7 @@ export const defaultCopyEn: LandingCopy = {
     items: [
       {
         q: "What is Velora?",
-        a: "An agentic commerce platform: AI agents that sell, charge, invoice and ship end to end, interoperate agent-to-agent, and are operated from your Claude, ChatGPT or Gemini — or from the Velora App.",
+        a: "We build MCP products with real UI — Velora is our flagship: an agentic commerce platform where AI agents sell, charge, invoice and ship end to end, interoperate agent-to-agent, and are operated from your Claude, ChatGPT or Gemini — or from the Velora App.",
       },
       {
         q: "Where can I use Velora?",

@@ -12,6 +12,10 @@ const DEFAULT_IMAGE_ALT =
 const HERO_SCREENSHOT_SRC: string | undefined = undefined;
 
 export type HeroCopy = {
+  /** Small label above the wordmark establishing the studio identity —
+   *  e.g. "Productos MCP con UI real". Velora is the flagship shown below it,
+   *  not the whole identity. */
+  eyebrow?: string;
   /** Giant wordmark. Conventionally uppercase. */
   wordmark: string;
   /** Italic verb directly under the wordmark, e.g. "Conectate." */
@@ -48,6 +52,14 @@ export default function Hero({
         <div className="grid gap-[clamp(28px,4vw,48px)]">
           {/* Wordmark + italic verb */}
           <div>
+            {copy.eyebrow && (
+              <p
+                className="m-0 mb-3 font-medium uppercase tracking-[0.12em] text-[color:var(--color-ink-60)]"
+                style={{ fontSize: "0.875rem" }}
+              >
+                {copy.eyebrow}
+              </p>
+            )}
             <h1
               id="hero-title"
               className="m-0 font-[family-name:var(--font-serif)] font-semibold text-[color:var(--color-ink)]"
