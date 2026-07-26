@@ -84,7 +84,7 @@ export function registerCobroStatusRenderTool(
     server,
     "Estado del cobro",
     COBRO_STATUS_RESOURCE_URI,
-    // _meta.ui.csp: sandbox CSP ChatGPT requires to render. Self-contained → no external origins.
+    // _meta.ui.csp: official MCP Apps sandbox CSP field. Self-contained → no external origins.
     { _meta: { ui: { csp: { connectDomains: [], resourceDomains: [], frameDomains: [] } } } },
     (uri) => ({
       contents: [{ uri: uri.href, mimeType: RESOURCE_MIME_TYPE, text: COBRO_STATUS_HTML }],

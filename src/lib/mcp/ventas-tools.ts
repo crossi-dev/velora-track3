@@ -139,9 +139,9 @@ export function registerVentasTools(
     server,
     "Selector de catálogo",
     CATALOG_SELECTOR_RESOURCE_URI,
-    // _meta.ui.csp declares the sandbox security policy ChatGPT requires to render the
-    // iframe (developers.openai.com/apps-sdk/build/mcp-server). Self-contained widget →
-    // no external origins needed. Without this the host shows "CSP desact." and skips render.
+    // _meta.ui.csp: official MCP Apps sandbox CSP field (claude.com/docs/connectors/
+    // building/mcp-apps/design-guidelines#content-security-policy). Self-contained widget
+    // → no external origins needed. Without this the host shows "CSP desact." and skips render.
     { _meta: { ui: { csp: { connectDomains: [], resourceDomains: [], frameDomains: [] } } } },
     (uri) => ({
       contents: [{ uri: uri.href, mimeType: RESOURCE_MIME_TYPE, text: CATALOG_SELECTOR_HTML }],
