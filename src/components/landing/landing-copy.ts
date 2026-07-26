@@ -43,7 +43,7 @@ export const defaultCopy: LandingCopy = {
     verb: "Vendé sin estar.",
     tagline:
       "Manejá tu negocio con IA. Ventas, stock, cobros — todo desde el chat. Tu equipo de agentes de IA trabaja mientras vos dirigís.",
-    taglineStrong: "Desde la Velora App, ChatGPT, Claude o Gemini.",
+    taglineStrong: "Desde tu Claude, ChatGPT o Gemini — o la Velora App.",
     ctaLabel: "Empezá con Google",
     ctaMicroTrust: "Gratis en beta · sin tarjeta",
   },
@@ -61,7 +61,7 @@ export const defaultCopy: LandingCopy = {
       },
       {
         title: "Operalo desde cualquier IA",
-        body: "Usá la Velora App, ChatGPT o Claude. El mismo negocio, manejado desde la superficie que ya usás.",
+        body: "Usá tu Claude, ChatGPT o Gemini. El mismo negocio, manejado desde la IA que ya usás — o entrá directo por la Velora App si preferís.",
       },
     ],
   },
@@ -85,15 +85,6 @@ export const defaultCopy: LandingCopy = {
     sub: "Tres puntos de entrada, el mismo negocio. Elegís el que se ajusta a cómo operás hoy — sin perder nada. Gemini ya opera Velora directo vía MCP — miralo en Integraciones.",
     entries: [
       {
-        name: "Velora App",
-        description:
-          "La app nativa de Velora. Entrás con Google, configurás tu negocio en el chat y empezás a operar en minutos. Construida sobre infraestructura Google, con identidad criptográfica por agente.",
-        badge: "Disponible",
-        available: true,
-        ctaLabel: "Empezá con Google",
-        ctaHref: "#",
-      },
-      {
         name: "ChatGPT",
         description:
           "Velora como toolkit dentro de ChatGPT. Consultá el catálogo, registrá ventas y seguí el stock sin salir de la conversación. Conectado vía el estándar abierto MCP.",
@@ -106,6 +97,15 @@ export const defaultCopy: LandingCopy = {
           "Operá Velora desde Claude. Ideal si ya usás Cowork para tu día a día: el mismo chat gestiona el negocio y tus herramientas de trabajo. Conectado vía MCP.",
         badge: "Disponible vía MCP · directorio próximamente",
         available: false,
+      },
+      {
+        name: "Velora App",
+        description:
+          "La app nativa de Velora. Entrás con Google, configurás tu negocio en el chat y empezás a operar en minutos. Construida sobre infraestructura Google, con identidad criptográfica por agente.",
+        badge: "Disponible",
+        available: true,
+        ctaLabel: "Empezá con Google",
+        ctaHref: "#",
       },
     ],
   },
@@ -170,11 +170,11 @@ export const defaultCopy: LandingCopy = {
     items: [
       {
         q: "¿Qué es Velora?",
-        a: "Una plataforma de comercio agéntico: agentes de IA que venden, cobran, facturan y despachan de punta a punta, interoperan agente a agente, y se operan desde la Velora App, ChatGPT, Claude o Gemini.",
+        a: "Una plataforma de comercio agéntico: agentes de IA que venden, cobran, facturan y despachan de punta a punta, interoperan agente a agente, y se operan desde tu Claude, ChatGPT o Gemini — o desde la Velora App.",
       },
       {
         q: "¿Desde dónde puedo usar Velora?",
-        a: "Desde tres superficies: la Velora App (disponible ahora, entrás con Google), o como toolkit dentro de ChatGPT o Claude vía el estándar MCP — conectalos hoy con el endpoint público; los listados en los directorios oficiales están en camino. Gemini ya se conecta hoy directamente al endpoint MCP — sin necesidad de directorio. El mismo negocio desde cualquiera de las tres.",
+        a: "Desde tu Claude, ChatGPT o Gemini, vía el estándar abierto MCP — conectalos hoy con el endpoint público (Gemini ya se conecta directo, sin directorio; los listados oficiales de ChatGPT y Claude están en camino). También podés entrar directo por la Velora App (disponible ahora, entrás con Google). El mismo negocio desde cualquiera de las cuatro.",
       },
       {
         q: "¿Los widgets del chat son reales?",
