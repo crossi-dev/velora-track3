@@ -105,6 +105,7 @@ function PendingOrdersList(): React.JSX.Element {
 
   const [orders, setOrders] = useState<DisplayOrder[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   // Per-card nav error: keyed by paymentIntentId (ucp.id).
   const [navErrors, setNavErrors] = useState<Record<string, string>>({});
   const [superseded, setSuperseded] = useState(false);
@@ -163,7 +164,9 @@ function PendingOrdersList(): React.JSX.Element {
     const apply = (params: { structuredContent?: unknown; arguments?: unknown }) => {
       const raw = (params.structuredContent ?? params.arguments ?? {}) as { prefill?: Prefill } & Prefill;
       const args = (raw.prefill ?? raw) as Prefill;
-      setOrders(args.orders ?? []);
+      const hasOrders = Array.isArray(args.orders);
+      setOrders(hasOrders ? args.orders! : []);
+      setLoadFailed(!hasOrders);
       setLoaded(true);
       if (Number.isFinite(args.createdAt)) {
         orderKeyRef.current = args.createdAt;
@@ -189,9 +192,14 @@ function PendingOrdersList(): React.JSX.Element {
   }
   if (!isConnected) return <Centered>Conectando…</Centered>;
   if (!loaded) return <Centered>Cargando cobros pendientes…</Centered>;
+  if (loadFailed) return <Centered>No pudimos cargar los cobros pendientes. Probá de nuevo.</Centered>;
 
   const displayed = orders.slice(0, DISPLAY_CAP);
   const overflow = orders.length - displayed.length;
+  // Aggregate outstanding across ALL pending orders (not just the DISPLAY_CAP
+  // shown) so the overflow case can't hide money owed. Summed in minor units
+  // (integers) to avoid float drift.
+  const totalOwed = orders.reduce((sum, o) => sum + resolveTotal(o.ucp.totals), 0);
 
   // Safe areas (claude.com/docs/connectors/building/mcp-apps/design-guidelines
   // #host-context-for-layout): on mobile the chat composer/nav bar can overlay
@@ -219,9 +227,18 @@ function PendingOrdersList(): React.JSX.Element {
         <h1 className="text-xl font-semibold leading-snug">Cobros pendientes</h1>
       </div>
 
+      {displayed.length > 0 && (
+        <div className="flex items-baseline justify-between gap-2 rounded-control bg-surface-2 px-4 py-3">
+          <span className="text-sm text-ink-soft">
+            {orders.length} cobro{orders.length !== 1 ? "s" : ""} pendiente{orders.length !== 1 ? "s" : ""}
+          </span>
+          <span className="text-xl font-bold tabular-nums text-ink">{formatARS(totalOwed)}</span>
+        </div>
+      )}
+
       {displayed.length === 0 ? (
         <p className="rounded-control bg-surface-2 p-4 text-base text-ink-soft">
-          No hay cobros pendientes.
+          No hay cobros pendientes — todo al día.
         </p>
       ) : (
         <ul className="flex flex-col gap-3">
