@@ -319,7 +319,7 @@ function SaleConfirmWidget(): React.JSX.Element {
   if (!isConnected) return <Centered>Conectando…</Centered>;
   if (!prefill && toolResultReceived)
     return <Centered>No pudimos cargar los datos de la venta. Probá de nuevo.</Centered>;
-  if (!prefill) return <Centered>Esperando los datos de la venta…</Centered>;
+  if (!prefill) return <Centered>Cargando venta…</Centered>;
 
   // Safe areas (claude.com/docs/connectors/building/mcp-apps/design-guidelines
   // #host-context-for-layout): on mobile the chat composer/nav bar can overlay

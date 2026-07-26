@@ -165,7 +165,7 @@ export function registerDeliveryReceiptRenderTool(
                 text: JSON.stringify({ order: null, message: "No encontré ese comprobante." }),
               },
             ],
-            structuredContent: { prefill: { order: null } },
+            structuredContent: { prefill: { order: null, createdAt: Date.now() } },
           };
         }
 
@@ -187,7 +187,10 @@ export function registerDeliveryReceiptRenderTool(
               text: JSON.stringify({ order: prefillOrder }),
             },
           ],
-          structuredContent: { prefill: { order: prefillOrder } },
+          // createdAt is the instance-supersession election key (Velora display
+          // extension, distinct from any order/receipt timestamp) — see
+          // cobro-status-render.ts for the same convention.
+          structuredContent: { prefill: { order: prefillOrder, createdAt: Date.now() } },
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
