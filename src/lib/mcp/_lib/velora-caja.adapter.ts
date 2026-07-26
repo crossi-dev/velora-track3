@@ -132,10 +132,16 @@ export class VeloraCajaAdapter implements CajaBackend {
           { paymentMethod: null },
         ],
       },
-      select: { amount: true },
+      select: { amount: true, type: true, description: true, date: true },
+      orderBy: { date: "desc" },
     });
     // Decimal → number at the port boundary (INV-6).
-    return rows.map((r) => ({ amount: Number(r.amount) }));
+    return rows.map((r) => ({
+      amount: Number(r.amount),
+      type: r.type,
+      description: r.description,
+      date: r.date.toISOString(),
+    }));
   }
 
   async createMovement(input: CreateMovementInput): Promise<CreateMovementResult> {

@@ -26,6 +26,16 @@ export const CAJA_STATUS_RESOURCE_URI = "ui://caja-status";
 
 type CajaState = "OPEN" | "CLOSED" | "NO_SESSION";
 
+export interface CajaMovementItem {
+  type: string;
+  description: string;
+  amount: number;
+  date: string;
+}
+
+// Same cap convention as pending-orders.tsx's DISPLAY_CAP.
+const MOVEMENTS_CAP = 10;
+
 export interface CajaPrefill {
   state: CajaState;
   /** Defined when state=OPEN */
@@ -36,6 +46,13 @@ export interface CajaPrefill {
   totalOutflows?: number;
   expectedCashAmount?: number;
   movementCount?: number;
+  // JD integration-map finding (2026-07-26): the owner could see the blended
+  // Ingresos/Egresos total but never WHICH lines made it up (sale vs. manual
+  // movement) without leaving the widget — data was already unified in one
+  // CashMovement query, just discarded before reaching the prefill. Capped +
+  // newest-first (same query already orders desc). Optional: business-overview
+  // reuses this resolver too and doesn't render the list, only the totals.
+  movements?: CajaMovementItem[];
   /** Defined when state=CLOSED */
   closedAt?: string | null;
   closedCashAmount?: number | null;
@@ -77,6 +94,12 @@ export async function resolveCajaPrefill(businessId: string, backend: CajaBacken
     totalOutflows: Math.abs(totalOutflows),
     expectedCashAmount,
     movementCount: movements.length,
+    movements: movements.slice(0, MOVEMENTS_CAP).map((m) => ({
+      type: m.type ?? "movimiento",
+      description: m.description ?? "",
+      amount: m.amount,
+      date: m.date ?? openSession.openedAt.toISOString(),
+    })),
   };
 }
 

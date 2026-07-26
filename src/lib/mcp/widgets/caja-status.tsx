@@ -51,10 +51,21 @@ interface Prefill {
   totalOutflows?: number;
   expectedCashAmount?: number;
   movementCount?: number;
+  movements?: { type: string; description: string; amount: number; date: string }[];
   closedAt?: string | null;
   closedCashAmount?: number | null;
   variance?: number | null;
 }
+
+// Same short-label convention CashMovement.type values map to across the app.
+const MOVEMENT_TYPE_LABELS: Record<string, string> = {
+  sale: "Venta",
+  purchase: "Pago proveedor",
+  income: "Ingreso",
+  salary: "Sueldo",
+  tax: "Impuesto",
+  adjustment: "Ajuste",
+};
 
 const ars = (n: number | null | undefined) =>
   n != null && Number.isFinite(n)
@@ -315,6 +326,28 @@ function CajaStatusWidget(): React.JSX.Element {
         <Row label="Egresos" value={prefill.totalOutflows != null ? ars(-Math.abs(prefill.totalOutflows)) : "—"} numeric />
         {prefill.movementCount != null && <Row label="Movimientos" value={String(prefill.movementCount)} numeric />}
       </dl>
+      {/* JD integration-map finding (2026-07-26): the owner could see the blended
+       * total but never which lines made it up. Collapsed by default so the default
+       * view stays within the inline data-point budget — "reveal complexity only
+       * when users need it" — expands to an itemized, capped list on demand. */}
+      {!!prefill.movements?.length && (
+        <details className="rounded-control bg-surface-2 px-4 py-3">
+          <summary className="cursor-pointer text-sm font-medium text-ink-soft">Ver detalle de movimientos</summary>
+          <ul className="mt-2 flex flex-col gap-2">
+            {prefill.movements.map((m, i) => (
+              <li key={i} className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="truncate text-sm text-ink">{MOVEMENT_TYPE_LABELS[m.type] ?? m.type}{m.description ? ` — ${m.description}` : ""}</div>
+                  <div className="text-sm text-ink-soft">{fmtDate(m.date)}</div>
+                </div>
+                <span className={`shrink-0 text-sm font-medium tabular-nums ${m.amount < 0 ? "text-danger-ink" : "text-ink"}`}>
+                  {ars(m.amount)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
       <SecondaryButton disabled={superseded} onClick={() => { setActionMode("cerrar"); setActionErr(null); }}>Cerrar caja</SecondaryButton>
     </Card>
   );

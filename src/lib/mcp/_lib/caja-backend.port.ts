@@ -38,6 +38,14 @@ export interface ClosedSessionResult {
 export interface MovementResult {
   /** Pre-signed amount: inflows positive, outflows negative. */
   amount: number;
+  // JD integration-map finding (2026-07-26): the OPEN caja-status view only ever
+  // showed aggregate Ingresos/Egresos/Movimientos totals — the owner couldn't audit
+  // which line was a sale vs. a manual movement without leaving the widget, even
+  // though the data was already unified in one CashMovement table. Optional so
+  // callers that only need the sum (caja-saldo-tool, caja-ciclo-tool) are unaffected.
+  type?: string;
+  description?: string | null;
+  date?: string;
 }
 
 // ── ciclo_caja — open/close types ────────────────────────────────────────────
