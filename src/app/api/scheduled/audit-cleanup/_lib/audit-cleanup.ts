@@ -177,6 +177,22 @@ export async function cleanA2aJtiSeen(): Promise<number> {
 }
 
 /**
+ * Remove stale A2A multi-turn session rows (A2ASessionTurn).
+ * Pure storage hygiene: the route's own 10-minute functional TTL already
+ * makes rows older than that invisible to reads (query-filtered in
+ * getSession, src/app/api/a2a/jsonrpc/route.ts). This 1-day cutoff just
+ * bounds table growth — generous on purpose, since it never affects
+ * conversational correctness.
+ */
+export async function cleanA2aSessionTurns(now: number): Promise<number> {
+  const cutoff1d = new Date(now - DAY_MS);
+  const r = await prisma.a2ASessionTurn.deleteMany({
+    where: { createdAt: { lt: cutoff1d } },
+  });
+  return r.count;
+}
+
+/**
  * Remove expired OAuthState rows. Rows are created at the start of the OAuth
  * connect flow and should be consumed (deleted) on callback. Any that were
  * abandoned accumulate until this cron sweeps them.

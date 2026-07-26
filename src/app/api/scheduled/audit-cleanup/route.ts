@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { logRouteError, verifyCronSecret } from "@/app/api/_lib/route-helpers";
 import {
   cleanA2aJtiSeen,
+  cleanA2aSessionTurns,
   cleanAgentEventLog,
   cleanAiRateLimit,
   cleanCashMovement,
@@ -42,6 +43,7 @@ export const maxDuration = 300;
  *   PushSubscription     → expired=true OR updatedAt > 30d ago
  *   OAuthState           → expiresAt < now (abandoned OAuth flows)
  *   AiRateLimit          → date > 30d ago (per-user daily counters)
+ *   A2ASessionTurn       → 1d   (storage hygiene only; functional TTL is 10 min, query-filtered)
  *   PaymentIntent (reconcile orphan) → reconcileFastTrack reset on terminal PIs, cap 1000
  *
  * Sequential deletes — avoid saturating Supabase with parallel large DELETEs.
@@ -85,6 +87,7 @@ async function handleRequest(request: NextRequest) {
     const pushSubscriptionsDeleted = await cleanPushSubscriptions(startedAt);
     const rateLimitBucketsDeleted = await cleanRateLimitBuckets(startedAt);
     const a2aJtiDeleted = await cleanA2aJtiSeen();
+    const a2aSessionTurnsDeleted = await cleanA2aSessionTurns(startedAt);
     const oauthStateDeleted = await cleanOAuthState();
     const aiRateLimitDeleted = await cleanAiRateLimit(startedAt);
     const webhookSecurityIncidentsDeleted = await cleanWebhookSecurityIncidents();
@@ -114,6 +117,7 @@ async function handleRequest(request: NextRequest) {
         pushSubscriptionsDeleted,
         rateLimitBucketsDeleted,
         a2aJtiDeleted,
+        a2aSessionTurnsDeleted,
         oauthStateDeleted,
         aiRateLimitDeleted,
         webhookSecurityIncidentsDeleted,
@@ -139,6 +143,7 @@ async function handleRequest(request: NextRequest) {
       pushSubscriptionsDeleted,
       rateLimitBucketsDeleted,
       a2aJtiDeleted,
+      a2aSessionTurnsDeleted,
       oauthStateDeleted,
       aiRateLimitDeleted,
       webhookSecurityIncidentsDeleted,

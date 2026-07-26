@@ -4,6 +4,7 @@ import { cloudLog, reportError, reportWarning, runWithTraceContext } from "@/lib
 import { runSupervisor, supervisorAnswer } from "@/app/api/supervisor/_lib/supervisor-runner";
 import type { StockIngressDecision } from "@/lib/a2a-transport";
 import { checkRateLimit } from "@/app/api/_lib/route-helpers";
+import { prisma } from "@/lib/prisma";
 import {
   handleA2ARpc,
   checkA2AApiKey,
@@ -17,13 +18,26 @@ import {
 } from "./_lib/handle-rpc";
 
 // ── Session store for multi-turn A2A conversations ───────────────────────────
-// In-memory, per-process. Survives within a Cloud Run instance (warm requests).
-// TTL = 10 min. Max 500 sessions total; max 10 sessions per businessId (SEC-N-2).
+// Postgres-backed (A2ASessionTurn table), replacing the previous per-process
+// in-memory Map. That Map was per-instance only — under Cloud Run horizontal
+// autoscaling, a multi-turn conversation could land on a different instance
+// mid-conversation and silently lose context. See the A2ASessionTurn model
+// comment in prisma/schema.prisma for the full rationale, including why
+// ChatMessageSessionService (the canonical durable-session pattern used by
+// Supervisor/Customer Agent) was not reused: it requires a non-null
+// businessId and threads by source/targetEmployeeId/customerId rather than
+// an arbitrary contextId, and its interface is shaped for the ADK Runner's
+// Session/Event objects rather than a simple {role, text}[] turn array.
+//
+// TTL = 10 min, enforced by query filtering on createdAt (a session with no
+// turns in the last 10 min reads back as empty — no active pruning needed).
+// Max 10 sessions per businessId (SEC-N-2), enforced by evicting the oldest
+// active session for that tenant when a NEW one would exceed the cap. The
+// old global 500-session cap protected in-process heap and has no equivalent
+// with a real DB backing it, so it was dropped rather than reused.
 const SESSION_TTL_MS = 10 * 60 * 1000;
-const SESSION_MAX = 500;
 const SESSION_MAX_PER_TENANT = 10;
-interface A2ASession { turns: Array<{ role: "user" | "agent"; text: string }>; updatedAt: number }
-const sessionStore = new Map<string, A2ASession>();
+type A2ATurn = { role: "user" | "agent"; text: string };
 
 // Session keys are namespaced as `${businessId}:${contextId}` when a
 // businessId is available (loopback transport always provides one via the
@@ -33,45 +47,67 @@ function sessionKey(contextId: string, businessId: string | null): string {
   return businessId ? `${businessId}:${contextId}` : `anon:${contextId}`;
 }
 
-function getSession(contextId: string, businessId: string | null): A2ASession["turns"] {
+async function getSession(contextId: string, businessId: string | null): Promise<A2ATurn[]> {
   const key = sessionKey(contextId, businessId);
-  const s = sessionStore.get(key);
-  if (!s || Date.now() - s.updatedAt > SESSION_TTL_MS) { sessionStore.delete(key); return []; }
-  return s.turns;
+  const cutoff = new Date(Date.now() - SESSION_TTL_MS);
+  // Same window as the old in-memory store (.slice(-6) — 3 user/agent pairs).
+  // Rows are fetched newest-first then reversed into chronological order.
+  const rows = await prisma.a2ASessionTurn.findMany({
+    where: { sessionKey: key, createdAt: { gt: cutoff } },
+    orderBy: { createdAt: "desc" },
+    take: 6,
+    select: { role: true, text: true },
+  });
+  if (rows.length === 0) return [];
+  return rows.reverse().map((r) => ({ role: r.role as A2ATurn["role"], text: r.text }));
 }
 
-function saveSession(contextId: string, businessId: string | null, userText: string, agentText: string): void {
-  if (sessionStore.size >= SESSION_MAX) {
-    // First pass: evict all TTL-expired entries (O(n), no allocation).
-    const now = Date.now();
-    for (const [k, v] of sessionStore) {
-      if (now - v.updatedAt > SESSION_TTL_MS) sessionStore.delete(k);
-    }
-    // If still at capacity, evict the single oldest entry (last resort).
-    if (sessionStore.size >= SESSION_MAX) {
-      let oldestKey: string | undefined;
-      let oldestTime = Infinity;
-      for (const [k, v] of sessionStore) {
-        if (v.updatedAt < oldestTime) { oldestTime = v.updatedAt; oldestKey = k; }
-      }
-      if (oldestKey !== undefined) sessionStore.delete(oldestKey);
-    }
-  }
-  // SEC-N-2: per-tenant session cap — evict oldest if this businessId exceeds 10 slots.
+async function saveSession(
+  contextId: string,
+  businessId: string | null,
+  userText: string,
+  agentText: string,
+): Promise<void> {
+  const key = sessionKey(contextId, businessId);
+  const cutoff = new Date(Date.now() - SESSION_TTL_MS);
+
+  // SEC-N-2: per-tenant active-session cap. Only checked when this write
+  // starts a NEW session for the tenant (no non-expired rows under this key
+  // yet) — an ongoing conversation is never evicted by its own growth.
+  // Best-effort under concurrency (two simultaneous new sessions for the same
+  // tenant can both pass the count check) — same fairness-not-security intent
+  // as the original in-memory version, which was also not thread-safe across
+  // instances.
   if (businessId) {
-    const prefix = `${businessId}:`;
-    const tenantKeys: [string, number][] = [];
-    for (const [k, v] of sessionStore) {
-      if (k.startsWith(prefix)) tenantKeys.push([k, v.updatedAt]);
-    }
-    if (tenantKeys.length >= SESSION_MAX_PER_TENANT) {
-      tenantKeys.sort((a, b) => a[1] - b[1]);
-      sessionStore.delete(tenantKeys[0][0]);
+    const existingForKey = await prisma.a2ASessionTurn.count({
+      where: { sessionKey: key, createdAt: { gt: cutoff } },
+    });
+    if (existingForKey === 0) {
+      const activeSessions = await prisma.a2ASessionTurn.groupBy({
+        by: ["sessionKey"],
+        where: { businessId, createdAt: { gt: cutoff } },
+        _min: { createdAt: true },
+      });
+      if (activeSessions.length >= SESSION_MAX_PER_TENANT) {
+        const oldest = activeSessions.reduce((a, b) =>
+          (a._min.createdAt ?? new Date(0)) < (b._min.createdAt ?? new Date(0)) ? a : b,
+        );
+        await prisma.a2ASessionTurn.deleteMany({
+          where: { businessId, sessionKey: oldest.sessionKey },
+        });
+      }
     }
   }
-  const existing = getSession(contextId, businessId);
-  const turns = [...existing, { role: "user" as const, text: userText }, { role: "agent" as const, text: agentText }].slice(-6);
-  sessionStore.set(sessionKey(contextId, businessId), { turns, updatedAt: Date.now() });
+
+  // Older rows for this key are simply never read again (getSession takes
+  // only the last 6) — they are swept later by the audit-cleanup cron
+  // (cleanA2aSessionTurns), not deleted here.
+  await prisma.a2ASessionTurn.createMany({
+    data: [
+      { sessionKey: key, businessId, role: "user", text: userText },
+      { sessionKey: key, businessId, role: "agent", text: agentText },
+    ],
+  });
 }
 
 export const maxDuration = 40;
@@ -114,13 +150,13 @@ function checkA2AKeyRateLimit(apiKey: string): boolean {
 
 const json = (body: unknown) => NextResponse.json(body, { status: 200 });
 
-function buildTextWithHistory(text: string, history: A2ASession["turns"]): string {
+function buildTextWithHistory(text: string, history: A2ATurn[]): string {
   if (history.length === 0) return text;
   const ctx = history.map((t) => `${t.role === "user" ? "usuario" : "velora"}: ${t.text}`).join("\n");
   return `[CONTEXTO CONVERSACIONAL]\n${ctx}\n[FIN CONTEXTO]\n${text}`;
 }
 
-async function supervisorAdapter(text: string, history: A2ASession["turns"] = []): Promise<SupervisorAdapterResult> {
+async function supervisorAdapter(text: string, history: A2ATurn[] = []): Promise<SupervisorAdapterResult> {
   const enrichedText = buildTextWithHistory(text, history);
   const isStockIngress = enrichedText.includes("type: STOCK_INGRESS_REQUEST");
   const sup = await runSupervisor(enrichedText);
@@ -233,14 +269,28 @@ async function handlePost(req: NextRequest) {
     const clientContextId = rawContextId && CONTEXT_ID_RE.test(rawContextId) ? rawContextId : null;
     const contextId = businessId !== null ? (clientContextId ?? randomUUID()) : randomUUID();
     // Session is keyed by businessId:contextId to prevent cross-tenant leakage.
-    const history = getSession(contextId, businessId);
+    const history = await getSession(contextId, businessId);
     const supervisorFn = (text: string) => supervisorAdapter(text, history);
     const response = await handleA2ARpc(body, supervisorFn);
     if ("result" in response && response.result) {
       const result = response.result as { parts?: Array<{ kind: string; text?: string }> };
       const agentText = result.parts?.find((p) => p.kind === "text")?.text ?? "";
       const userText = rawText ?? "";
-      if (userText && agentText) saveSession(contextId, businessId, userText, agentText);
+      if (userText && agentText) {
+        // Awaited (not fire-and-forget): Cloud Run may freeze the instance
+        // shortly after the response is sent, so an un-awaited write here
+        // could silently never complete. A persistence failure must not
+        // turn an already-successful RPC reply into a 500 — caught and
+        // logged, not rethrown.
+        try {
+          await saveSession(contextId, businessId, userText, agentText);
+        } catch (persistError) {
+          reportWarning("A2A session persist failed", {
+            scope: "a2a.jsonrpc.session-persist",
+            error: persistError instanceof Error ? persistError.message : String(persistError),
+          });
+        }
+      }
     }
     return json(response);
   } catch (error) {

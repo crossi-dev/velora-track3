@@ -1665,6 +1665,62 @@ model A2aJtiSeen {
   @@index([expiresAt])
 }
 
+// A2ASessionTurn — Postgres-backed session store for multi-turn A2A conversations.
+//
+// Replaces the previous per-process in-memory Map in
+// src/app/api/a2a/jsonrpc/route.ts. That Map was per-instance only — under
+// Cloud Run horizontal autoscaling, a multi-turn conversation could land on a
+// different instance mid-conversation and silently lose context. Same class
+// of fix as WebhookSecurityIncident below (in-memory Map → shared table).
+//
+// Why not ChatMessageSessionService (src/lib/adk/session-service.ts), the
+// canonical durable-session pattern used by Supervisor/Customer Agent:
+//   - It requires a real, non-null businessId (constructor param, used to
+//     scope ChatMessage rows via a NOT NULL FK). A2A's anonymous fallback
+//     path (no verified businessId) has nothing to bind to.
+//   - Its thread key is source ("owner"/"assistant") / targetEmployeeId /
+//     customerId — there is no column for an arbitrary high-cardinality
+//     contextId, so two concurrent A2A conversations for the same business
+//     would collide onto the same "thread".
+//   - Its interface is shaped for the ADK Runner (Session/Event objects,
+//     appName/userId/sessionId) — much heavier than A2A's simple
+//     {role, text}[] turn shape; forcing the fit would mean writing
+//     ChatMessage rows for server-to-server A2A traffic (polluting the
+//     owner/employee dashboard chat history table) and reconstructing
+//     Session/Event objects back into a turn array on every read.
+// This table is the minimal, correct alternative for just the A2A use case.
+//
+// Design (mirrors the removed in-memory store):
+//   - sessionKey = `${businessId}:${contextId}` or `anon:${contextId}` —
+//     identical namespacing to the old sessionKey() helper.
+//   - TTL (10 min) is enforced by query filtering on createdAt at read time
+//     (see getSession in route.ts), not by active in-app pruning — a session
+//     with no turns in the last 10 min is treated as expired/empty.
+//   - Per-tenant cap (SEC-N-2, max 10 concurrent sessions/business) is
+//     enforced in saveSession() by evicting the oldest active session for
+//     that businessId when a NEW session would exceed the cap. The old
+//     global cap (500 sessions across all tenants) protected in-process
+//     heap and has no equivalent here — Postgres storage isn't a shared
+//     bounded slot pool, so it was dropped rather than reused.
+//   - businessId is nullable: anonymous callers never reuse a contextId
+//     (route.ts always mints a fresh random one for them), so their rows
+//     are write-once/never-read-again and have no tenant to scope a cap to.
+//   - Cleanup: audit-cleanup cron deletes rows older than 1 day
+//     (cleanA2aSessionTurns) — pure storage hygiene; the 10-min functional
+//     TTL above already makes older rows invisible to reads.
+model A2ASessionTurn {
+  id         String   @id @default(cuid())
+  sessionKey String
+  businessId String?
+  // "user" | "agent" — mirrors the old A2ASession.turns[].role union.
+  role       String
+  text       String   @db.VarChar(8192)
+  createdAt  DateTime @default(now())
+
+  @@index([sessionKey, createdAt])
+  @@index([businessId, createdAt])
+}
+
 // WebhookSecurityIncident — distributed IP-ban tracker for MP webhook abuse.
 //
 // Replaces the in-memory `mismatchTracker` Map in webhook-security.ts that was

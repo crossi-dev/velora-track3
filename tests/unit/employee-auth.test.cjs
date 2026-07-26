@@ -12,6 +12,7 @@ const {
   businessLoginToken,
   EmployeeAuthError,
   EMPLOYEE_COOKIE_NAME,
+  EMPLOYEE_IDLE_TIMEOUT_MS,
 } = require("../../src/lib/employee-auth.ts");
 
 // ── PIN hashing ───────────────────────────────────────────────────────
@@ -145,8 +146,75 @@ test("businessLoginToken: 12-char output", () => {
   assert.equal(token.length, 12);
 });
 
+// ── Idle timeout (task #15) ──────────────────────────────────────────
+//
+// signRawPayload mirrors employee-auth.ts's internal HKDF derivation
+// (deriveEmployeeKey) so these tests can craft payloads with an arbitrary
+// lastActivity — signEmployeeSession() itself always stamps lastActivity
+// at call time, so it can't produce a stale one directly.
+
+function signRawPayload(payloadObj) {
+  const { createHmac, hkdfSync } = require("node:crypto");
+  const salt = Buffer.from("velora-hkdf-salt-v1", "utf8");
+  const key = Buffer.from(hkdfSync("sha256", process.env.AUTH_SECRET, salt, "velora-employee-session-v1", 32));
+  const payloadB64 = Buffer.from(JSON.stringify(payloadObj)).toString("base64url");
+  const sig = createHmac("sha256", key).update(payloadB64).digest("base64url");
+  return `${payloadB64}.${sig}`;
+}
+
+test("verifyEmployeeSession: returns null when idle beyond the timeout, even with a valid absolute exp", () => {
+  const stale = signRawPayload({
+    employeeId: "e",
+    businessId: "b",
+    role: "cashier",
+    sv: 0,
+    exp: Date.now() + 60 * 60 * 1000, // 1h left on the absolute 8h cap
+    lastActivity: Date.now() - (EMPLOYEE_IDLE_TIMEOUT_MS + 60 * 1000), // idle timeout + 1 min
+  });
+  assert.equal(verifyEmployeeSession(stale), null);
+});
+
+test("verifyEmployeeSession: accepts a session with recent activity", () => {
+  const fresh = signRawPayload({
+    employeeId: "e",
+    businessId: "b",
+    role: "cashier",
+    sv: 0,
+    exp: Date.now() + 60 * 60 * 1000,
+    lastActivity: Date.now() - 5 * 60 * 1000, // 5 min idle — well within the window
+  });
+  const decoded = verifyEmployeeSession(fresh);
+  assert.ok(decoded, "expected a recently-active session to verify");
+  assert.equal(decoded.employeeId, "e");
+});
+
+test("verifyEmployeeSession: grandfathers cookies signed before lastActivity existed", () => {
+  const legacy = signRawPayload({
+    employeeId: "e",
+    businessId: "b",
+    role: "cashier",
+    sv: 0,
+    exp: Date.now() + 60 * 60 * 1000,
+    // no lastActivity field — simulates a cookie issued pre-deploy
+  });
+  const decoded = verifyEmployeeSession(legacy);
+  assert.ok(decoded, "legacy cookie without lastActivity should still verify (grandfathered)");
+});
+
+test("signEmployeeSession: stamps lastActivity at sign time", () => {
+  const token = signEmployeeSession({ employeeId: "e", businessId: "b", role: "cashier", sv: 0 });
+  const decoded = verifyEmployeeSession(token);
+  assert.ok(decoded);
+  assert.equal(typeof decoded.lastActivity, "number");
+  assert.ok(decoded.lastActivity > Date.now() - 5000 && decoded.lastActivity <= Date.now());
+});
+
 // ── Constants ─────────────────────────────────────────────────────────
 
 test("EMPLOYEE_COOKIE_NAME is namespaced", () => {
   assert.match(EMPLOYEE_COOKIE_NAME, /velora-employee/);
+});
+
+test("EMPLOYEE_IDLE_TIMEOUT_MS is 30 minutes", () => {
+  assert.equal(EMPLOYEE_IDLE_TIMEOUT_MS, 30 * 60 * 1000);
 });
