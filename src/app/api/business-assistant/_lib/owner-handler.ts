@@ -17,7 +17,6 @@ import type { LatencyTracker } from "./latency-tracker";
 import { retrieveFewShotExamples } from "./few-shot-retrieval";
 import { sanitizeAlertLines, sanitizeFewShotBlock } from "./owner-handler.prompt-sanitize";
 import { maybeSaveFewShotExample } from "./few-shot-learner";
-import { maybeNotifyPermissionApproval } from "./permission-escalation";
 import { buildMemoryInjection } from "./inject-memory";
 import { extractAndSaveMemory } from "./extract-memory";
 import { loadBusinessAssistantContext } from "./context";
@@ -245,12 +244,6 @@ async function runOwnerSupervisor(
 
   latency.setMeta("path", "owner-supervisor");
   latency.emit({ businessId, actorUserId, actorEmployeeId: null });
-
-  void maybeNotifyPermissionApproval({ text, businessId, supAnswer }).then((r) => {
-    if (r.notified) trace.add("permission", `approval notified to employee=${r.employeeId}`);
-  }).catch((err) => {
-    cloudLog({ severity: "WARNING", component: "System", action: "PERM_APPROVAL_NOTIFY_FAILED", a2a_transfer: false, message: "maybeNotifyPermissionApproval rejected", businessId, data: { error: err instanceof Error ? err.message : String(err) } });
-  });
 
   if (supResult?.kind === "actions" || supResult?.kind === "answer") {
     void maybeSaveFewShotExample({ input: text, outputJson: JSON.stringify(supResult), intentType: supResult.actions?.[0]?.intent ?? supResult.kind, agentType: "strategic", confidence: 0.9, requiresClarification: false }).catch(() => { /* best-effort */ });

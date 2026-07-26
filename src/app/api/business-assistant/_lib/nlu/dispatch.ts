@@ -7,7 +7,6 @@
 import { NextResponse } from "next/server";
 import { cloudLog, logUnauthorizedAccess } from "@/lib/cloud-logger";
 import { buildEmployeeRefusal, gateIntentByRole } from "../intent-permissions";
-import { handlePermissionEscalation } from "../permission-escalation";
 import { resolveCustomerCreateRequest } from "../handlers/customers";
 import { executeInvoice, executePurchaseRequest } from "./execute-invoice-and-purchase";
 import { executeCobroQr } from "../handlers/cobro-qr-handler";
@@ -159,41 +158,22 @@ async function executeIntent(
     case "courier_settings": return executeCourierSettings(intent as CourierSettingsIntent, params);
     case "mp_oauth_reconnect": return executeMpOAuthReconnect(intent as MpOAuthReconnectIntent, params);
     case "service_connect": return executeServiceConnect(intent as ServiceConnectIntent, params);
-    case "delete_sale_item_escalation": return executeDeleteSaleItemEscalation(intent, params);
+    case "delete_sale_item_escalation": return executeDeleteSaleItemEscalation();
   }
 }
 
 // ── Handlers individuales ────────────────────────────────────────────────
 
-async function executeDeleteSaleItemEscalation(
-  intent: { rawText: string },
-  params: PreModelIntentParams,
-): Promise<NextResponse> {
-  // Employees cannot mutate in-progress sale line items directly.
-  // Route through the owner-permission escalation flow (B1): write an
-  // owner_only notification + push, then return a warm answer that includes
-  // "dueño" so EMP-CORR-03 assertion (dueño|panel|cancel|ok|...) passes.
-  // Falls back to a plain warm response when actorEmployeeId is absent.
-  if (!params.actorEmployeeId) {
-    return NextResponse.json({
-      answer: "Modificar ítems de la venta requiere autorización del dueño.",
-    });
-  }
-  const noopTrace = { add: () => undefined, toJSON: () => null };
-  // Override the answer to include "dueño" — handlePermissionEscalation's
-  // default ("jefe") doesn't satisfy the journey assertion vocabulary.
-  const respond = (_body: Record<string, unknown>) =>
-    Promise.resolve(
-      NextResponse.json({
-        answer: "Le consulté al dueño. Te aviso cuando responda.",
-      }),
-    );
-  return handlePermissionEscalation({
-    text: intent.rawText,
-    businessId: params.businessId,
-    actorEmployeeId: params.actorEmployeeId,
-    respond,
-    trace: noopTrace,
+function executeDeleteSaleItemEscalation(): NextResponse {
+  // This intent can only be produced when actorRole !== "owner" (see
+  // detect.ts label "0a"), which never happens now that resolveActor()
+  // only ever returns "owner" (employee role removed — Stage 1/2 cleanup).
+  // The permission-escalation flow this used to route through (asking the
+  // owner to authorize an in-progress-sale item deletion) was confirmed
+  // unreachable and deleted in Stage 3; this warm fallback is the only
+  // answer that was ever actually reachable.
+  return NextResponse.json({
+    answer: "Modificar ítems de la venta requiere autorización del dueño.",
   });
 }
 

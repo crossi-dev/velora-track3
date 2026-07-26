@@ -252,13 +252,13 @@ test("GET /services-status: courierCredential rows populate logistica connected 
   assert.equal(correo.connected, true);
 });
 
-test("GET /services-status: employee.count populates companion.employeeCount", async () => {
+test("GET /services-status: companion.employeeCount is always 0 (employee concept removed)", async () => {
   resetSut();
-  installMocks({ actor: makeOwnerActor(), prismaData: { employeeCount: 5 } });
+  installMocks({ actor: makeOwnerActor() });
   const { GET } = loadSut();
   const res = await GET(makeReq());
   const body = await res.json();
-  assert.equal(body.companion.employeeCount, 5);
+  assert.equal(body.companion.employeeCount, 0);
 });
 
 test("GET /services-status: Prisma error in Promise.all → 500 SERVICES_STATUS_FAILED", async () => {
