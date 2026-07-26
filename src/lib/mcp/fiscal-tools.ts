@@ -99,8 +99,8 @@ export function registerFiscalTools(
     {
       title: "Emit invoice (ARCA)",
       description:
-        "Use this when the owner needs to issue a standalone official electronic invoice (factura electrónica) not linked to an existing sale. " +
-        "Do NOT call this for a sale already recorded via `register_sale` — that tool creates the invoice automatically; calling this too would duplicate the ARCA emission. Use this only for standalone, sale-unlinked emissions. " +
+        "Use this when the owner needs to issue a standalone official electronic invoice (factura electrónica) not linked to an existing sale, OR for a sale recorded via `register_sale` whose customer is a consumidor final (NO CUIT/taxId on file) — those sales do NOT auto-emit to ARCA, so this is the way to produce an official comprobante for them. " +
+        "Do NOT call this for a `register_sale` sale whose customer HAS a CUIT/taxId: that sale already triggers the real ARCA emission automatically, and this standalone tool does NOT persist to or dedupe against the sale's Invoice row, so calling it would register a DUPLICATE comprobante with AFIP. " +
         "Emits an ARCA (formerly AFIP)-compliant electronic invoice (factura electrónica) " +
         "for the authenticated business and returns the CAE authorization code. Routes to the " +
         "real ARCA/WSFE pipeline when ARCA_REAL_MODE=true and a credential exists; " +

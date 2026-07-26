@@ -38,6 +38,9 @@ import { prismaTransactionAdapter } from "@/infrastructure/persistence/prisma-tr
 import { getServerActionMeta } from "@/app/api/_lib/mutation-contract";
 import { normalizeCustomerName, CONSUMIDOR_FINAL_NAME } from "@/infrastructure/shared/sale-customer";
 import { resolveCatalogPrices } from "./sale-price-guard";
+import { triggerFiscalIfTaxId } from "@/app/api/sales/create/sale-post-commit";
+import type { InvoicePayload } from "@/infrastructure/shared/invoice-document";
+import { reportError } from "@/lib/cloud-logger";
 import { createHash } from "crypto";
 import { errResponse } from "./mcp-responses";
 
@@ -181,6 +184,31 @@ export async function handleRegisterSale(
     if (result.outcome !== "created") return errResponse("REGISTER_SALE_ERROR", `Unexpected outcome: ${String((result as { outcome: unknown }).outcome)}`);
 
     const { data } = result;
+
+    // Real ARCA/AFIP fiscal emission for the MCP surface.
+    //
+    // The REST route (src/app/api/sales/create/route.ts) triggers CAE emission via
+    // firePostCommitActions → triggerFiscalIfTaxId. The MCP register_sale path shares
+    // the same createSaleUseCase but historically stopped at the local Invoice row and
+    // never triggered the fiscal agent — so a sale registered through Claude/ChatGPT/
+    // WhatsApp never received a real comprobante even for a customer with a CUIT on file.
+    //
+    // We reuse ONLY triggerFiscalIfTaxId (not the whole post-commit bundle) so the MCP
+    // path gains fiscal emission WITHOUT inheriting the REST path's other side effects
+    // (owner chat confirmation, customer WhatsApp auto-send, payments/logistica agents,
+    // low-stock alerts) that the MCP surface intentionally does not perform. The function
+    // self-gates: no taxId → skip; async payment (qr/transferencia) → defer to webhook;
+    // caeCode already present → skip (idempotent). Fire-and-forget after commit, matching
+    // the MCP return_sale post-commit pattern — the sale is already durably recorded, so a
+    // fiscal-agent failure must not fail the tool response.
+    void triggerFiscalIfTaxId(
+      businessId,
+      data.sale.id,
+      data.invoice.id,
+      data.invoice.payload as InvoicePayload,
+      args.paymentMethod ?? "efectivo",
+    ).catch((err) => reportError(err, { scope: "mcp.register-sale.fiscal-agent" }));
+
     return {
       content: [{
         type: "text",

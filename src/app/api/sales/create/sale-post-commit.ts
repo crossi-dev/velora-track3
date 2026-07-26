@@ -315,7 +315,13 @@ async function triggerLogisticaIfShippingData(
   });
 }
 
-async function triggerFiscalIfTaxId(
+// Exported so the MCP register_sale path (src/lib/mcp/_lib/sales-mutations.ts)
+// can reuse ONLY the fiscal-emission piece in isolation — without pulling in the
+// rest of firePostCommitActions' side effects (owner chat confirmation, customer
+// WhatsApp, payments/logistica agents, low-stock alerts), which the MCP surface
+// deliberately does not perform. This is a self-contained trigger: it carries its
+// own async-payment gate, taxId gate, and caeCode idempotency guard.
+export async function triggerFiscalIfTaxId(
   businessId: string,
   saleId: string,
   invoiceId: string,
