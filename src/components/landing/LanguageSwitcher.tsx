@@ -4,15 +4,23 @@ import { LOCALE_COOKIE, type Locale } from "@/app/_landing/i18n";
 
 // Next.js App Router i18n cookie pattern:
 // https://nextjs.org/docs/app/building-your-application/routing/internationalization
-// Originally used router.refresh() to re-run the server component without a
-// full navigation. Confirmed live (2026-07-26) that Firebase Hosting's CDN
-// (edge node cache-eze2230075-EZE) intermittently 503s the RSC fetch
-// router.refresh() issues (Cloud Run logs show the same request landing
-// 200 at the origin every time — the failure is CDN-layer only, likely the
-// large Next-Router-State-Tree header this specific request carries hitting
-// an edge size/timeout limit a plain navigation never triggers). A full
-// document reload sidesteps the RSC fetch path entirely and was verified
-// reliable — worse than a soft refresh, but it actually works.
+//
+// History (both prior approaches confirmed broken live, 2026-07-26):
+//   1. router.refresh() — Firebase Hosting's CDN intermittently 503'd the RSC
+//      fetch this issues (Cloud Run logs showed the same request landing 200
+//      at the origin every time — CDN-layer only).
+//   2. window.location.reload() — worked around the 503, but a server-side
+//      diagnostic log (LANDING_LOCALE_DEBUG) proved the Cookie header never
+//      reaches the origin at all on a real top-level navigation to "/"
+//      (rawCookiePresent: false) — some layer between the browser and Cloud
+//      Run strips it. A curl test that appeared to "work" was a false
+//      positive: curl sent no Accept-Language header, so pickLocale() fell
+//      through to its es-AR DEFAULT, not because the cookie was forwarded.
+//
+// Fix: switch instantly via the onLocaleChange callback (client state, no
+// server round-trip at all) instead of depending on the cookie ever
+// reaching the origin. The cookie is still written for the rare case a
+// future request DOES carry it, but nothing depends on it doing so anymore.
 
 const SUPPORTED: Locale[] = ["es-AR", "en"];
 const ONE_YEAR = 60 * 60 * 24 * 365;
@@ -29,17 +37,20 @@ export type SwitcherLabels = {
 export default function LanguageSwitcher({
   currentLocale,
   labels,
+  onLocaleChange,
 }: {
   currentLocale: Locale;
   labels: SwitcherLabels;
+  /** Client-side locale switch — no server round-trip. See module comment. */
+  onLocaleChange?: (locale: Locale) => void;
 }) {
   function switchTo(locale: Locale) {
     if (locale === currentLocale) return;
-    // Write the NEXT_LOCALE preference cookie.
-    // SameSite=Lax: safe for top-level navigations (no CSRF risk for a UI pref).
+    // Write the NEXT_LOCALE preference cookie — best-effort for the next
+    // fresh visit; the switch itself no longer depends on this reaching the
+    // server. SameSite=Lax: safe for top-level navigations (no CSRF risk).
     document.cookie = `${LOCALE_COOKIE}=${locale}; max-age=${ONE_YEAR}; path=/; SameSite=Lax`;
-    // Full reload (not router.refresh()) — see the module comment above.
-    window.location.reload();
+    onLocaleChange?.(locale);
   }
 
   return (

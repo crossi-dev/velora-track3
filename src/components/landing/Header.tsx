@@ -21,10 +21,13 @@ export default function Header({
   copy,
   locale,
   onSignIn,
+  onLocaleChange,
 }: {
   copy: HeaderCopy;
   locale?: Locale;
   onSignIn?: () => void | Promise<void>;
+  /** Client-side locale switch — no server round-trip. See LanguageSwitcher.tsx. */
+  onLocaleChange?: (locale: Locale) => void;
 }) {
   const [solid, setSolid] = useState(false);
 
@@ -71,7 +74,7 @@ export default function Header({
             ))}
           </nav>
           {copy.switcher && locale && (
-            <LanguageSwitcher currentLocale={locale} labels={copy.switcher} />
+            <LanguageSwitcher currentLocale={locale} labels={copy.switcher} onLocaleChange={onLocaleChange} />
           )}
           {copy.cta && onSignIn && (
             <button

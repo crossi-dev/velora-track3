@@ -27,18 +27,21 @@ export type LandingPageProps = {
   copy?: LandingCopy;
   /** Active locale — used to render the correct active state in the switcher. */
   locale?: Locale;
+  /** Client-side locale switch — no server round-trip. See LanguageSwitcher.tsx. */
+  onLocaleChange?: (locale: Locale) => void;
 };
 
 export default function LandingPage({
   onSignIn,
   copy = defaultCopy,
   locale,
+  onLocaleChange,
 }: LandingPageProps) {
   // Theme isolation lives in src/app/(landing)/layout.tsx via
   // `color-scheme: light only` — no inline overrides needed here.
   return (
     <>
-      <Header copy={copy.header} locale={locale} onSignIn={onSignIn} />
+      <Header copy={copy.header} locale={locale} onSignIn={onSignIn} onLocaleChange={onLocaleChange} />
       <main id="main-content">
         <Hero copy={copy.hero} onSignIn={onSignIn} />
         <Steps copy={copy.steps} />

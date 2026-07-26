@@ -20,21 +20,17 @@ export default async function HomePage() {
   if (!user) {
     const hdrs = await headers();
     const cookieJar = await cookies();
-    const rawCookieHeader = hdrs.get("cookie");
-    const localeCookieValue = cookieJar.get(LOCALE_COOKIE)?.value ?? null;
-    const locale = pickLocale(hdrs.get("accept-language"), localeCookieValue);
-    // TEMP DIAGNOSTIC (2026-07-26) — remove once the switcher bug is confirmed
-    // fixed live. Carlos reported the ES/EN switcher does nothing even after
-    // the cookie is confirmed set client-side and a real reload is confirmed
-    // to hit the origin. This logs exactly what the server sees per request.
-    console.log(JSON.stringify({
-      severity: "INFO", component: "System", action: "LANDING_LOCALE_DEBUG",
-      a2a_transfer: false, message: "landing page locale resolution",
-      localeCookieValue, resolvedLocale: locale,
-      rawCookiePresent: !!rawCookieHeader,
-      rawCookieLength: rawCookieHeader?.length ?? 0,
-      acceptLanguage: hdrs.get("accept-language"),
-    }));
+    // NEXT_LOCALE cookie confirmed (2026-07-26, via a temporary server-side
+    // diagnostic log) to not reliably reach the origin on a real browser
+    // navigation to "/" — some layer between the browser and Cloud Run
+    // strips the Cookie header (Firebase Hosting/CDN, not app code; a plain
+    // curl test misleadingly "worked" only because it sent no
+    // Accept-Language header, hitting the es-AR DEFAULT by coincidence).
+    // This is still the correct value for FIRST paint / SEO (Accept-Language
+    // negotiation), but the switcher no longer depends on this cookie ever
+    // reaching the server — see LanguageSwitcher.tsx, which switches locale
+    // as client state instead.
+    const locale = pickLocale(hdrs.get("accept-language"), cookieJar.get(LOCALE_COOKIE)?.value ?? null);
     return (
       <>
         {/* JSON-LD is server-rendered here so it's in the initial HTML payload

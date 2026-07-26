@@ -86,8 +86,16 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
   AccessDenied: "Acceso denegado. Verificá los permisos en Google.",
 };
 
-export default function LandingPage({ locale = "es-AR" }: { locale?: Locale }) {
+export default function LandingPage({ locale: initialLocale = "es-AR" }: { locale?: Locale }) {
+  // Locale is client state, not a static server prop — the switcher changes
+  // it directly (see LanguageSwitcher.tsx for why: the NEXT_LOCALE cookie
+  // confirmed does not reliably reach the server on a real browser
+  // navigation to "/", so nothing here can depend on a server round-trip).
+  // initialLocale (from Accept-Language negotiation server-side) is still
+  // the right value for first paint / SEO.
+  const [locale, setLocale] = useState<Locale>(initialLocale);
   const dict = getDict(locale);
+  const copy = getCopy(locale);
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -217,7 +225,7 @@ export default function LandingPage({ locale = "es-AR" }: { locale?: Locale }) {
           </button>
         </div>
       )}
-      <LandingTemplate onSignIn={onSignIn} copy={getCopy(locale)} locale={locale} />
+      <LandingTemplate onSignIn={onSignIn} copy={copy} locale={locale} onLocaleChange={setLocale} />
     </div>
   );
 }
