@@ -49,7 +49,10 @@
   /* Velora brand accent — deliberately NOT chameleon-mapped to the host palette.
    * Exact hex from crossi-dev/velora/src/styles/tokens.css (--brand / --tone-on-brand):
    * navy #1B3A6B (light) / #8AB0F0 (dark), on-brand cream #FAF6EE (light) / #02060F (dark).
-   * Used only for the business-overview tab bar so the brand identity persists across
+   * Used for the business-overview tab bar/hero border, the shared PrimaryButton
+   * (_widget-primitives.tsx — the one primary/confirm CTA per widget, including the
+   * ones that fire real mutations like register_sale/create_tracked_payment_link),
+   * and the shared VeloraMark header icon, so the brand identity persists across
    * hosts. Allowed by the doc: "You can use your own brand colors for accents and
    * identity, but the core UI should use the provided palette."
    */

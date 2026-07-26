@@ -42,7 +42,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { Centered, SecondaryButton, StatusChip } from "./_widget-primitives";
+import { Centered, SecondaryButton, StatusChip, VeloraMark } from "./_widget-primitives";
 
 // ── Data contract (matches business-overview-render.ts) ─────────────────────────
 
@@ -201,17 +201,6 @@ function SectionCard({ title, children, hero }: { title: string; children: React
       <h2 className="text-sm font-semibold text-ink-soft">{title}</h2>
       {children}
     </section>
-  );
-}
-
-/** Inline Velora mark (crossi-dev/velora public/velora-mark.svg) — every Velora
- *  product carries the mark. No external asset load (CSP-safe). */
-function VeloraMark({ size = 24 }: { size?: number }): React.JSX.Element {
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" role="img" aria-label="Velora">
-      <rect x="4" y="4" width="56" height="56" rx="14" fill="#1B3A6B" />
-      <path d="M20 44V20M20 44L44 20M44 20V34" stroke="#FAF6EE" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   );
 }
 

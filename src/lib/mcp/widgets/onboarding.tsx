@@ -33,7 +33,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { Centered, StatusChip, StatusBanner } from "./_widget-primitives";
+import { Centered, StatusChip, StatusBanner, VeloraMark } from "./_widget-primitives";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -148,7 +148,10 @@ function OnboardingHub(): React.JSX.Element {
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 p-5 text-ink" style={safeAreaStyle}>
       <div className="flex items-start justify-between gap-2">
-        <h1 className="text-xl font-semibold leading-snug">Conectá tu negocio</h1>
+        <div className="flex items-center gap-2">
+          <VeloraMark size={20} />
+          <h1 className="text-xl font-semibold leading-snug">Conectá tu negocio</h1>
+        </div>
         <span className="shrink-0 rounded-full border border-line bg-surface-2 px-3 py-1 text-sm font-medium text-ink-soft">
           {connectedCount}/{integrations.length}
         </span>

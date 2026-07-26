@@ -39,7 +39,7 @@ import React, { useCallback, useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
 import type { UCPOrder, UCPLineItem, UCPTotal } from "../_lib/ucp-types";
-import { Centered, SecondaryButton, StatusChip } from "./_widget-primitives";
+import { Centered, SecondaryButton, StatusChip, VeloraMark } from "./_widget-primitives";
 
 // ── Velora display extension (not UCP fields) ─────────────────────────────────
 // UCP Order has no buyer/created_at fields. Velora carries them alongside.
@@ -214,7 +214,10 @@ function PendingOrdersList(): React.JSX.Element {
           <span>Esta vista quedó vieja — hay una más nueva en este chat.</span>
         </div>
       )}
-      <h1 className="text-xl font-semibold leading-snug">Cobros pendientes</h1>
+      <div className="flex items-center gap-2">
+        <VeloraMark size={20} />
+        <h1 className="text-xl font-semibold leading-snug">Cobros pendientes</h1>
+      </div>
 
       {displayed.length === 0 ? (
         <p className="rounded-control bg-surface-2 p-4 text-base text-ink-soft">

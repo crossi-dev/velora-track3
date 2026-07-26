@@ -7,13 +7,32 @@
 
 import React from "react";
 
+/** Inline Velora mark (crossi-dev/velora public/velora-mark.svg) — every Velora
+ *  product carries the mark. No external asset load (CSP-safe). Shared here
+ *  (moved from business-overview.tsx, the reference implementation) so every
+ *  widget's header can carry the same brand identity, not just one. */
+export function VeloraMark({ size = 24 }: { size?: number }): React.JSX.Element {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" role="img" aria-label="Velora">
+      <rect x="4" y="4" width="56" height="56" rx="14" fill="#1B3A6B" />
+      <path d="M20 44V20M20 44L44 20M44 20V34" stroke="#FAF6EE" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 /** style is optional so widgets can add hostContext.safeAreaInsets padding on
  *  top of the base p-5 (claude.com/docs/connectors/building/mcp-apps/
- *  design-guidelines#host-context-for-layout) without duplicating this shell. */
+ *  design-guidelines#host-context-for-layout) without duplicating this shell.
+ *  Header carries the VeloraMark next to the title — same size (20) and
+ *  placement (flex items-center gap-2) as business-overview.tsx's inline
+ *  header, the reference implementation. */
 export function Card({ title, style, children }: { title: string; style?: React.CSSProperties; children: React.ReactNode }): React.JSX.Element {
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 p-5 text-ink" style={style}>
-      <h1 className="text-xl font-semibold leading-snug">{title}</h1>
+      <div className="flex items-center gap-2">
+        <VeloraMark size={20} />
+        <h1 className="text-xl font-semibold leading-snug">{title}</h1>
+      </div>
       {children}
     </main>
   );
@@ -34,12 +53,20 @@ export function Field({ label, children }: { label: string; children: React.Reac
 // the host's default outline happens to be.
 const INTERACTIVE = "transition-[background-color,border-color,opacity,transform] duration-[var(--widget-duration)] ease-[var(--widget-ease)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.98]";
 
+// Brand navy instead of the generic chameleon --color-accent (host invert
+// token, black-in-light/white-in-dark) — this is the ONE primary/confirm CTA
+// per widget, including the ones that fire real mutations (register_sale,
+// create_tracked_payment_link, caja_ciclo_caja...). Matches the "accent and
+// identity" carve-out business-overview.tsx already uses for its hero border
+// and tab bar (--color-brand, widget.css) — same allowed exception, not a new
+// token. Never chameleon here on purpose: this is the one button that should
+// read as "Velora", not as whatever host is rendering it.
 export function PrimaryButton(props: React.ButtonHTMLAttributes<HTMLButtonElement>): React.JSX.Element {
   return (
     <button
       type="button"
       {...props}
-      className={`mt-1 w-full rounded-control bg-accent px-4 py-3 text-base font-semibold text-on-accent disabled:opacity-60 disabled:active:scale-100 ${INTERACTIVE}`}
+      className={`mt-1 w-full rounded-control bg-brand px-4 py-3 text-base font-semibold text-on-brand disabled:opacity-60 disabled:active:scale-100 ${INTERACTIVE}`}
     />
   );
 }
