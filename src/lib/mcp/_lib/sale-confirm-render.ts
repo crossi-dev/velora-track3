@@ -33,13 +33,16 @@ interface ResolvedItem {
 
 // ── Prefill resolution ────────────────────────────────────────────────────────
 
-/** Resolves product names + catalog prices and optional customer name.
- *  Returns { items, customerName, totalARS } or throws with a structured error. */
+/** Resolves product names + catalog prices and optional customer name/phone.
+ *  Returns { items, customerName, customerPhone, totalARS } or throws with a structured error. */
 async function resolveSaleConfirmPrefill(
   businessId: string,
   items: Array<{ productId: string; quantity: number }>,
   customerId?: string,
-): Promise<{ items: ResolvedItem[]; customerName: string; totalARS: number } | { domainError: string; errorMessage: string }> {
+): Promise<
+  | { items: ResolvedItem[]; customerName: string; customerPhone: string | null; totalARS: number }
+  | { domainError: string; errorMessage: string }
+> {
   const productIds = items.map((i) => i.productId);
   const hasCustomer = Boolean(customerId && customerId.trim() !== "");
 
@@ -51,7 +54,7 @@ async function resolveSaleConfirmPrefill(
     hasCustomer
       ? prisma.customer.findFirst({
           where: { id: customerId!, businessId },
-          select: { name: true },
+          select: { name: true, phone: true },
         })
       : Promise.resolve(null),
   ]);
@@ -91,6 +94,7 @@ async function resolveSaleConfirmPrefill(
   return {
     items: resolvedItems,
     customerName: hasCustomer ? customer!.name : "Consumidor final",
+    customerPhone: hasCustomer ? customer!.phone : null,
     totalARS,
   };
 }
@@ -188,6 +192,7 @@ export function registerSaleConfirmRenderTool(
           items: result.items,
           customerId: args.customerId ?? "",
           customerName: result.customerName,
+          customerPhone: result.customerPhone,
           totalARS: result.totalARS,
         };
 

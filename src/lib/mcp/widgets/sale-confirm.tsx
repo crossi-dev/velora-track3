@@ -26,7 +26,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { Card, Field, PrimaryButton, Centered } from "./_widget-primitives";
+import { Card, Field, PrimaryButton, SecondaryButton, Centered } from "./_widget-primitives";
 
 // Same cap convention as pending-orders.tsx's DISPLAY_CAP — the host clips
 // (doesn't scroll) inline content past its height, so an uncapped item list
@@ -46,6 +46,7 @@ interface Prefill {
   items: PrefillItem[];
   customerId: string;
   customerName: string;
+  customerPhone: string | null;
   totalARS: number;
 }
 
@@ -72,6 +73,8 @@ function SaleConfirmWidget(): React.JSX.Element {
   const [confirmed, setConfirmed] = useState(false);
   const [saleId, setSaleId] = useState<string | null>(null);
   const [errMsg, setErrMsg] = useState<string | null>(null);
+  const [sendingWa, setSendingWa] = useState(false);
+  const [waSentMsg, setWaSentMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (!app) return;
@@ -133,6 +136,40 @@ function SaleConfirmWidget(): React.JSX.Element {
     }
   }, [app, prefill]);
 
+  // Carlos (2026-07-26): the confirmed screen previously left the customer with
+  // nothing — no receipt, no confirmation on their end, even though a phone was
+  // often on file. Mirrors delivery-receipt.tsx's onSendComprobante pattern
+  // (same send_whatsapp_text tool, same to/text argument shape).
+  const onSendReceipt = useCallback(async () => {
+    if (!app || !prefill?.customerPhone) return;
+    setSendingWa(true);
+    setWaSentMsg(null);
+    try {
+      const itemLines = prefill.items
+        .map((it) => `${it.quantity}x ${it.name}`)
+        .join(", ");
+      const message =
+        `¡Hola! Te confirmamos tu compra: ${itemLines}. ` +
+        `Total pagado en efectivo: ${ars(prefill.totalARS)}. ¡Gracias por tu compra!`;
+      const result = await app.callServerTool({
+        name: "send_whatsapp_text",
+        arguments: { to: prefill.customerPhone, text: message },
+      });
+      if (result.isError) {
+        const raw = (result.content?.[0] as { text?: string } | undefined)?.text ?? "{}";
+        let msg = "No se pudo enviar el comprobante.";
+        try { const p = JSON.parse(raw) as { message?: string }; msg = p.message ?? msg; } catch { /* default */ }
+        setWaSentMsg(msg);
+      } else {
+        setWaSentMsg("Comprobante enviado por WhatsApp.");
+      }
+    } catch {
+      setWaSentMsg("No se pudo enviar el comprobante. Intentá de nuevo.");
+    } finally {
+      setSendingWa(false);
+    }
+  }, [app, prefill]);
+
   // ── Loading / error states ────────────────────────────────────────────────
 
   if (error) return <Centered>No pudimos abrir la confirmación de venta. {error.message}</Centered>;
@@ -171,6 +208,14 @@ function SaleConfirmWidget(): React.JSX.Element {
         </div>
         {saleId && (
           <p className="text-sm text-ink-soft">ID de venta: {saleId}</p>
+        )}
+        {prefill.customerPhone && (
+          <>
+            <SecondaryButton disabled={sendingWa} onClick={onSendReceipt}>
+              {sendingWa ? "Enviando…" : "Enviar comprobante por WhatsApp"}
+            </SecondaryButton>
+            {waSentMsg && <p className="text-sm text-ink-soft">{waSentMsg}</p>}
+          </>
         )}
       </Card>
     );
