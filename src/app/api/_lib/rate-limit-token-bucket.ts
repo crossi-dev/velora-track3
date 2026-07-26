@@ -17,14 +17,18 @@
  *
  * ALGORITHM
  * ─────────
- * Lazy refill token bucket:
+ * Lazy refill token bucket, single-statement conditional upsert:
  *   1. On each request, compute elapsed = now - lastRefillAt (seconds).
  *   2. Refill: new_tokens = MIN(capacity, current_tokens + elapsed * refillRate).
- *   3. Attempt to consume 1 token: UPDATE ... SET tokens = new_tokens - 1 WHERE tokens >= 1.
- *   4. If 0 rows updated → bucket empty → 429. Otherwise → allowed.
+ *   3. INSERT ... ON CONFLICT DO UPDATE SET tokens = new_tokens - 1 WHERE new_tokens >= 1.
+ *   4. If 0 rows returned → bucket empty → 429. Otherwise → allowed.
  *
- * The INSERT + UPDATE are wrapped in a single CTE so Postgres executes them atomically.
- * Multiple instances hitting the same row get serialized by Postgres row-level locking.
+ * Refill and decrement happen in the SAME `ON CONFLICT DO UPDATE ... WHERE` clause —
+ * NOT a data-modifying CTE feeding a second UPDATE on the same row. PostgreSQL's
+ * behavior for that two-statement pattern is documented as unspecified when both
+ * touch the same row, and it empirically always returned 0 rows in production. See
+ * the fix comment inline below. Multiple instances hitting the same row get
+ * serialized by Postgres row-level locking either way.
  *
  * FAIL-OPEN POLICY
  * ─────────────────
@@ -74,58 +78,59 @@ export async function consumeToken(
 
   try {
     /**
-     * Atomic CTE:
-     * Step 1 — INSERT with full capacity (minus 1 for this request).
-     *   ON CONFLICT: refresh the tokens using lazy refill formula.
-     *   Result: the row now holds the refilled token count (not yet decremented).
+     * Single-statement conditional upsert (NOT a data-modifying CTE chained into
+     * a second UPDATE on the same row): PostgreSQL's behavior for a data-modifying
+     * WITH-CTE whose output feeds a second data-modifying statement touching the
+     * SAME row is documented as unspecified, and empirically (verified live against
+     * prod 2026-07-26) the previous two-statement CTE version ALWAYS returned 0 rows
+     * — every call denied, regardless of actual token availability. This bug shipped
+     * with the per-tenant rate-limit fix earlier tonight and silently 429'd 100% of
+     * /api/mcp traffic.
      *
-     * Step 2 — UPDATE to decrement 1 token, but ONLY if tokens >= 1.
-     *   RETURNING tokens gives us the post-decrement balance.
-     *   If 0 rows returned → bucket was empty → deny.
-     *
-     * Both steps run inside the same implicit transaction on Postgres, which means
-     * the UPDATE sees the INSERT/upsert result before any other concurrent writer.
+     * Fix: do the refill AND the decrement in ONE `ON CONFLICT DO UPDATE ... WHERE`
+     * clause. The DO UPDATE's WHERE guards the conflict branch itself — if the
+     * refilled-token expression is < 1, the conflict resolution is skipped entirely
+     * and no row is returned by RETURNING, which is exactly the "deny" signal we need,
+     * with no second statement touching the row.
      */
     const rows = await prisma.$queryRaw<Array<{ tokens: number }>>(Prisma.sql`
-      WITH refilled AS (
-        INSERT INTO "RateLimitBucket" (
-          "key", "tokens", "capacity", "refillRate", "lastRefillAt", "updatedAt"
-        )
-        VALUES (
-          ${key},
-          ${capacity},
-          ${capacity},
-          ${refillRate},
-          NOW(),
-          NOW()
-        )
-        ON CONFLICT ("key") DO UPDATE SET
-          -- Update capacity/refillRate from the current config: if the code
-          -- bumped a route's max from 20 to 60, existing buckets immediately
-          -- adopt the new limit instead of being permanently pinned at their
-          -- creation-time value. Without this, a one-time row created when
-          -- max=20 would silently keep enforcing 20 tokens forever, even
-          -- after the code change shipped (root cause of the path-juan
-          -- session 2026-05-26 rate-limit "ghost" — bucket capacity ignored
-          -- the new max=60 in the route).
-          "capacity"   = ${capacity},
-          "refillRate" = ${refillRate},
-          "tokens" = LEAST(
-            ${capacity}::float,
-            "RateLimitBucket"."tokens"
-              + EXTRACT(EPOCH FROM (NOW() - "RateLimitBucket"."lastRefillAt"))
-              * ${refillRate}::float
-          ),
-          "lastRefillAt" = NOW(),
-          "updatedAt"    = NOW()
-        RETURNING "tokens", "capacity"
+      INSERT INTO "RateLimitBucket" (
+        "key", "tokens", "capacity", "refillRate", "lastRefillAt", "updatedAt"
       )
-      UPDATE "RateLimitBucket"
-      SET    "tokens" = refilled.tokens - 1
-      FROM   refilled
-      WHERE  "RateLimitBucket"."key" = ${key}
-        AND  refilled.tokens >= 1
-      RETURNING "RateLimitBucket"."tokens"
+      VALUES (
+        ${key},
+        ${capacity} - 1,
+        ${capacity},
+        ${refillRate},
+        NOW(),
+        NOW()
+      )
+      ON CONFLICT ("key") DO UPDATE SET
+        -- Update capacity/refillRate from the current config: if the code
+        -- bumped a route's max from 20 to 60, existing buckets immediately
+        -- adopt the new limit instead of being permanently pinned at their
+        -- creation-time value. Without this, a one-time row created when
+        -- max=20 would silently keep enforcing 20 tokens forever, even
+        -- after the code change shipped (root cause of the path-juan
+        -- session 2026-05-26 rate-limit "ghost" — bucket capacity ignored
+        -- the new max=60 in the route).
+        "capacity"     = ${capacity},
+        "refillRate"   = ${refillRate},
+        "tokens"       = LEAST(
+                            ${capacity}::float,
+                            "RateLimitBucket"."tokens"
+                              + EXTRACT(EPOCH FROM (NOW() - "RateLimitBucket"."lastRefillAt"))
+                              * ${refillRate}::float
+                          ) - 1,
+        "lastRefillAt" = NOW(),
+        "updatedAt"    = NOW()
+      WHERE LEAST(
+              ${capacity}::float,
+              "RateLimitBucket"."tokens"
+                + EXTRACT(EPOCH FROM (NOW() - "RateLimitBucket"."lastRefillAt"))
+                * ${refillRate}::float
+            ) >= 1
+      RETURNING "tokens"
     `);
 
     if (rows.length === 0) {
