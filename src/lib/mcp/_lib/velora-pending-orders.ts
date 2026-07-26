@@ -39,6 +39,7 @@ export async function listPendingOrdersImpl(
       checkoutUrl: true,
       createdAt: true,
       items: true,
+      shippingCostARS: true,
       matchedCustomer: { select: { name: true } },
       sale: {
         select: {
@@ -82,6 +83,15 @@ export async function listPendingOrdersImpl(
           unitPrice: it.unitPrice ?? 0,
         }),
       );
+    }
+
+    // monto (totalARS) is itemsSubtotal + shippingCostARS (see
+    // register-sale-with-payment-link-use-case.ts). Without a shipping line the
+    // widget total would exceed the sum of displayed items whenever shipping
+    // applies — append it so the two always reconcile.
+    const shippingCostARS = pi.shippingCostARS ? Number(pi.shippingCostARS) : 0;
+    if (shippingCostARS > 0) {
+      items = [...items, { productId: null, name: "Envío", quantity: 1, unitPrice: shippingCostARS }];
     }
 
     const totalARS = Number(pi.monto);
