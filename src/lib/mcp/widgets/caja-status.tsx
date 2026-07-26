@@ -34,7 +34,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { Card, PrimaryButton, SecondaryButton, Centered, ReturnHint, StatusBanner, StatusChip } from "./_widget-primitives";
+import { Card, PrimaryButton, SecondaryButton, Centered, ReturnHint, StatusBanner, StatusChip, SupersededNotice } from "./_widget-primitives";
 
 type CajaState = "OPEN" | "CLOSED" | "NO_SESSION";
 
@@ -223,13 +223,7 @@ function CajaStatusWidget(): React.JSX.Element {
       }
     : {};
 
-  const topHint = superseded ? (
-    <div className="rounded-control bg-surface-2 p-3 text-sm text-ink-soft" role="status">
-      Esta vista quedó vieja — hay una más nueva en este chat.
-    </div>
-  ) : (
-    <ReturnHint />
-  );
+  const topHint = superseded ? <SupersededNotice /> : <ReturnHint />;
 
   if (doneBanner) {
     return (

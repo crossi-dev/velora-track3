@@ -23,7 +23,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { SecondaryButton, Centered, ReturnHint, StatusChip, type StatusTone } from "./_widget-primitives";
+import { Card, SecondaryButton, Centered, ReturnHint, StatusChip, type StatusTone } from "./_widget-primitives";
 import type { UCPOrder, UCPTotal } from "../_lib/ucp-types";
 
 // ── Velora display extensions ─────────────────────────────────────────────────
@@ -181,7 +181,7 @@ function DeliveryReceiptWidget(): React.JSX.Element {
     : {};
 
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-5 p-5 text-ink" style={safeAreaStyle}>
+    <Card title="Comprobante y envío" style={safeAreaStyle}>
       <ReturnHint />
 
       {/* Comprobante block */}
@@ -279,7 +279,7 @@ function DeliveryReceiptWidget(): React.JSX.Element {
         <p className="text-sm text-ink-soft text-center">{waSentMsg}</p>
       )}
 
-    </main>
+    </Card>
   );
 }
 

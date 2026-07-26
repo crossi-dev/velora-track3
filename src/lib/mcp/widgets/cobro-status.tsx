@@ -26,7 +26,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
 import type { UCPOrder, UCPTotal } from "../_lib/ucp-types";
-import { SecondaryButton, Centered, ReturnHint, TONE_CLASSES, type StatusTone } from "./_widget-primitives";
+import { Card, SecondaryButton, Centered, ReturnHint, SupersededNotice, TONE_CLASSES, type StatusTone } from "./_widget-primitives";
 
 // ── Velora display extensions (not UCP fields) ────────────────────────────────
 
@@ -216,14 +216,8 @@ function CobroStatusWidget(): React.JSX.Element {
     : {};
 
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-5 p-5 text-ink" style={safeAreaStyle}>
-      {superseded ? (
-        <div className="flex items-center justify-between gap-2 rounded-control bg-surface-2 p-3 text-sm text-ink-soft" role="status">
-          <span>Esta vista quedó vieja — hay una más nueva en este chat.</span>
-        </div>
-      ) : (
-        <ReturnHint />
-      )}
+    <Card title="Estado del cobro" style={safeAreaStyle}>
+      {superseded ? <SupersededNotice /> : <ReturnHint />}
       {/* BIG status banner */}
       <section
         aria-label="Estado del cobro"
@@ -301,7 +295,7 @@ function CobroStatusWidget(): React.JSX.Element {
       {detail.estado === "pending" && detail.ucp.permalink_url && (
         <CopyLinkButton url={detail.ucp.permalink_url} />
       )}
-    </main>
+    </Card>
   );
 }
 

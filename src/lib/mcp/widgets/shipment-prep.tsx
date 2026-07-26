@@ -99,7 +99,7 @@ function ShipmentPrepWidget(): React.JSX.Element {
 
   if (error) return <Centered>No pudimos abrir la vista previa de envío. {error.message}</Centered>;
   if (!isConnected) return <Centered>Conectando…</Centered>;
-  if (!loaded) return <Centered>Cargando…</Centered>;
+  if (!loaded) return <Centered>Cargando vista previa de envío…</Centered>;
   if (!prefill || prefill.items.length === 0) {
     return <Centered>No hay productos para preparar el envío.</Centered>;
   }
@@ -177,7 +177,7 @@ function ShipmentPrepWidget(): React.JSX.Element {
         <h2 className="mb-2 text-sm font-medium text-ink-soft">Envío</h2>
         {shipping.activeCourierCount === 0 ? (
           <div className="rounded-control bg-surface-2 px-4 py-3 text-sm text-ink-soft">
-            No hay couriers activos para este negocio. El dueño debe conectar un courier en Configuración.
+            No hay couriers activos. Conectá un courier en Configuración para cotizar envíos.
           </div>
         ) : shipping.options.length === 0 ? (
           <div className="rounded-control bg-surface-2 px-4 py-3 text-sm text-ink-soft">

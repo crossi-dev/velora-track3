@@ -108,6 +108,19 @@ export function ReturnHint(): React.JSX.Element {
   );
 }
 
+/** Shown on an older widget copy once a newer instance of the same widget has
+ *  rendered in the conversation (instance-supersession,
+ *  claude.com/docs/connectors/building/mcp-apps/instance-supersession). Same copy
+ *  and styling in every widget that participates, instead of re-inlining the
+ *  banner per file — consolidated for the same reason StatusChip/StatusBanner were. */
+export function SupersededNotice(): React.JSX.Element {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-control bg-surface-2 p-3 text-sm text-ink-soft" role="status">
+      <span>Esta vista quedó vieja — hay una más nueva en este chat.</span>
+    </div>
+  );
+}
+
 // ── Status chip / banner ─────────────────────────────────────────────────────
 // Consolidates the ad-hoc `style={{ color: "light-dark(...)" }}` chips that
 // used to be hand-rolled per widget (caja-status, cobro-status, sale-confirm,

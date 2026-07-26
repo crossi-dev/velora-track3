@@ -42,7 +42,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { Centered, SecondaryButton, StatusChip, VeloraMark } from "./_widget-primitives";
+import { Centered, SecondaryButton, StatusChip, SupersededNotice, VeloraMark } from "./_widget-primitives";
 
 // ── Data contract (matches business-overview-render.ts) ─────────────────────────
 
@@ -812,11 +812,7 @@ function BusinessOverviewWidget(): React.JSX.Element {
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 p-5 text-ink" style={safeAreaStyle}>
-      {superseded && (
-        <div className="flex items-center justify-between gap-2 rounded-control bg-surface-2 p-3 text-sm text-ink-soft" role="status">
-          <span>Esta vista quedó vieja — hay una más nueva en este chat.</span>
-        </div>
-      )}
+      {superseded && <SupersededNotice />}
       {fullscreen ? (
         <>
           <header className="flex items-center justify-between gap-2">

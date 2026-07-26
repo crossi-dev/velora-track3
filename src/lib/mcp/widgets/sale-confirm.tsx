@@ -87,7 +87,7 @@ function mpErrorCopy(code: string, fallback: string): string {
 const segClass = (active: boolean) =>
   `flex-1 rounded-control px-4 py-3 text-base font-medium transition-colors ${
     active
-      ? "bg-accent text-on-accent"
+      ? "bg-brand text-on-brand"
       : "border border-line bg-surface text-ink hover:bg-surface-2"
   }`;
 
