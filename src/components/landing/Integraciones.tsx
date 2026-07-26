@@ -48,7 +48,7 @@ export default function Integraciones({ copy }: { copy: IntegracionesCopy }) {
     <section
       id="integraciones"
       data-screen-label="Integraciones"
-      className="py-[clamp(96px,14vw,160px)] border-t border-[color:var(--color-line)]"
+      className="py-[clamp(64px,9vw,96px)] border-t border-[color:var(--color-line)]"
     >
       <div className="mx-auto max-w-[1240px] px-[clamp(20px,4vw,56px)]">
 

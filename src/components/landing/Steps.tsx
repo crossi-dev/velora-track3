@@ -8,7 +8,7 @@ export default function Steps({ copy }: { copy: StepsCopy }) {
     <section
       id="como-funciona"
       data-screen-label="Steps"
-      className="pt-[clamp(40px,6vw,56px)] pb-[clamp(96px,14vw,160px)]"
+      className="pt-[clamp(40px,6vw,56px)] pb-[clamp(56px,8vw,88px)]"
     >
       <div className="mx-auto max-w-[1240px] px-[clamp(20px,4vw,56px)]">
         <div

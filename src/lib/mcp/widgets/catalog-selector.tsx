@@ -338,18 +338,38 @@ function CatalogSelector(): React.JSX.Element {
                   </span>
                 </div>
               </div>
-              <label className="flex items-center gap-1 text-sm text-ink-soft shrink-0">
-                <span className="sr-only">Cantidad de {p.title}</span>
-                <input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  aria-label={`Restar una unidad de ${p.title}`}
+                  disabled={!inStock || qty <= 0}
+                  onClick={() => setQty(p.id, qty - 1)}
+                  className="grid h-11 w-9 place-items-center rounded-control border border-line bg-surface text-base text-ink hover:bg-surface-2 disabled:opacity-40"
+                >
+                  −
+                </button>
+                <label>
+                  <span className="sr-only">Cantidad de {p.title}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    inputMode="numeric"
+                    disabled={!inStock}
+                    className="w-12 min-h-[44px] rounded-control border border-line bg-surface px-1 py-2 text-center text-base text-ink outline-none focus:border-accent disabled:opacity-40"
+                    value={qty}
+                    onChange={(e) => setQty(p.id, parseInt(e.target.value, 10))}
+                  />
+                </label>
+                <button
+                  type="button"
+                  aria-label={`Sumar una unidad de ${p.title}`}
                   disabled={!inStock}
-                  className="w-16 min-h-[44px] rounded-control border border-line bg-surface px-2 py-2 text-center text-base text-ink outline-none focus:border-accent disabled:opacity-40"
-                  value={qty}
-                  onChange={(e) => setQty(p.id, parseInt(e.target.value, 10))}
-                />
-              </label>
+                  onClick={() => setQty(p.id, qty + 1)}
+                  className="grid h-11 w-9 place-items-center rounded-control border border-line bg-surface text-base text-ink hover:bg-surface-2 disabled:opacity-40"
+                >
+                  +
+                </button>
+              </div>
             </li>
           );
         })}

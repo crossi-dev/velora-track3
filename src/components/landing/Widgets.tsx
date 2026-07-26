@@ -32,7 +32,7 @@ export default function Widgets({ copy }: { copy: WidgetsCopy }) {
       id="widgets"
       data-screen-label="Widgets"
       aria-labelledby="widgets-headline"
-      className="py-[clamp(96px,14vw,160px)] border-t border-[color:var(--color-line)]"
+      className="py-[clamp(64px,9vw,96px)] border-t border-[color:var(--color-line)]"
     >
       <div className="mx-auto max-w-[1240px] px-[clamp(20px,4vw,56px)]">
         {/* Eyebrow */}

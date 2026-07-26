@@ -18,7 +18,7 @@ export default function Benefits({ copy }: { copy: BenefitsCopy }) {
       id="capacidades"
       aria-label={copy.label}
       data-screen-label="Benefits"
-      className="pt-[clamp(96px,14vw,160px)] pb-[clamp(48px,7vw,72px)] border-t border-[color:var(--color-line)]"
+      className="pt-[clamp(56px,8vw,88px)] pb-[clamp(48px,7vw,72px)] border-t border-[color:var(--color-line)]"
     >
       <div className="mx-auto max-w-[1240px] px-[clamp(20px,4vw,56px)]">
         <p

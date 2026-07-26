@@ -14,7 +14,7 @@ export default function QuietRow({ copy }: { copy: QuietRowCopy }) {
           <p
             key={item}
             className={[
-              "py-7 text-base tracking-[-0.005em] text-[color:var(--color-ink-80)] md:px-7 md:py-8",
+              "py-8 text-[1.0625rem] font-medium tracking-[-0.005em] text-[color:var(--color-ink)] md:px-7 md:py-10",
               i > 0
                 ? "border-t border-[color:var(--color-line)] md:border-t-0 md:border-l"
                 : "",

@@ -27,7 +27,7 @@ export default function FAQ({ copy }: { copy: FAQCopy }) {
     <section
       id="preguntas"
       data-screen-label="FAQ"
-      className="py-[clamp(96px,14vw,160px)]"
+      className="py-[clamp(64px,9vw,96px)]"
     >
       <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-[clamp(40px,6vw,80px)] px-[clamp(20px,4vw,56px)] lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
         <div>
