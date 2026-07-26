@@ -1,13 +1,18 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { LOCALE_COOKIE, type Locale } from "@/app/_landing/i18n";
 
 // Next.js App Router i18n cookie pattern:
 // https://nextjs.org/docs/app/building-your-application/routing/internationalization
-// Set NEXT_LOCALE cookie client-side → router.refresh() re-runs the server
-// component which calls pickLocale() with the new cookie value → locale switches
-// without a full navigation.
+// Originally used router.refresh() to re-run the server component without a
+// full navigation. Confirmed live (2026-07-26) that Firebase Hosting's CDN
+// (edge node cache-eze2230075-EZE) intermittently 503s the RSC fetch
+// router.refresh() issues (Cloud Run logs show the same request landing
+// 200 at the origin every time — the failure is CDN-layer only, likely the
+// large Next-Router-State-Tree header this specific request carries hitting
+// an edge size/timeout limit a plain navigation never triggers). A full
+// document reload sidesteps the RSC fetch path entirely and was verified
+// reliable — worse than a soft refresh, but it actually works.
 
 const SUPPORTED: Locale[] = ["es-AR", "en"];
 const ONE_YEAR = 60 * 60 * 24 * 365;
@@ -28,15 +33,13 @@ export default function LanguageSwitcher({
   currentLocale: Locale;
   labels: SwitcherLabels;
 }) {
-  const router = useRouter();
-
   function switchTo(locale: Locale) {
     if (locale === currentLocale) return;
     // Write the NEXT_LOCALE preference cookie.
     // SameSite=Lax: safe for top-level navigations (no CSRF risk for a UI pref).
     document.cookie = `${LOCALE_COOKIE}=${locale}; max-age=${ONE_YEAR}; path=/; SameSite=Lax`;
-    // Re-run the server component tree so pickLocale() picks up the new cookie.
-    router.refresh();
+    // Full reload (not router.refresh()) — see the module comment above.
+    window.location.reload();
   }
 
   return (
