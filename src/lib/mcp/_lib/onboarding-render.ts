@@ -74,7 +74,9 @@ export function registerOnboardingRenderTool(
         "integrations the business has connected (MercadoPago, WhatsApp, ARCA, " +
         "Andreani, Twilio, Resend, PedidosYa) and offering launcher buttons that " +
         "open Velora's official connect/import pages in the browser. " +
-        "Side-effect-free — no mutations.",
+        "Side-effect-free — no mutations. " +
+        "Once the owner has connected what they need, suggest they try `open_business_overview` " +
+        "('mostrame mi negocio') to see their business at a glance.",
       _meta: {
         ui: { resourceUri: ONBOARDING_RESOURCE_URI },
         "openai/outputTemplate": ONBOARDING_RESOURCE_URI,

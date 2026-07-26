@@ -75,7 +75,9 @@ export function registerOnboardingTools(
         "On failure returns isError:true with a domain error code: " +
         "MP_NOT_CONFIGURED (OAuth env vars missing), " +
         "INVALID_TOKEN (bad/expired token), MP_UNREACHABLE (network), UPSERT_FAILED (DB error). " +
-        "This is a credential write — confirm intent with the owner before executing.",
+        "This is a credential write — confirm intent with the owner before executing. " +
+        "The owner authorizes in a browser tab outside this chat, so once they say they're done, " +
+        "call `connection_status` to confirm the connection actually completed before telling them it's connected.",
       inputSchema: {
         accessToken: z
           .string()
@@ -117,7 +119,9 @@ export function registerOnboardingTools(
         "No live API validation is performed — the token is validated on first use. " +
         "Returns { ok: true } on fallback success. " +
         "On failure returns isError:true with a domain error code: " +
-        "INVALID_TOKEN (empty/missing), ENCRYPT_FAILED, UPSERT_FAILED.",
+        "INVALID_TOKEN (empty/missing), ENCRYPT_FAILED, UPSERT_FAILED. " +
+        "The owner pastes the token on that page outside this chat, so once they say they're done, " +
+        "call `connection_status` to confirm the connection actually completed before telling them it's connected.",
       inputSchema: {
         apiToken: z
           .string()
@@ -158,7 +162,9 @@ export function registerOnboardingTools(
         "lightweight first step — the response still includes the connectUrl to complete " +
         "the full WABA connection. " +
         "Returns { ok: true, action: 'authorize', connectUrl, instructions, phone } when phone is supplied. " +
-        "On failure returns isError:true with code INVALID_PHONE or SAVE_FAILED.",
+        "On failure returns isError:true with code INVALID_PHONE or SAVE_FAILED. " +
+        "The owner authorizes in a browser tab outside this chat, so once they say they're done, " +
+        "call `connection_status` to confirm the connection actually completed before telling them it's connected.",
       inputSchema: {
         phone: z
           .string()

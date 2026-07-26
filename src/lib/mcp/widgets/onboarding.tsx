@@ -232,7 +232,10 @@ function OnboardingHub(): React.JSX.Element {
 
       {/* All connected state */}
       {connectedCount === integrations.length && (
-        <StatusBanner tone="success">¡Todo conectado! Tu negocio está listo para operar.</StatusBanner>
+        <StatusBanner tone="success">
+          ¡Todo conectado! Ya podés operar: probá pedirme &apos;vendí 2 alfajores a Juan&apos; para
+          registrar tu primera venta, o &apos;mostrame mi negocio&apos; para ver el resumen.
+        </StatusBanner>
       )}
     </main>
   );
