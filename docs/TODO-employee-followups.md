@@ -31,3 +31,19 @@ cosmetic rename touching that much passing test surface deserves a real
 review pass, not an autonomous edit. The public agent-card metadata (skill id
 `assist.employee.turn`) was also left alone since it's live A2A protocol
 surface an external caller may already parse.
+
+## 3. Landing hero/Surfaces sequencing — a real product-writing tension
+
+An Opus audit (2026-07-26) flagged: the hero now leads hard with "Claude,
+ChatGPT o Gemini" before the Velora App (today's repositioning). But two
+scrolls later, the Surfaces section badges ChatGPT and Claude as
+`available: false` ("directorio próximamente") — only the Velora App is
+`available: true`. A cold reader gets promised AI-native access in the hero,
+then told two of the three ways to get it aren't self-serve yet. The FAQ does
+resolve this ("conectalos hoy con el endpoint público") but most readers
+won't scroll that far.
+
+Not touched today — whether ChatGPT/Claude should show as more available
+(e.g. "conectá el endpoint ahora" instead of "próximamente") depends on
+real submission/listing status only Carlos knows, not something to guess at
+in copy.
