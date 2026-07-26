@@ -90,5 +90,12 @@
     "path": "/api/scheduled/idempotency-prune",
     "httpMethod": "POST",
     "description": "Frequent stuck-pending idempotency prune — every 5 min (ART-anchored). Fixes M-1: deletes IdempotencyRecord rows with status=pending and updatedAt older than 5 min so a stuck row blocks AFIP emit retries for at most ~5 min instead of ~24h. The daily audit-cleanup is unchanged (belt-and-suspenders fallback)."
+  },
+  {
+    "name": "velora-supabase-keepalive",
+    "schedule": "0 6 * * *",
+    "path": "/api/scheduled/supabase-keepalive",
+    "httpMethod": "POST",
+    "description": "Supabase free-tier auto-pause keepalive — daily lightweight SELECT 1 (03:00 ART = 06:00 UTC). Supabase Free pauses the whole project after 7 consecutive days with zero DB traffic (silent full outage); this guarantees at least one DB round-trip per day regardless of other cron/app activity."
   }
 ]
