@@ -3,24 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import { useChatContext, useInputContext, useBusinessActionsContext } from "../lib/contexts";
 import { AssistantInputBar } from "./assistant/AssistantInputBar";
-import { TeamSuccessBanner } from "./TeamSuccessBanner";
 
 interface OnboardingTurn {
   role: "user" | "assistant";
   content: string;
 }
 
-interface EmployeeAccess {
-  name: string;
-  pin: string;
-  loginUrl: string;
-}
-
 const GREETING_EN =
-  "Hi, I'm Velora — your business AI.\n\nIn a few minutes we'll set up your catalog, team rules, and employee access. All from here.\n\nWhat's your business name and what type of store is it? (boutique, pet shop, mini-market, restaurant, franchise, etc.)";
+  "Hi, I'm Velora — your business AI.\n\nIn a few minutes we'll set up your catalog and team rules. All from here.\n\nWhat's your business name and what type of store is it? (boutique, pet shop, mini-market, restaurant, franchise, etc.)";
 
 const GREETING_ES =
-  "Hola, soy Velora — tu IA de negocio.\n\nEn unos minutos configuramos tu catálogo, las reglas del equipo y el acceso de los empleados. Todo desde acá.\n\n¿Cómo se llama tu negocio y qué tipo de comercio es? (boutique, pet shop, mini-market, restaurante, franquicia, etc.)";
+  "Hola, soy Velora — tu IA de negocio.\n\nEn unos minutos configuramos tu catálogo y las reglas del equipo. Todo desde acá.\n\n¿Cómo se llama tu negocio y qué tipo de comercio es? (boutique, pet shop, mini-market, restaurante, franquicia, etc.)";
 
 const BUBBLE_BASE: React.CSSProperties = {
   fontFamily: "var(--font-dm-sans)",
@@ -71,7 +64,6 @@ export function OnboardingChat({ onComplete }: OnboardingChatProps) {
   const [sending, setSending] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [onboardingHistory, setOnboardingHistory] = useState<OnboardingTurn[]>([]);
-  const [pendingBanners, setPendingBanners] = useState<EmployeeAccess[]>([]);
   const injectedRef = useRef(false);
   const pendingInputRef = useRef("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -153,7 +145,6 @@ export function OnboardingChat({ onComplete }: OnboardingChatProps) {
         message?: string;
         complete?: boolean;
         error?: string;
-        employeeAccess?: EmployeeAccess[];
       };
       if (!res.ok) throw new Error(data.error ?? t("Something went wrong", "Algo salió mal"));
       if (data.message) {
@@ -161,9 +152,6 @@ export function OnboardingChat({ onComplete }: OnboardingChatProps) {
         setOnboardingHistory((prev) => [...prev, { role: "assistant", content: data.message! }]);
       }
       if (data.complete) {
-        if (data.employeeAccess && data.employeeAccess.length > 0) {
-          setPendingBanners(data.employeeAccess);
-        }
         setCompleting(true);
         completeTimerRef.current = setTimeout(() => onCompleteRef.current(), 1000);
       }
@@ -218,24 +206,6 @@ export function OnboardingChat({ onComplete }: OnboardingChatProps) {
           </div>
         )}
       </div>
-      {pendingBanners.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", padding: "0.75rem 0" }}>
-          {pendingBanners.map((emp) => (
-            <TeamSuccessBanner
-              key={emp.name}
-              notice={t(
-                `"${emp.name}" is ready to log in.`,
-                `"${emp.name}" ya puede entrar.`,
-              )}
-              pin={emp.pin}
-              loginUrl={emp.loginUrl}
-              onDismiss={() => setPendingBanners((prev) => prev.filter((e) => e.name !== emp.name))}
-              t={t}
-            />
-          ))}
-        </div>
-      )}
-
       {completing && (
         <div
           style={{

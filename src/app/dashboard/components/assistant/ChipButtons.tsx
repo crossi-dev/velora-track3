@@ -3,7 +3,6 @@
 import { useState, useCallback } from "react";
 import type { ChipsBundle, ChipOption } from "../../lib/types";
 import { subscribeOwnerPush } from "../../lib/hooks/subscribeOwnerPush";
-import { subscribeEmployeePush } from "../../lib/hooks/subscribeEmployeePush";
 import { useT } from "../../lib/DashboardLangContext";
 
 // Chip button — ≥44×44 px target per Velora typography/touch standard.
@@ -57,11 +56,7 @@ export function ChipButtons({
     setBusy(true);
     try {
       if (opt.action === "subscribe_push") {
-        if (role === "employee") {
-          await subscribeEmployeePush();
-        } else {
-          await subscribeOwnerPush();
-        }
+        await subscribeOwnerPush();
       }
       onSendChip(opt.value);
     } finally {

@@ -59,11 +59,11 @@ export async function handlePermissionEscalation({
   respond: (body: Record<string, unknown>) => Promise<NextResponse>;
   trace: { add: (step: string, detail: string) => void; toJSON: () => Record<string, unknown> | null };
 }): Promise<NextResponse> {
-  const employee = await prisma.employee.findUnique({
-    where: { id: actorEmployeeId },
-    select: { name: true },
-  });
-  const empName = employee?.name ?? "El empleado";
+  // Employee concept removed (0 rows in production, Stage 1 cleanup) — this
+  // whole flow is unreachable now (callers only invoke it when actorEmployeeId
+  // is present, which can no longer happen), kept only so the function's
+  // type contract stays intact for its still-existing callers.
+  const empName = "El empleado";
 
   const clientMessageId = `${PERM_PREFIX}${actorEmployeeId}:${Date.now()}`;
   const shortRequest = text.slice(0, 160).trim();

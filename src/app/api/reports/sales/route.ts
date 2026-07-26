@@ -41,7 +41,6 @@ async function handleGet(req: NextRequest): Promise<NextResponse> {
         date: true,
         totalAmount: true,
         customer: { select: { name: true, taxId: true } },
-        employee: { select: { name: true } },
         saleItems: {
           select: {
             quantity: true,
@@ -88,7 +87,9 @@ async function handleGet(req: NextRequest): Promise<NextResponse> {
       const cliente = sale.customer?.name ?? "—";
       const cuit = sale.customer?.taxId ?? "—";
       const metodo = sale.cashMovements[0]?.type ?? "efectivo";
-      const empleado = sale.employee?.name ?? "Owner";
+      // Employee concept removed (0 rows in production, Stage 1 cleanup) —
+      // every sale is attributed to the owner now.
+      const empleado = "Owner";
       const total = Number(sale.totalAmount);
 
       if (sale.saleItems.length === 0) {

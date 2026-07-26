@@ -8,7 +8,6 @@
 // Create uses createBusinessRuleUseCase with allowUpsertByTrigger=true for upsert semantics.
 
 import { reportWarning } from "@/lib/cloud-logger";
-import { notifyRuleEmployees } from "@/app/api/_lib/notify-rule-employees";
 import { getServerActionMeta } from "@/app/api/_lib/mutation-contract";
 import { prismaBusinessRuleRepository } from "@/infrastructure/persistence/prisma-business-rule.repository";
 import { prismaIdempotencyAdapter } from "@/infrastructure/persistence/prisma-idempotency.adapter";
@@ -112,7 +111,6 @@ export async function executeRuleAction(
         classifier: async () => ({ kind: kind as RuleKind, cron: null }),
         audit: prismaAuditAdapter,
         assertDemoQuota,
-        notifyRuleEmployees,
         invalidateSupervisorContext,
       });
       const result = await createUseCase.execute({
@@ -178,7 +176,6 @@ export async function executeRuleAction(
         businessRule: prismaBusinessRuleRepository,
         idempotency: prismaIdempotencyAdapter,
         audit: prismaAuditAdapter,
-        notifyRuleEmployees,
         invalidateSupervisorContext,
         assertDemoQuota,
       });

@@ -13,7 +13,6 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { cloudLog } from "@/lib/cloud-logger";
 import { sendPushToOwner } from "@/app/api/_lib/owner-push";
-import { sendPushToEmployee } from "@/app/api/_lib/employee-push";
 import { recordPostCommitFailure } from "@/app/api/_lib/post-commit-failure-tracker";
 import { deriveSupervisorIdempotencyKey as deriveKey } from "./contract-helpers";
 import {
@@ -152,13 +151,10 @@ export async function handleEmployeePush(data: unknown, idempotencySeed: string)
   const { recordId } = idem;
 
   try {
-    await sendPushToEmployee(businessId, employeeId, {
-      title,
-      body,
-      url: deepLink ?? "/dashboard",
-      notificationCategory: "default",
-      entityId: `comm-emp-push:${idempotencyKey.slice(0, 16)}`,
-    });
+    // Employee concept removed (0 rows in production, Stage 1 cleanup) — no
+    // employee device to push to. Idempotency record still completes so a
+    // Supervisor retry of the same send_employee_push intent doesn't loop.
+    void employeeId;
     await completeIdempotentMutation({ client: prisma, recordId, responseStatus: 200, responseBody: { ok: true } });
     cloudLog({
       severity: "INFO",

@@ -7,10 +7,8 @@
 // fresh data on every navigation without a client-side fetch waterfall.
 
 import { Suspense, cache } from "react";
-import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { verifyEmployeeSession, EMPLOYEE_COOKIE_NAME } from "@/lib/employee-auth-edge";
 import { loadBusinessCapabilities, type BusinessCapabilities } from "@/lib/business-capabilities";
 import DashboardPage from "./DashboardPage";
 import type { ActorRole } from "./lib/contexts";
@@ -20,21 +18,14 @@ import type { ActorRole } from "./lib/contexts";
 // JWT decodes into one per request (no cross-request state — cache is per-request).
 const cachedAuth = cache(auth);
 
+// Employee PIN-login removed (0 rows in production, Stage 1 cleanup) — every
+// dashboard session is an owner session now. middleware.ts guards unauthenticated.
 async function detectRole(): Promise<ActorRole> {
-  const jar = await cookies();
-  const empCookie = jar.get(EMPLOYEE_COOKIE_NAME)?.value ?? null;
-  if (empCookie) {
-    const emp = await verifyEmployeeSession(empCookie);
-    if (emp?.payload) return "employee";
-  }
-  const session = await cachedAuth();
-  if (session?.user?.id) return "owner";
-  return "owner"; // middleware guards unauthenticated — fallback is safe
+  return "owner";
 }
 
 /**
- * Resolves the businessId for an owner session.
- * Returns null for employee sessions (no business lookup needed — banner is owner-only).
+ * Resolves the businessId for the owner session.
  */
 async function resolveOwnerBusinessId(): Promise<string | null> {
   const session = await cachedAuth();

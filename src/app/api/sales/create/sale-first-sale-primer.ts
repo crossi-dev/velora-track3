@@ -98,40 +98,13 @@ export async function maybeWriteEmployeeFirstSalePrimer(args: {
   employeeId: string;
   saleId: string;
 }): Promise<FirstSalePrimerResult> {
-  const { businessId, employeeId, saleId } = args;
-
-  let updated: { count: number };
-  try {
-    updated = await prisma.employee.updateMany({
-      where: { id: employeeId, businessId, firstSaleConfirmed: false },
-      data: { firstSaleConfirmed: true },
-    });
-  } catch (error) {
-    cloudLog({
-      severity: "WARNING",
-      component: "System",
-      action: "EMPLOYEE_PUSH_PRIMER_FLAG_FAILED",
-      a2a_transfer: false,
-      message: "employee first-sale primer flag flip failed",
-      businessId,
-      data: { saleId, employeeId, error: error instanceof Error ? error.message : String(error) },
-    });
-    return { primed: false, skippedReason: "write_failed" };
-  }
-
-  if (updated.count === 0) {
-    return { primed: false, skippedReason: "already_primed" };
-  }
-
-  const clientMessageId = `employee-push-primer-${employeeId}`;
-  return writePrimerChatRow({
-    businessId,
-    clientMessageId,
-    text: EMPLOYEE_PRIMER_TEXT,
-    visibility: "employee_only",
-    targetEmployeeId: employeeId,
-    logScope: { saleId, action: "EMPLOYEE", employeeId },
-  });
+  // Employee concept removed (0 rows in production, Stage 1 cleanup) — the
+  // only caller (sale-post-commit.ts) gates this behind `actorEmployeeId ?`,
+  // which is always null now, so this function is unreachable in practice.
+  // Kept as a safe no-op (rather than deleted) so the caller's ternary keeps
+  // compiling without touching sale-post-commit.ts's shared owner/employee logic.
+  void args;
+  return { primed: false, skippedReason: "already_primed" };
 }
 
 async function writePrimerChatRow(args: {

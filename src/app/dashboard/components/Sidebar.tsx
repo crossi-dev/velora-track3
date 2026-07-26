@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { Globe, SignOut } from "@phosphor-icons/react";
 import {
   Sidebar as ShadcnSidebar,
@@ -14,9 +13,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import type { TabKey } from "../lib/types";
-import { primaryTabs, secondaryTabs, employeePrimaryTabs, employeeSecondaryTabs } from "../lib/constants";
+import { primaryTabs, secondaryTabs } from "../lib/constants";
 import { OfflineQueueBadge } from "./OfflineQueueBadge";
-import { useRole } from "../lib/contexts";
 import { useDashboardLang } from "../lib/DashboardLangContext";
 import { SidebarSectionIcon } from "./SidebarParts";
 import { handleSignOut } from "@/lib/handle-sign-out";
@@ -32,28 +30,11 @@ interface VeloraSidebarProps {
 
 // eslint-disable-next-line max-lines-per-function -- composition root
 export function VeloraSidebar({ activeTab, setActiveTab, tabLabel, t }: VeloraSidebarProps) {
-  const role = useRole();
   const { lang, setLang } = useDashboardLang();
-  const router = useRouter();
 
-  const visiblePrimary = role === "employee" ? employeePrimaryTabs : primaryTabs;
-  const visibleSecondary = role === "employee" ? employeeSecondaryTabs : secondaryTabs;
-  const NAVIGABLE_TABS: readonly TabKey[] = [...visiblePrimary, ...visibleSecondary];
+  const NAVIGABLE_TABS: readonly TabKey[] = [...primaryTabs, ...secondaryTabs];
 
   async function handleLogout() {
-    if (role === "employee") {
-      try { await fetch("/api/employees/logout", { method: "POST" }); } catch { /* best-effort */ }
-      try {
-        for (let i = localStorage.length - 1; i >= 0; i--) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith("velora-dashboard-draft:")) {
-            localStorage.removeItem(key);
-          }
-        }
-      } catch { /* localStorage disabled */ }
-      router.push("/employee-login");
-      return;
-    }
     await handleSignOut();
   }
 

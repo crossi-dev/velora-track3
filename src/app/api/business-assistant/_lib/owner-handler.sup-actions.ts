@@ -1,6 +1,5 @@
 import { randomUUID, createHash } from "crypto";
 import { executeRuleActions } from "@/app/api/supervisor/_lib/business-rule-actions";
-import { executeEmployeeActions } from "@/app/api/supervisor/_lib/employee-actions";
 import { executePolicyActions } from "@/app/api/supervisor/_lib/delegation-policy-actions";
 import { executeBroadcastActions } from "@/app/api/supervisor/_lib/broadcast-actions";
 import { executeCommunicationsActions } from "@/app/api/supervisor/_lib/communications-actions";
@@ -66,37 +65,11 @@ export async function executeSupActions(
       supAnswer = `${ruleResults.errors.map((e) => `Error: ${e}`).join(" ")} ${supAnswer}`.trim();
     }
 
-    const baseUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? "https://www.somosvelora.com";
-    const empResult = await executeEmployeeActions(supResult.actions, businessId, baseUrl, actorUserId, `${seed}|emp`);
-    // Distinguish "Empleado creado" vs "PIN reseteado" vs "Credenciales" —
-    // the link shape is shared across the three intents (employee-actions
-    // returns {name, pin, loginUrl}; pin === null only for read-only lookup).
-    // We re-derive the action kind from supResult.actions by matching the
-    // link's name against the action's data.name (the user-typed name, may
-    // be partial — same matching strategy as employee-actions.ts uses to
-    // find the employee).
-    const namesByIntent = (intent: string): string[] => supResult.actions!
-      .filter((a) => a.intent === intent)
-      .map((a) => {
-        const d = a.data as Record<string, unknown> | null;
-        return typeof d?.name === "string" ? d.name.trim().toLowerCase() : "";
-      })
-      .filter((n) => n.length > 0);
-    const resetNames = namesByIntent("reset_employee_pin");
-    const getCredNames = namesByIntent("get_employee_credentials");
-    const matchesAny = (empNameLower: string, names: string[]) =>
-      names.some((n) => empNameLower.includes(n) || n.includes(empNameLower));
-    for (const emp of empResult.links) {
-      const empNameLower = emp.name.toLowerCase();
-      if (matchesAny(empNameLower, getCredNames)) {
-        supAnswer += `\n\nCredenciales de ${emp.name}\nLink: ${emp.loginUrl}\nPIN: no se puede recuperar (está hasheado). Si lo perdió, pedime un reset diciendo "reseteá el pin de ${emp.name}".`;
-        continue;
-      }
-      const isReset = matchesAny(empNameLower, resetNames);
-      const header = isReset ? `PIN reseteado: ${emp.name}` : `Empleado creado: ${emp.name}`;
-      supAnswer += `\n\n${header}\nLink: ${emp.loginUrl}\nPIN: ${emp.pin}`;
-    }
-    if (empResult.errors.length > 0) trace.add("employee-actions", `errors=${empResult.errors.join(", ")}`);
+    // Employee-management chat actions (create/reset-pin/get-credentials) removed
+    // Stage 1 cleanup — the employee concept had 0 rows in production. The
+    // "create_employee" / "reset_employee_pin" / "get_employee_credentials"
+    // intents stay in STRATEGIC_INTENTS below (harmless dead entries) so the
+    // Supervisor LLM never mis-routes them as operational compound actions.
 
     const policyResult = await executePolicyActions(supResult.actions, businessId, actorUserId, `${seed}|policy`);
     if (policyResult.confirmations.length > 0) supAnswer = `${supAnswer} ${policyResult.confirmations.join(" ")}`.trim();

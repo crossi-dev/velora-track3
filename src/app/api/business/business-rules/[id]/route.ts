@@ -14,7 +14,6 @@ import {
 } from "@/app/api/business/business-rules/business-rule-schema";
 import { invalidateBusinessContext } from "@/app/api/business-assistant/_lib/context";
 import { prismaBusinessRuleRepository } from "@/infrastructure/persistence/prisma-business-rule.repository";
-import { notifyRuleEmployees } from "@/app/api/_lib/notify-rule-employees";
 import { runWithTraceContext } from "@/lib/cloud-logger";
 import { recordCriticalWriteEvent } from "@/infrastructure/shared/critical-write-audit";
 import { prisma } from "@/lib/prisma";
@@ -93,11 +92,6 @@ async function handlePatch(
       payload: { ruleId: updated.id, updates },
     });
     invalidateBusinessContext(businessId);
-    // Only notify employees when the rule is explicitly being activated (active === true).
-    // Notifying on every edit (message/kind/trigger changes) or on deactivation is noise.
-    if (active === true) {
-      notifyRuleEmployees(businessId, updated.id, `Regla actualizada: ${updated.message}`).catch(() => {});
-    }
     return NextResponse.json({
       rule: {
         id: updated.id,

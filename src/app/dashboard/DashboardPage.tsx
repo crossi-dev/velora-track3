@@ -21,8 +21,6 @@ import type { BusinessCapabilities } from "@/lib/business-capabilities";
 import { useAndroidBackButton } from "./lib/useAndroidBackButton";
 import { usePlannerCheck } from "./lib/hooks/usePlannerCheck";
 import { usePushSubscriptionPrompt } from "./lib/hooks/usePushSubscriptionPrompt";
-import { useProactiveWelcome } from "./lib/hooks/useEmployeeProactiveWelcome";
-import { useEmployeePushSubscription } from "./lib/hooks/useEmployeePushSubscription";
 
 const SUCCESS_TOAST_DURATION_MS = 3500;
 // Stable ID constants so re-renders replace the same Sonner toast instead of stacking.
@@ -107,17 +105,10 @@ function DashboardInner({
   // message (primer first, OS dialog second; never a cold ask on mount).
   // Employee: gated on >=1 confirmed sale via post-first-sale onboarding
   // transition copy. Same primer-first-OS-dialog-second pattern.
-  const hasAtLeastOneSale = (sales?.length ?? 0) > 0;
   const ownerFirstSaleConfirmed = role === "owner" && business?.firstSaleConfirmed === true;
   usePushSubscriptionPrompt({ hasConfirmedSale: ownerFirstSaleConfirmed });
-  useEmployeePushSubscription({ enabled: role === "employee", hasFirstSale: hasAtLeastOneSale });
 
   useEffect(() => { applyAppSettingsToDOM(); }, []);
-
-  useProactiveWelcome({
-    role, loadingPage, chatHistory,
-    appendChatHistoryEntry: state.appendChatHistoryEntry,
-  });
 
   // reloadData is recreated on every render (it's a plain async function in
   // useBusinessData, not memoized). Listing it in deps re-attaches the

@@ -5,7 +5,6 @@ import {
   deleteCustomerBodySchema,
 } from "@/app/api/customers/customer-schema";
 import { supplierCreateSchema, supplierUpdateSchema } from "@/app/api/suppliers/supplier-schema";
-import { createEmployeeBodySchema, deleteEmployeeBodySchema } from "@/app/api/employees/employee-schema";
 import { budgetItemSchema, createBudgetBodySchema, deleteBudgetBodySchema } from "@/app/api/budgets/budget-schema";
 
 const VALID_CUID = "abc123def456ghi789jk"; // 20 chars
@@ -55,26 +54,6 @@ describe("supplierUpdateSchema", () => {
   it("objeto vacío → parsea (extend con id opcional)", () => expect(supplierUpdateSchema.safeParse({}).success).toBe(true));
   it("con id válido → parsea", () => expect(supplierUpdateSchema.safeParse({ id: VALID_CUID }).success).toBe(true));
   it("id formato inválido → falla", () => expect(supplierUpdateSchema.safeParse({ id: "ABC-INVALID" }).success).toBe(false));
-});
-
-// ── employees ─────────────────────────────────────────────────────────────────
-
-describe("createEmployeeBodySchema", () => {
-  const valid = { name: "María García", pin: "1234" };
-  it("datos válidos → parsea", () => expect(createEmployeeBodySchema.safeParse(valid).success).toBe(true));
-  it("nombre vacío → falla", () => expect(createEmployeeBodySchema.safeParse({ ...valid, name: "" }).success).toBe(false));
-  it("pin muy corto (3 dígitos) → falla", () => expect(createEmployeeBodySchema.safeParse({ ...valid, pin: "123" }).success).toBe(false));
-  it("pin 4 dígitos → parsea", () => expect(createEmployeeBodySchema.safeParse({ ...valid, pin: "0000" }).success).toBe(true));
-  it("pin 8 dígitos → parsea", () => expect(createEmployeeBodySchema.safeParse({ ...valid, pin: "12345678" }).success).toBe(true));
-  it("pin 9 dígitos → falla", () => expect(createEmployeeBodySchema.safeParse({ ...valid, pin: "123456789" }).success).toBe(false));
-  it("pin con letras → falla (regex numérico)", () => expect(createEmployeeBodySchema.safeParse({ ...valid, pin: "12ab" }).success).toBe(false));
-  it("campo extra → falla (strict)", () => expect(createEmployeeBodySchema.safeParse({ ...valid, extra: "x" }).success).toBe(false));
-});
-
-describe("deleteEmployeeBodySchema", () => {
-  it("employeeId válido → parsea", () => expect(deleteEmployeeBodySchema.safeParse({ employeeId: VALID_CUID }).success).toBe(true));
-  it("employeeId formato inválido → falla", () => expect(deleteEmployeeBodySchema.safeParse({ employeeId: "SHORT" }).success).toBe(false));
-  it("campo extra → falla (strict)", () => expect(deleteEmployeeBodySchema.safeParse({ employeeId: VALID_CUID, x: 1 }).success).toBe(false));
 });
 
 // ── budgets ───────────────────────────────────────────────────────────────────

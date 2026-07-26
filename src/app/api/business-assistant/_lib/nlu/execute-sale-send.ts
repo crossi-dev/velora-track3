@@ -9,7 +9,6 @@ import { runBusinessAssistantModel } from "../model";
 import { normalizeActionText } from "../shared";
 import { buildModelContext } from "../filters";
 import { buildLocalSaleDraft } from "./build-local-sale-draft";
-import { markOnboardingTaskDone } from "../employee-welcome";
 import type { SaleSendIntent } from "./types";
 import type { PreModelIntentParams } from "../router-params";
 
@@ -191,10 +190,7 @@ export async function executeSaleSend(
     },
   });
 
-  // Onboarding: mark first_sale_send done for employees — fire-and-forget.
-  if (params.actorEmployeeId) {
-    void markOnboardingTaskDone(params.actorEmployeeId, "sale_send");
-  }
+  // Employee onboarding-task tracking removed (0 rows in production, Stage 1 cleanup).
 
   // Plantilla determinística — nunca el answer del modelo. Modelo a veces
   // devolvía pasado ("Listo, registrada la venta...") cuando la action es

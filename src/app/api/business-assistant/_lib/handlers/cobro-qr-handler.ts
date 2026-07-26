@@ -8,7 +8,6 @@ import { createHash, randomUUID } from "crypto";
 import { cloudLog } from "@/lib/cloud-logger";
 import { createPaymentIntentUseCase } from "@/app/api/payment-intents/_lib/payment-intent-use-case";
 import { attemptRealQrWithReason } from "./cobro-qr-real";
-import { markOnboardingTaskDone } from "../employee-welcome";
 import type { CobroQrIntent } from "../nlu/types";
 import type { PreModelIntentParams } from "../router-params";
 
@@ -152,10 +151,7 @@ async function runCreate(
       });
     }
 
-    // Onboarding: mark first_cobro_qr done for employees — fire-and-forget.
-    if (params.actorEmployeeId) {
-      void markOnboardingTaskDone(params.actorEmployeeId, "cobro_qr");
-    }
+    // Employee onboarding-task tracking removed (0 rows in production, Stage 1 cleanup).
 
     // Intent ya creado en DB (estado pending, metodo "qr_dynamic_fake"). Si el
     // flag MP_REAL_QR_ENABLED está activo, intentamos crear el QR real en MP

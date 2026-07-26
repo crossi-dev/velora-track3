@@ -147,15 +147,9 @@ export async function queryPorEmpleado(businessId: string, dateFrom: Date, dateT
     orderBy: { _sum: { totalAmount: "desc" } },
   });
 
-  const employeeIds = grouped
-    .map((s) => s.employeeId)
-    .filter((id): id is string => id !== null);
-
-  const employees = await prisma.employee.findMany({
-    where: { businessId, id: { in: employeeIds } },
-    select: { id: true, name: true },
-  });
-  const empNameById = new Map(employees.map((e) => [e.id, e.name]));
+  // Employee concept removed (0 rows in production, Stage 1 cleanup) — Sale.employeeId
+  // is always null now, so there is never a name to resolve.
+  const empNameById = new Map<string, string>();
 
   return grouped.map((row) => ({
     employee: row.employeeId

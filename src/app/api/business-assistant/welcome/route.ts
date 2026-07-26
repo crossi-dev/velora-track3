@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { resolveActor } from "@/app/api/_lib/resolve-actor";
 import { unauthorized, checkRateLimit } from "@/app/api/_lib/route-helpers";
-import { buildEmployeeOnboardingResponse } from "@/app/api/business-assistant/_lib/employee-welcome";
 import { loadSupervisorContext } from "@/app/api/supervisor/_lib/load-context";
 import { prisma } from "@/lib/prisma";
 import { formatMoney } from "@/app/api/business-assistant/_lib/shared";
@@ -72,13 +71,8 @@ export async function GET(req: NextRequest) {
     return unauthorized();
   }
 
-  if (actor.actorEmployeeId) {
-    const result = await buildEmployeeOnboardingResponse({
-      employeeId: actor.actorEmployeeId,
-      businessId: actor.businessId,
-    });
-    return NextResponse.json({ message: result.message });
-  }
+  // Employee PIN-login removed (0 rows in production, Stage 1 cleanup) —
+  // actor.actorEmployeeId is always null now.
 
   // Owner branch: day-0 T1 greeting is owned by the DB seed in
   // chat-history/route.ts (maybeSeedOnboardingTurn1). 204 (no body) so a stale

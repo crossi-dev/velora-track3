@@ -97,52 +97,10 @@ export function useBusinessData(opts: useBusinessDataOptions) {
     setPageError(null);
 
     try {
-      // skipAuthRedirect=true: this call intentionally checks for 401 to detect
-      // employee sessions before falling back to the login redirect.
       const res = await fetchWithTimeout("/api/onboarding", {}, 15_000, undefined, true);
       if (res.status === 401) {
-        // Could be an employee session — try the employee context endpoint before
-        // redirecting. Employees don't have NextAuth sessions so /api/onboarding
-        // always returns 401 for them.
-        const empRes = await fetchWithTimeout("/api/employee/context", {}, 15_000, undefined, true);
-        if (empRes.ok) {
-          const empData = await getSafeJson<{
-            employee?: { name?: string };
-            business: Business;
-            products?: { id: string; name: string; price: number; sku: string | null; stock: number; costPrice: null }[];
-            customers?: { id: string; name: string; phone: string | null }[];
-            cashMovements?: CashMovement[];
-            cashTotal?: number;
-            sales?: SaleRecord[];
-          }>(
-            empRes,
-            t("Could not load the business.", "No se pudo cargar el negocio."),
-          );
-          if (empData?.business?.id) {
-            setEmployeeName(empData.employee?.name ?? "");
-            setBusinessId(empData.business.id);
-            setBusiness(empData.business);
-            setProducts(Array.isArray(empData.products) ? empData.products : []);
-            setClients(
-              (Array.isArray(empData.customers) ? empData.customers : []).map((c) => ({
-                ...c,
-                name: normalizePersonOrBusinessName(c.name ?? ""),
-                email: null,
-                taxId: null,
-              }))
-            );
-            setManufacturers([]);
-            setSales(Array.isArray(empData.sales) ? empData.sales : []);
-            setCashMovements(Array.isArray(empData.cashMovements) ? empData.cashMovements : []);
-            setCashTotal(typeof empData.cashTotal === "number" ? empData.cashTotal : 0);
-            setStockMovements([]);
-            setInvoices([]);
-            markUpdatedMany(["products", "clients", "suppliers", "sales", "cash"]);
-            setDataStale(false);
-            lastSuccessfulLoadRef.current = Date.now();
-          }
-          return;
-        }
+        // Employee PIN-login removed (0 rows in production, Stage 1 cleanup) —
+        // 401 now always means "no owner session", straight to the login redirect.
         window.location.replace("/");
         return;
       }

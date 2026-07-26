@@ -29,10 +29,9 @@ export async function fetchSupervisorContext(businessId: string): Promise<Superv
       orderBy: { name: "asc" },
       take: 50,
     }),
-    prisma.employee.findMany({
-      where: { businessId, active: true },
-      select: { name: true, role: true },
-    }),
+    // Employee concept removed (0 rows in production, Stage 1 cleanup) — no
+    // employee audience left to load context for.
+    Promise.resolve([] as Array<{ name: string; role: string }>),
     prisma.business.findUnique({
       where: { id: businessId },
       select: {
@@ -70,7 +69,7 @@ export async function fetchSupervisorContext(businessId: string): Promise<Superv
     }),
     prisma.chatMessage.findMany({
       where: { businessId, ackedAt: { not: null }, createdAt: { gte: todayStart } },
-      select: { text: true, targetEmployee: { select: { name: true } } },
+      select: { text: true },
       orderBy: { ackedAt: "desc" },
       take: 10,
     }),
@@ -181,7 +180,7 @@ export async function fetchSupervisorContext(businessId: string): Promise<Superv
     productCount: mappedProducts.length,
     productsWithoutStock: mappedProducts.filter((p) => p.stock === 0).length,
     employeeCount: employees.length,
-    ackedAlerts: ackedMessages.map((m) => ({ employeeName: m.targetEmployee?.name ?? "empleado", text: m.text })),
+    ackedAlerts: ackedMessages.map((m) => ({ employeeName: "empleado", text: m.text })),
     businessNameSet: typeof business?.name === "string" && business.name.trim().length > 0,
     businessTypeSet: typeof business?.type === "string" && business.type.trim().length > 0,
     paymentMethodsSet: (business?.paymentMethods?.length ?? 0) > 0,

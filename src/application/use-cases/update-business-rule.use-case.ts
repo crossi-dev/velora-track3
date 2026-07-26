@@ -38,7 +38,8 @@ interface Ports {
   businessRule: BusinessRuleRepositoryPort;
   idempotency: IdempotencyPort;
   audit: AuditPort;
-  notifyRuleEmployees: (businessId: string, ruleId: string, body: string) => Promise<void>;
+  /** Optional: notify active employees of a rule change. No-op when omitted (employee concept removed). */
+  notifyRuleEmployees?: (businessId: string, ruleId: string, body: string) => Promise<void>;
   invalidateSupervisorContext: (businessId: string) => void;
   /** Optional: injected for demo-quota enforcement. No-op when omitted. */
   assertDemoQuota?: (businessId: string) => Promise<void>;
@@ -112,7 +113,7 @@ export function updateBusinessRuleUseCase(ports: Ports) {
       // Bug2: wrap in try/catch — notify failure releases idempotency before rethrowing.
       const notifyMsg = updates.message ?? rule.message;
       try {
-        await ports.notifyRuleEmployees(businessId, existing.id, `Regla actualizada: ${notifyMsg}`);
+        await ports.notifyRuleEmployees?.(businessId, existing.id, `Regla actualizada: ${notifyMsg}`);
       } catch (notifyErr) {
         await ports.idempotency.release(recordId);
         throw notifyErr;

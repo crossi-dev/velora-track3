@@ -10,7 +10,6 @@ import { cloudLog, reportError, getTraceStore, runWithTraceStore } from "@/lib/c
 import { prisma } from "@/lib/prisma";
 import { buildInvoicePdf } from "@/app/api/invoices/[invoiceId]/pdf/build-invoice-pdf";
 import { uploadPdfToGcs, getSignedUrlForGcsKey, buildPdfR2Key } from "@/lib/r2";
-import { buildEmployeeOnboardingResponse } from "@/app/api/business-assistant/_lib/employee-welcome";
 import { handleFiscalRpc } from "@/app/api/agents/fiscal/jsonrpc/_lib/handle-fiscal-rpc";
 import { handlePaymentsRpcAsync } from "@/app/api/agents/payments/jsonrpc/_lib/handle-payments-rpc";
 import { handleLogisticaRpc } from "@/app/api/agents/logistica/jsonrpc/_lib/handle-logistica-rpc";
@@ -598,21 +597,8 @@ export function firePostCommitActions({
     }
   });
 
-  if (actorEmployeeId) {
-    void runWithTraceStore(traceStore, async () => {
-      try {
-        const onboarding = await buildEmployeeOnboardingResponse({ employeeId: actorEmployeeId, businessId });
-        if (!onboarding.message || !onboarding.currentTask) return;
-        const date = new Date().toISOString().slice(0, 10);
-        const clientMessageId = `onboarding-transition-${actorEmployeeId}-${onboarding.currentTask}-${date}`;
-        await prisma.chatMessage.create({
-          data: { businessId, clientMessageId, kind: "reply", source: "manager", visibility: "employee_only", targetEmployeeId: actorEmployeeId, text: onboarding.message },
-        });
-      } catch (err: unknown) {
-        if ((err as { code?: string })?.code !== "P2002") reportError(err, { scope: "sale-post-commit.onboarding-transition" });
-      }
-    });
-  }
+  // Employee onboarding-transition chat message removed (0 rows in production,
+  // Stage 1 cleanup) — actorEmployeeId is always null now, this block was dead.
 
   if (lowStockAlerts.length === 0) return;
 

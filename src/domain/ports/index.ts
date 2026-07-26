@@ -23,7 +23,6 @@ export type {
   CreateSaleTransactionResult,
 } from "./sale.repository.port";
 export type { InventoryRepositoryPort, InventoryRecord } from "./inventory.repository.port";
-export type { EmployeeRepositoryPort, EmployeeCreateArgs, EmployeeRecord, EmployeeListRecord } from "./employee.repository.port";
 export type { BusinessRuleRepositoryPort, BusinessRuleCreateArgs, BusinessRuleRecord, BusinessRuleClassification } from "./business-rule.repository.port";
 export type { CustomerRepositoryPort, CustomerRecord, CustomerCreateArgs, CustomerUpdateArgs, CustomerDeleteArgs } from "./customer.repository.port";
 export type { SupplierRepositoryPort, SupplierRecord, SupplierCreateArgs, SupplierUpdateArgs, SupplierDeleteArgs } from "./supplier.repository.port";

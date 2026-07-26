@@ -20,7 +20,6 @@ import { checkAndIncrementOwnerChatQuota, buildQuotaExhaustedResponse } from "@/
 import { publishChatMessage } from "@/app/api/_lib/agent-event-publishers";
 import { handleAssistantRouteError } from "./_lib/error-handler";
 import { handleOwnerTurn } from "./_lib/owner-handler";
-import { handleEmployeeTurn } from "./_lib/employee-handler";
 import { cloudLog, runWithTraceContext } from "@/lib/cloud-logger";
 import { runWithTenantContext } from "@/lib/tenant-context";
 import { createLatencyTracker } from "./_lib/latency-tracker";
@@ -228,66 +227,33 @@ async function handlePost(req: NextRequest, preReadBuffer?: ArrayBuffer) {
       return attachOwnerReadWidget({ body: cacheBody, response: patched, status: patched.status, role: ctx.role, businessId, text, finalise: finalisePost });
     };
 
-    if (ctx.role === "owner") {
-      // Free-tier daily cap. Fail-open on DB error — soft cost-protection, not a security gate.
-      const quota = await checkAndIncrementOwnerChatQuota({
+    // Employee role removed (0 rows in production, Stage 1 cleanup) — resolveActor()
+    // now only ever returns role "owner", so this path always executes. A safe
+    // fallback is kept in case ctx.role is ever anything else (defense in depth;
+    // role-contract.ts still types Role as "owner" | "employee" pending stage-2).
+    if (ctx.role !== "owner") {
+      return NextResponse.json({ code: "FORBIDDEN", message: "Insufficient permissions." }, { status: 403 });
+    }
+
+    // Free-tier daily cap. Fail-open on DB error — soft cost-protection, not a security gate.
+    const quota = await checkAndIncrementOwnerChatQuota({
+      businessId,
+      isTester: ctx.isTester === true,
+    });
+    if (!quota.allowed) {
+      cloudLog({
+        severity: "INFO",
+        component: "System",
+        action: "OWNER_CHAT_QUOTA_EXHAUSTED",
+        a2a_transfer: false,
+        message: "Owner hit free daily chat cap — returning quota-exhausted response",
         businessId,
-        isTester: ctx.isTester === true,
+        data: { current: quota.current, limit: quota.limit, actorUserId: ctx.actorUserId },
       });
-      if (!quota.allowed) {
-        cloudLog({
-          severity: "INFO",
-          component: "System",
-          action: "OWNER_CHAT_QUOTA_EXHAUSTED",
-          a2a_transfer: false,
-          message: "Owner hit free daily chat cap — returning quota-exhausted response",
-          businessId,
-          data: { current: quota.current, limit: quota.limit, actorUserId: ctx.actorUserId },
-        });
-        // Route through respond/finalisePost so the quota message persists to chat history.
-        return respond(buildQuotaExhaustedResponse(quota.remaining, quota.limit) as Record<string, unknown>);
-      }
-      return handleOwnerTurn({ text, lang, businessId, actorUserId: ctx.actorUserId, inboundEventId, respond, cacheAndReturn, trace, latency, recentHistory });
+      // Route through respond/finalisePost so the quota message persists to chat history.
+      return respond(buildQuotaExhaustedResponse(quota.remaining, quota.limit) as Record<string, unknown>);
     }
-
-    const auditCrossTenantRejection = (kind: "invoice" | "purchase_request", id: string, foundBusinessId: string | null) => {
-      cloudLog({ severity: "WARNING", component: "RBAC", action: "CROSS_TENANT_ID_REJECTED", a2a_transfer: false, message: `Cross-tenant ${kind} id rejected: ${id}`, data: { kind, attemptedId: id, foundBusinessId, actorBusinessId: businessId }, businessId, actorUserId: ctx.actorUserId, actorEmployeeId: ctx.actorEmployeeId ?? undefined });
-    };
-
-    // C2 fix (Finding 6): validate both IDs in parallel (independent findUnique calls, no P2024 risk outside $transaction).
-    // Ref: prisma.io/docs/orm/prisma-client/queries/transactions
-    let activeInvoiceId: string | undefined = typeof rawActiveInvoiceId === "string" ? rawActiveInvoiceId : undefined;
-    let latestPurchaseRequestId: string | undefined = typeof rawLatestPurchaseRequestId === "string" ? rawLatestPurchaseRequestId : undefined;
-
-    if (activeInvoiceId || latestPurchaseRequestId) {
-      const [invoiceRow, purchaseRequestRow] = await Promise.all([
-        activeInvoiceId
-          ? prisma.invoice.findUnique({ where: { id: activeInvoiceId }, select: { businessId: true } })
-          : Promise.resolve(null),
-        latestPurchaseRequestId
-          ? prisma.purchaseRequest.findUnique({ where: { id: latestPurchaseRequestId }, select: { businessId: true } })
-          : Promise.resolve(null),
-      ]);
-
-      if (activeInvoiceId && (!invoiceRow || invoiceRow.businessId !== businessId)) {
-        auditCrossTenantRejection("invoice", activeInvoiceId, invoiceRow?.businessId ?? null);
-        activeInvoiceId = undefined;
-      }
-      if (latestPurchaseRequestId && (!purchaseRequestRow || purchaseRequestRow.businessId !== businessId)) {
-        auditCrossTenantRejection("purchase_request", latestPurchaseRequestId, purchaseRequestRow?.businessId ?? null);
-        latestPurchaseRequestId = undefined;
-      }
-    }
-
-    const loadedContext = await loadBusinessAssistantContext(businessId);
-    if (!loadedContext) return respond({ code: "BUSINESS_NOT_FOUND", message: "Business not found." }, 404);
-
-    return handleEmployeeTurn({
-      text, locale, lang, businessId, actorEmployeeId, actorUserId: ctx.actorUserId,
-      role: ctx.role, inboundEventId, respond, cacheAndReturn, trace, latency,
-      recentHistory, loadedContext, activeInvoiceId, latestPurchaseRequestId,
-      latestPurchaseRequestNumber,
-    }); });
+    return handleOwnerTurn({ text, lang, businessId, actorUserId: ctx.actorUserId, inboundEventId, respond, cacheAndReturn, trace, latency, recentHistory }); });
   } catch (error) {
     latency.setMeta("error", true);
     // Release idempotency record so retries are not blocked for 5 min.

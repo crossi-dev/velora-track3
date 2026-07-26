@@ -1,7 +1,6 @@
 import { getGeminiSupervisorModel } from "@/app/api/business-assistant/_lib/gemini-client";
 import { callGemini } from "@/app/api/business-assistant/_lib/gemini-wrapper";
 import { prisma } from "@/lib/prisma";
-import { hashPin } from "@/lib/employee-auth";
 import { cloudLog } from "@/lib/cloud-logger";
 import { executeOnboardingOrchestration } from "@/app/api/onboarding-orchestrator/_lib/orchestrator-executor";
 import {
@@ -148,21 +147,8 @@ export async function finalizeOnboarding(args: FinalizeArgs): Promise<{ business
     );
   }
 
-  for (const emp of spec.employees) {
-    const trimmedPin = emp.pin.trim();
-    if (!/^\d{4}$/.test(trimmedPin)) continue;
-    inserts.push(
-      prisma.employee.create({
-        data: {
-          businessId: result.businessId,
-          name: emp.name.trim().slice(0, 60),
-          pinHash: hashPin(trimmedPin),
-          role: "employee",
-          active: true,
-        },
-      })
-    );
-  }
+  // Employee concept removed (0 rows in production, Stage 1 cleanup) — spec.employees
+  // (if the caller still sends it) is intentionally not persisted anymore.
 
   if (inserts.length > 0) await Promise.all(inserts);
 

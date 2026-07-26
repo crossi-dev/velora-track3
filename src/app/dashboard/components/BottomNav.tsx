@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { House, CurrencyCircleDollar, Package, Users, Truck, GearSix, Notepad, PlugsConnected } from "@phosphor-icons/react";
 import type { TabKey } from "../lib/types";
-import { primaryTabs, employeePrimaryTabs } from "../lib/constants";
-import { useRole } from "../lib/contexts";
+import { primaryTabs } from "../lib/constants";
 
 /** Returns true when the software keyboard is open (visualViewport shrinks). */
 function useKeyboardOpen(): boolean {
@@ -53,9 +52,8 @@ interface BottomNavProps {
 }
 
 export function BottomNav({ activeTab, setActiveTab, tabLabel, t }: BottomNavProps) {
-  const role = useRole();
   const keyboardOpen = useKeyboardOpen();
-  const visibleTabs = role === "employee" ? employeePrimaryTabs : primaryTabs;
+  const visibleTabs = primaryTabs;
   function navLabel(tab: TabKey) {
     const override = NAV_LABEL[tab];
     return override ? t(override.en, override.es) : tabLabel(tab);

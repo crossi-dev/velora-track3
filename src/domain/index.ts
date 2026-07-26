@@ -8,7 +8,6 @@ export type { ContactRow } from "./contact";
 export type { CashMovement, MovementType } from "./movement";
 export type { Business, BusinessType } from "./business";
 export type { BusinessRule, BusinessRuleKind } from "./business-rule";
-export type { Employee, EmployeeRole } from "./employee";
 export type { PurchaseRequest, PurchaseRequestItem, PurchaseRequestStatus } from "./purchase-request";
 export type { Invoice, InvoiceType, InvoiceStatus } from "./invoice";
 // OWNER_ONLY_INTENTS is intentionally NOT exported via the barrel — direct

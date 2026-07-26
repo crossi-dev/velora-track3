@@ -162,27 +162,16 @@ export async function POST(req: NextRequest) {
       cloudLog({ severity: "WARNING", component: "System", action: "ONBOARDING_AUDIT_FAILED", a2a_transfer: false, message: "Onboarding chat audit write failed (best-effort)", businessId: finalized.businessId, data: { error: err instanceof Error ? err.message : String(err) } });
     });
 
-    const baseUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? "https://www.somosvelora.com";
-    let message = wrapUpPrefix + result.message;
-    const employeeAccess = safeSpec.employees.map((emp) => ({
-      name: emp.name,
-      pin: emp.pin,
-      loginUrl: `${baseUrl}/employee-login?b=${finalized.businessId}`,
-    }));
-
-    if (employeeAccess.length > 0) {
-      const names = employeeAccess.map((e) => e.name).join(", ");
-      message +=
-        `\n\nListo — ya creé el acceso para ${names}. Andá a la sección Equipo para ver el código de cada uno y compartirlo por WhatsApp.`;
-    }
+    // Employee concept removed (0 rows in production, Stage 1 cleanup) —
+    // spec.employees (if the LLM still returns it) is no longer persisted by
+    // finalizeOnboarding/conversation.ts, so no "employee access created"
+    // message or employeeAccess payload is built here anymore.
+    const message = wrapUpPrefix + result.message;
 
     return NextResponse.json({
       message,
       complete: true,
       businessId: finalized.businessId,
-      // employeeAccess entregado al cliente para mostrar TeamSuccessBanner.
-      // El PIN viaja en el response HTTP (HTTPS), NO se persiste en DB de chat.
-      employeeAccess,
     });
   } catch (err) {
     // FIX 5: LLM returned malformed JSON on both attempts — show a friendly

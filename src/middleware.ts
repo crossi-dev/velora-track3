@@ -1,11 +1,8 @@
 import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import { authConfig } from "@/auth.config";
-// Edge-compat verify: middleware runs on Edge Runtime which doesn't have
-// Node crypto. Web Crypto-based verifier in -edge module.
-import { EMPLOYEE_COOKIE_NAME } from "@/lib/employee-auth-edge";
 import { OWNER_NATIVE_REFRESH_HEADER } from "@/lib/owner-native-auth-edge";
-import { checkEmployeeSession, checkOwnerNativeSession } from "@/lib/middleware-session";
+import { checkOwnerNativeSession } from "@/lib/middleware-session";
 import { getClientIp } from "@/lib/client-ip";
 
 const { auth } = NextAuth(authConfig);
@@ -13,9 +10,6 @@ const { auth } = NextAuth(authConfig);
 // Each entry is an exact segment prefix: matches "/api/auth" and "/api/auth/..."
 // but NOT "/api/authenticated" or any other path that merely shares the string.
 //
-// /api/employees/login es allowlisted porque el empleado todavía no tiene
-// cookie cuando se loguea — debe poder llegar al endpoint sin sesión.
-// /api/employees (CRUD del owner) NO está allowlisted: requiere OAuth session.
 // /api/scheduled is allowlisted because Cloud Scheduler hits these routes
 // without a user session — auth is enforced inside each handler via
 // verifyCronSecret() (Authorization: Bearer <CRON_SECRET>). Without the
@@ -40,7 +34,7 @@ const { auth } = NextAuth(authConfig);
 // API_ALLOWLIST is an EXPLICIT list — when a new agent is added, its jsonrpc,
 // agent-card and jwks paths MUST be appended here individually. They are NOT
 // covered by a prefix pattern.
-const API_ALLOWLIST = ["/api/auth", "/api/service-worker", "/api/whatsapp/webhook", "/api/health", "/api/a2a/agent-card", "/api/a2a/pubsub-handler", "/api/a2a/dead-letter", "/api/a2a/jsonrpc", "/api/employees/login", "/api/public", "/api/cron", "/api/scheduled", "/api/business/public", "/api/integrations/mp/callback", "/api/integrations/mp/webhook", "/api/integrations/tiendanube/callback", "/api/integrations/modo/webhook", "/api/agents/andreani/webhook", "/api/agents/payments/jsonrpc", "/api/agents/fiscal/jsonrpc", "/api/agents/supervisor/agent-card", "/api/agents/supervisor/jsonrpc", "/api/agents/supervisor/jwks", "/api/agents/companion/agent-card", "/api/agents/companion/jsonrpc", "/api/agents/companion/jwks", "/api/agents/payments/agent-card", "/api/agents/payments/jwks", "/api/agents/fiscal/agent-card", "/api/agents/fiscal/jwks", "/api/agents/logistica/jsonrpc", "/api/agents/logistica/agent-card", "/api/agents/logistica/jwks", "/api/agents/ventas/jsonrpc", "/api/agents/ventas/agent-card", "/api/agents/ventas/jwks", "/api/agents/equipo/jsonrpc", "/api/agents/equipo/agent-card", "/api/agents/equipo/jwks", "/api/agents/communications/jsonrpc", "/api/agents/communications/agent-card", "/api/agents/communications/jwks", "/api/agents/onboarding/jsonrpc", "/api/agents/onboarding/agent-card", "/api/agents/onboarding/jwks", "/api/peers/distribuidora-mendoza/jsonrpc", "/api/peers/distribuidora-mendoza/agent-card", "/api/peers/distribuidora-mendoza/jwks", "/api/integrations/twilio/status", "/api/internal/tasks", "/api/internal/dlq",
+const API_ALLOWLIST = ["/api/auth", "/api/service-worker", "/api/whatsapp/webhook", "/api/health", "/api/a2a/agent-card", "/api/a2a/pubsub-handler", "/api/a2a/dead-letter", "/api/a2a/jsonrpc", "/api/public", "/api/cron", "/api/scheduled", "/api/business/public", "/api/integrations/mp/callback", "/api/integrations/mp/webhook", "/api/integrations/tiendanube/callback", "/api/integrations/modo/webhook", "/api/agents/andreani/webhook", "/api/agents/payments/jsonrpc", "/api/agents/fiscal/jsonrpc", "/api/agents/supervisor/agent-card", "/api/agents/supervisor/jsonrpc", "/api/agents/supervisor/jwks", "/api/agents/companion/agent-card", "/api/agents/companion/jsonrpc", "/api/agents/companion/jwks", "/api/agents/payments/agent-card", "/api/agents/payments/jwks", "/api/agents/fiscal/agent-card", "/api/agents/fiscal/jwks", "/api/agents/logistica/jsonrpc", "/api/agents/logistica/agent-card", "/api/agents/logistica/jwks", "/api/agents/ventas/jsonrpc", "/api/agents/ventas/agent-card", "/api/agents/ventas/jwks", "/api/agents/equipo/jsonrpc", "/api/agents/equipo/agent-card", "/api/agents/equipo/jwks", "/api/agents/communications/jsonrpc", "/api/agents/communications/agent-card", "/api/agents/communications/jwks", "/api/agents/onboarding/jsonrpc", "/api/agents/onboarding/agent-card", "/api/agents/onboarding/jwks", "/api/peers/distribuidora-mendoza/jsonrpc", "/api/peers/distribuidora-mendoza/agent-card", "/api/peers/distribuidora-mendoza/jwks", "/api/integrations/twilio/status", "/api/internal/tasks", "/api/internal/dlq",
 // /api/integrations/tiendanube/callback: TN OAuth callback — cross-site redirect may drop SameSite cookie; validated inside handler via OAuthState (same pattern as mp/callback).
 // /api/internal/agents/biz-snapshot: agent-to-core callback for payments biz prefetch —
 // server-to-server, no browser session; auth enforced inside the handler via CRON_SECRET bearer.
@@ -220,14 +214,12 @@ export default auth(async (req) => {
       return Response.json({ error: "Forbidden." }, { status: 403 });
     }
     // Run expensive HMAC session checks only for non-allowlisted API paths.
-    const empCheck = await checkEmployeeSession(req);
-    const isEmployee = empCheck.isEmployee;
     const ownerNativeCheck = await checkOwnerNativeSession(req);
     const isOwnerNative = ownerNativeCheck.isOwnerNative;
-    // Acceso aceptable si OAuth (owner), cookie empleado válida, o token nativo owner.
+    // Acceso aceptable si OAuth (owner) o token nativo owner.
     // El detalle de quién es el actor y qué permisos tiene se resuelve en cada
     // route via resolveActor() — middleware solo gatekeepea la presencia.
-    if (!isLoggedIn && !isEmployee && !isOwnerNative) {
+    if (!isLoggedIn && !isOwnerNative) {
       console.log(JSON.stringify({ severity: "WARNING", component: "System", action: "UNAUTHENTICATED_ACCESS", a2a_transfer: false, message: "API access without valid session", path: pathname, method: req.method }));
       // Browser top-level navigations (e.g. owner clicking "Conectar MP") send
       // Sec-Fetch-Mode: navigate. Redirect to login so the user doesn't see raw
@@ -240,20 +232,6 @@ export default auth(async (req) => {
       }
       return Response.json({ error: "No autorizado." }, { status: 401 });
     }
-    if (empCheck.shouldRefresh && empCheck.refreshedCookie) {
-      const response = NextResponse.next();
-      response.cookies.set(EMPLOYEE_COOKIE_NAME, empCheck.refreshedCookie, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        // strict: consistent with login/logout — all employee session cookie
-        // writes must use the same SameSite value so refreshes don't clobber.
-        // These refresh paths are same-site API requests, so strict is safe.
-        sameSite: "strict",
-        path: "/",
-        maxAge: 8 * 60 * 60, // 8 h — mantiene paridad con el login original
-      });
-      return response;
-    }
     // Owner native token refresh: piggyback a new token on any authenticated response.
     if (ownerNativeCheck.shouldRefresh && ownerNativeCheck.refreshedToken) {
       const response = NextResponse.next();
@@ -263,29 +241,13 @@ export default auth(async (req) => {
     return;
   }
 
-  // Páginas: /dashboard requiere ser owner OAuth, empleado con cookie, o token nativo owner.
+  // Páginas: /dashboard requiere ser owner OAuth o token nativo owner.
   // Run HMAC checks only for protected page paths.
   if (pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding")) {
-    const empCheck = await checkEmployeeSession(req);
-    const isEmployee = empCheck.isEmployee;
     const ownerNativeCheck = await checkOwnerNativeSession(req);
     const isOwnerNative = ownerNativeCheck.isOwnerNative;
-    if (!isLoggedIn && !isEmployee && !isOwnerNative) {
+    if (!isLoggedIn && !isOwnerNative) {
       return Response.redirect(new URL("/", req.url));
-    }
-    if (empCheck.shouldRefresh && empCheck.refreshedCookie) {
-      const response = NextResponse.next();
-      response.cookies.set(EMPLOYEE_COOKIE_NAME, empCheck.refreshedCookie, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        // strict: consistent with login/logout — all employee session cookie
-        // writes must use the same SameSite value so refreshes don't clobber.
-        // These refresh paths are same-site API requests, so strict is safe.
-        sameSite: "strict",
-        path: "/",
-        maxAge: 8 * 60 * 60, // 8 h — mantiene paridad con el login original
-      });
-      return response;
     }
   }
 });
@@ -293,5 +255,5 @@ export default auth(async (req) => {
 export const config = {
   // "/" is included so the tools.somosvelora.com host rewrite fires on the bare root.
   // All other entries are unchanged.
-  matcher: ["/", "/dashboard/:path*", "/onboarding/:path*", "/api/:path*", "/employee-login/:path*"],
+  matcher: ["/", "/dashboard/:path*", "/onboarding/:path*", "/api/:path*"],
 };

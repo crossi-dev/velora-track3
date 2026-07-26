@@ -23,7 +23,6 @@ const PresupuestoTab = lazy(() => import("./PresupuestoTab").then(m => ({ defaul
 const InventoryTab = lazy(() => import("./InventoryTab").then(m => ({ default: m.InventoryTab })));
 const InvoicesTab = lazy(() => import("./InvoicesTab").then(m => ({ default: m.InvoicesTab })));
 const ContactsTab = lazy(() => import("./ContactsTab").then(m => ({ default: m.ContactsTab })));
-const TeamTab = lazy(() => import("./TeamTab").then(m => ({ default: m.TeamTab })));
 const SettingsTab = lazy(() => import("./SettingsTab").then(m => ({ default: m.SettingsTab })));
 const ServiciosTab = lazy(() => import("./ServiciosTab").then(m => ({ default: m.ServiciosTab })));
 // SalesTab is lazy too: it was eagerly imported, forcing its JS into the initial
@@ -328,18 +327,6 @@ export function DashboardTabContent({ capabilities }: DashboardTabContentProps =
                   appendChatHistoryEntry={chat.appendChatHistoryEntry}
                   moneyFmt={actions.moneyFmt}
                   formatDate={actions.formatDate}
-                  t={actions.t}
-                />
-              </Suspense>
-            </TabErrorBoundary>
-          )}
-
-          {activeTab === "team" && (
-            <TabErrorBoundary tabName="team">
-              <Suspense fallback={<SkeletonRow count={3} />}>
-                <TeamTab
-                  business={business}
-                  moneyFmt={actions.moneyFmt}
                   t={actions.t}
                 />
               </Suspense>

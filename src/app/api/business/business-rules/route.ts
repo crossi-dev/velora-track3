@@ -30,7 +30,6 @@ import { createBusinessRuleUseCase } from "@/application/use-cases/create-busine
 import { prismaBusinessRuleRepository } from "@/infrastructure/persistence/prisma-business-rule.repository";
 import { prismaIdempotencyAdapter } from "@/infrastructure/persistence/prisma-idempotency.adapter";
 import { prismaAuditAdapter } from "@/infrastructure/persistence/prisma-audit.adapter";
-import { notifyRuleEmployees } from "@/app/api/_lib/notify-rule-employees";
 import { runWithTraceContext } from "@/lib/cloud-logger";
 
 const BUSINESS_RULE_ACTION_META = {
@@ -136,7 +135,6 @@ async function handlePost(req: NextRequest) {
       createdAt: result.rule.createdAt.toISOString(), updatedAt: result.rule.updatedAt.toISOString(),
     };
     invalidateBusinessContext(businessId);
-    notifyRuleEmployees(businessId, result.rule.id, `Nueva regla: ${result.rule.message}`).catch(() => {});
     return NextResponse.json({ rule }, { status: 201 });
   } catch (error) {
     logRouteError("business.business-rules.POST", error);

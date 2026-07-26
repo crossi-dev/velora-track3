@@ -11,7 +11,6 @@
 import { NextResponse } from "next/server";
 import { findProductInfoMatch } from "../handlers/inventory-matching";
 import { buildProductStockAnswer, buildInventorySummaryAnswer } from "../handlers/inventory-responses";
-import { markOnboardingTaskDone } from "../employee-welcome";
 import type { StockQueryIntent } from "./types";
 import type { PreModelIntentParams } from "../router-params";
 
@@ -24,10 +23,7 @@ export function executeStockQuery(
     params.productInfoDirectory,
   );
 
-  // Persist first_stock_query completion for employees — fire-and-forget.
-  if (params.actorEmployeeId) {
-    void markOnboardingTaskDone(params.actorEmployeeId, "stock_query");
-  }
+  // Employee onboarding-task tracking removed (0 rows in production, Stage 1 cleanup).
 
   if (ambiguous) {
     return NextResponse.json({

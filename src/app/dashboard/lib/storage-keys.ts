@@ -14,13 +14,4 @@ export const STORAGE_KEY = {
   FISCAL_WARNING_DISMISSED: "velora:fiscal-warning-dismissed",
 } as const;
 
-/**
- * Returns the sessionStorage key for a fresh employee PIN.
- * Stored only for the current browser session; cleared after first reveal.
- * Never persisted to localStorage or the DB.
- */
-export function freshPinKey(employeeId: string): string {
-  return `velora.fresh_pin.${employeeId}`;
-}
-
 export type StorageKey = typeof STORAGE_KEY[keyof typeof STORAGE_KEY];

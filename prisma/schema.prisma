@@ -170,12 +170,6 @@ model Business {
   // dueño lo declare en Ajustes; sin alias seteado, el flujo alias muestra
   // un error chip.
   alias                         String?
-  // Monotonic counter for the deterministic employee login token. Include in the
-  // HMAC input when deriving the PIN-entry URL token. Increment via
-  // rotateBusinessLoginToken() to invalidate all existing login URLs immediately
-  // (e.g. when an employee leaves and the owner wants to re-issue links).
-  // Migración: 20260519300000_add_employee_session_version.sql
-  loginTokenVersion             Int                         @default(1)
   openingTime                   String?                     @default("09:00")
   closingTime                   String?                     @default("20:00")
   allowNegativeStock            Boolean                     @default(false)
@@ -264,7 +258,6 @@ model Business {
   chatMessages                  ChatMessage[]
   ownerChatUsage                OwnerChatUsage[]
   budgets                       Budget[]
-  employees                     Employee[]
   businessRules                 BusinessRule[]
   delegationPolicies            DelegationPolicy[]
   businessDocuments             BusinessDocument[]
@@ -277,74 +270,11 @@ model Business {
   wabaConnection                WabaConnection?
   andreaniShipments             AndreaniShipment[]
   ocaShipments                  OcaShipment[]
-  employeeNotes                 EmployeeNote[]
   trustedPeerAgents             TrustedPeerAgent[]
   tenantToolConfig              TenantToolConfig?
   cajaSessions                  CajaSession[]
   priceTiers                    ProductPriceTier[]
   onboardingOauthAcks           OnboardingOauthAck[]
-}
-
-// Empleado del comercio. Auth paralelo a NextAuth/Google OAuth (para el dueño):
-// el empleado se loguea con PIN corto, NO con OAuth. Cada acción que ejecute
-// queda audit-eada con su Employee.id en CriticalWriteEvent.actorEmployeeId.
-//
-// Roles: "owner" (User) y "employee" (Employee). Un solo rol de empleado.
-// Solo el dueño OAuth puede crear/borrar/listar empleados.
-model Employee {
-  id                         String         @id @default(cuid())
-  businessId                 String
-  name                       String         @db.VarChar(255)
-  pinHash                    String         @db.VarChar(200) // scrypt hash con salt embebido
-  role                       String         @default("employee")
-  active                     Boolean        @default(true)
-  lastLoginAt                DateTime?
-  failedPinAttempts          Int            @default(0)
-  lockedUntil                DateTime?
-  // Consecutive lockout count — increments each time the account hits the
-  // failed-attempt threshold and gets locked. Drives exponential backoff
-  // (5m → 15m → 1h → 6h → 24h, capped). Reset to 0 on successful login.
-  // Must persist beyond the active lockout window; otherwise the schedule
-  // resets every cycle and an attacker can grind PINs at the longest
-  // single step indefinitely.
-  consecutiveLockouts        Int            @default(0)
-  // Set to true after THIS employee closes their first sale through chat.
-  // Used by the post-commit hook to inject the Web Push priming chat message
-  // exactly once per employee (mirrors Business.firstSaleConfirmed for the
-  // owner). Persisted on Employee so the primer never re-fires across
-  // sessions, devices, or browser PIN re-auths.
-  firstSaleConfirmed         Boolean        @default(false)
-  // Onboarding query-task completion — persisted so stock/sales query detection
-  // survives session refresh and window scroll (previously regex-only on
-  // recentHistory which reset on every new session).
-  onboardingStockQueryDoneAt DateTime?
-  onboardingSalesQueryDoneAt DateTime?
-  // Cobro QR and sale_send onboarding tasks — persisted to survive session refresh.
-  onboardingCobroQrDoneAt    DateTime?
-  onboardingSaleSendDoneAt   DateTime?
-  // Set once all onboarding tasks are done — used as fast-path short-circuit
-  // so we skip the criticalWriteEvent lookup on every subsequent request.
-  onboardingCompletedAt      DateTime?
-  // Tracks when the once-daily Companion welcome last fired for this employee
-  // (ART timezone). employeeDailyWelcomeStage reads this at request time;
-  // no Cloud Scheduler needed. Nullable: existing rows have no welcome history
-  // and will receive the greeting on the next chat open after onboarding completes.
-  lastWelcomeAt              DateTime?
-  // Monotonic counter for stateless session invalidation. Embed in cookie payload
-  // on login; validate on every request in resolveActor. Increment via
-  // invalidateEmployeeSessions() to force all existing cookies to expire immediately.
-  // Migración: 20260519300000_add_employee_session_version.sql
-  sessionVersion             Int            @default(1)
-  createdAt                  DateTime       @default(now())
-  business                   Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  targetedMessages           ChatMessage[]  @relation("TargetedMessages")
-  sales                      Sale[]
-  notes                      EmployeeNote[]
-  openedCajaSessions         CajaSession[]  @relation("OpenedBySessions")
-  closedCajaSessions         CajaSession[]  @relation("ClosedBySessions")
-
-  @@unique([businessId, name])
-  @@index([businessId, active])
 }
 
 // GROWTH NOTE (Fix #35 / Fix #36): Esta tabla crece indefinidamente. El DELETE del chat inserta
@@ -397,7 +327,6 @@ model ChatMessage {
   ackedAt          DateTime?
   createdAt        DateTime  @default(now())
   business         Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  targetEmployee   Employee? @relation("TargetedMessages", fields: [targetEmployeeId], references: [id], onDelete: SetNull)
   customer         Customer? @relation("CustomerThreadMessages", fields: [customerId], references: [id], onDelete: SetNull)
 
   @@unique([businessId, clientMessageId])
@@ -615,7 +544,6 @@ model Sale {
   undoNotificationSentAt DateTime?
   business               Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
   customer               Customer?       @relation(fields: [customerId], references: [id])
-  employee               Employee?       @relation(fields: [employeeId], references: [id])
   saleItems              SaleItem[]
   cashMovements          CashMovement[]
   invoice                Invoice?
@@ -1475,26 +1403,6 @@ model OcaShipment {
   @@index([trackingNumber])
 }
 
-// EmployeeNote — anotaciones del empleado al dueño para revisión al cierre del turno.
-//
-// El Companion escribe una fila cuando el empleado narra algo no operativo
-// ("se rompió la heladera", "vino un proveedor") en lugar de intentar
-// ejecutar una acción. El dueño las ve en el panel "Notas del equipo" y
-// las marca como leídas con acknowledgedAt.
-model EmployeeNote {
-  id             String    @id @default(cuid())
-  businessId     String
-  employeeId     String
-  content        String
-  createdAt      DateTime  @default(now())
-  acknowledgedAt DateTime?
-
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  @@index([businessId, acknowledgedAt])
-  @@index([businessId, createdAt])
-}
 
 // TrustedPeerAgent — agentes A2A externos que el owner agregó explícitamente.
 //
@@ -1873,9 +1781,7 @@ model CajaSession {
   closeNote          String?
   // Who opened and who closed — nullable for owner-only flows.
   openedByEmployeeId String?
-  openedByEmployee   Employee? @relation("OpenedBySessions", fields: [openedByEmployeeId], references: [id], onDelete: SetNull)
   closedByEmployeeId String?
-  closedByEmployee   Employee? @relation("ClosedBySessions", fields: [closedByEmployeeId], references: [id], onDelete: SetNull)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 

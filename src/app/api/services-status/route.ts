@@ -42,7 +42,8 @@ export async function GET(req: NextRequest) {
         prisma.courierCredential.findFirst({
           where: { businessId, provider: "correo" },
         }),
-        prisma.employee.count({ where: { businessId, active: true } }),
+        // Employee concept removed (0 rows in production, Stage 1 cleanup).
+        Promise.resolve(0),
       ]);
 
     // WhatsApp Business connection status — two-tier signal:

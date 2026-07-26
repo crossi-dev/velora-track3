@@ -1,11 +1,7 @@
-// Thin stage wrappers for the pre-LLM payment-method chip intercept.
-// Logic lives in sale-payment-prompt.ts; stages are here to keep the
-// owner and employee stage files under the 300-line hard limit.
-//
-// Both roles share identical stage logic — the only difference used to be
-// the TypeScript stage type (OwnerPipelineStage vs PipelineStage). Both
-// params types expose `{ text, businessId, respond }` with the same shape,
-// so a single shared run function replaces two byte-for-byte-identical bodies.
+// Thin stage wrapper for the pre-LLM payment-method chip intercept.
+// Logic lives in sale-payment-prompt.ts. The employee-pipeline variant of
+// this stage was removed (0 rows in production, Stage 1 cleanup) along with
+// the rest of the employee-handler pipeline — only the owner stage remains.
 
 import type { NextResponse } from "next/server";
 import { loadSupervisorContext } from "@/app/api/supervisor/_lib/load-context";
@@ -14,7 +10,6 @@ import {
   buildSalePaymentPromptResult,
 } from "./sale-payment-prompt";
 import type { OwnerPipelineStage, OwnerPipelineCtx } from "./owner-handler.stages";
-import type { PipelineStage, EmployeePipelineCtx } from "./employee-handler.ctx";
 
 /** Minimal context shape shared by both owner and employee pipeline params. */
 interface SalePaymentCtxMin {
@@ -60,11 +55,4 @@ async function runSalePaymentPromptStage(
 export const ownerSalePaymentPromptStage: OwnerPipelineStage = {
   name: "ownerSalePaymentPrompt",
   run: (ctx: OwnerPipelineCtx) => runSalePaymentPromptStage(ctx),
-};
-
-// Employee pipeline stage — runs AFTER employeeConfirmationFastPathStage
-// and BEFORE preModelStage.
-export const employeeSalePaymentPromptStage: PipelineStage = {
-  name: "employeeSalePaymentPrompt",
-  run: (ctx: EmployeePipelineCtx) => runSalePaymentPromptStage(ctx),
 };

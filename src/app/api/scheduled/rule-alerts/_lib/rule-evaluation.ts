@@ -9,7 +9,6 @@ import pLimit from "p-limit";
 import { prisma } from "@/lib/prisma";
 import { cloudLog } from "@/lib/cloud-logger";
 import { getGeminiTextModel } from "@/app/api/business-assistant/_lib/gemini-client";
-import { sendPushToEmployee } from "@/app/api/_lib/employee-push";
 import type { SlotInstant } from "./cron-matcher";
 
 // Concurrency caps protect a single run from a fan-out spike (e.g. a
@@ -110,13 +109,11 @@ async function generateCompanionTemplate(
  * Companion-tone template. Returns null when the rule has no audience.
  */
 export async function prepareRule(rule: RuleRow): Promise<{ employees: Array<{ id: string; name: string }>; template: string } | null> {
-  const employees = await prisma.employee.findMany({
-    where: { businessId: rule.businessId, active: true },
-    select: { id: true, name: true },
-  });
-  if (employees.length === 0) return null;
-  const template = await generateCompanionTemplate(rule);
-  return { employees, template };
+  // Employee concept removed (0 rows in production, Stage 1 cleanup) — there is
+  // never an active-employee audience for rule alerts. Always returns null so
+  // the cron caller (route.ts) skips this rule via its existing `if (!prepared)
+  // continue` short-circuit.
+  return null;
 }
 
 interface FireResult {
@@ -186,15 +183,10 @@ export async function fireRuleSlot(ctx: RuleEvaluationContext): Promise<FireResu
             return;
           }
 
-          await pushLimit(() =>
-            sendPushToEmployee(rule.businessId, emp.id, {
-              title: "Velora · Recordatorio",
-              body: alertText,
-              url: "/dashboard",
-              notificationCategory: "rule_alert",
-              entityId: rule.id,
-            }).catch(() => {})
-          );
+          // Employee push removed (0 rows in production, Stage 1 cleanup) —
+          // this branch is unreachable in practice (prepareRule always returns
+          // null now), kept only so fireRuleSlot's type contract stays intact.
+          void pushLimit(() => Promise.resolve());
         })
       )
   );
