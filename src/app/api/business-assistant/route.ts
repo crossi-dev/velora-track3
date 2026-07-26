@@ -123,7 +123,7 @@ async function handlePost(req: NextRequest, preReadBuffer?: ArrayBuffer) {
   const biz = await prisma.business.findUnique({ where: { id: ctx.businessId }, select: { id: true } });
   if (!biz) return NextResponse.json({ code: "BUSINESS_NOT_FOUND", message: "No business found for this user." }, { status: 404 });
 
-  const latency = createLatencyTracker(ctx.role === "owner" ? "owner" : "employee");
+  const latency = createLatencyTracker("owner");
 
   // C2 fix (Finding 5): hoist for finally block. LatencyTracker guards double-emits.
   const latencyEmitArgs = { businessId: biz.id, actorUserId: ctx.actorUserId, actorEmployeeId: ctx.actorEmployeeId };
@@ -160,11 +160,11 @@ async function handlePost(req: NextRequest, preReadBuffer?: ArrayBuffer) {
       actorEmployeeId,
       text,
       locale,
-      actorRole: ctx.role === "owner" ? "owner" : "employee",
+      actorRole: "owner",
       clientMessageId: null,
     });
 
-    const actorRole = ctx.role === "owner" ? "owner" : "employee";
+    const actorRole = "owner" as const;
     if (idempotencyKey) {
       try {
         const gate = await beginIdempotentMutation({
@@ -228,9 +228,9 @@ async function handlePost(req: NextRequest, preReadBuffer?: ArrayBuffer) {
     };
 
     // Employee role removed (0 rows in production, Stage 1 cleanup) — resolveActor()
-    // now only ever returns role "owner", so this path always executes. A safe
-    // fallback is kept in case ctx.role is ever anything else (defense in depth;
-    // role-contract.ts still types Role as "owner" | "employee" pending stage-2).
+    // now only ever returns role "owner" and role-contract.ts's Role type is
+    // "owner"-only (Stage 2), so this branch is unreachable. Kept as a runtime
+    // defense-in-depth guard rather than deleted.
     if (ctx.role !== "owner") {
       return NextResponse.json({ code: "FORBIDDEN", message: "Insufficient permissions." }, { status: 403 });
     }

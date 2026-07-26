@@ -83,7 +83,6 @@ function DashboardInner({
     reloadData,
     refreshChatHistory,
     sales,
-    employeeName,
     t,
   } = state;
 
@@ -216,7 +215,7 @@ function DashboardInner({
         onQuickActionsClick={() => setQuickAction((current) => (current === "menu" ? null : "menu"))}
         quickActionOpen={quickAction === "menu"}
         contentScrollable={activeTab !== "main"}
-        title={role === "employee" ? (employeeName || "Velora") : (business?.name || "Velora")}
+        title={business?.name || "Velora"}
         notifications={notifications}
         bottomNav={
           <div className="md:hidden">

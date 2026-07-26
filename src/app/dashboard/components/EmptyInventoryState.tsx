@@ -48,7 +48,10 @@ export function EmptyInventoryState({ onAddProduct }: EmptyInventoryStateProps =
   const t = useT();
 
   if (!onAddProduct) {
-    // Employee view: no permission to add products — show guidance instead of a dead-end.
+    // No add-product handler supplied — show guidance instead of a dead-end.
+    // (Historically this was the employee read-only view; no employee role
+    // exists anymore, but the fallback is kept for any caller that omits
+    // onAddProduct.)
     return (
       <SharedEmptyState
         illustration={<InventoryIllustration />}

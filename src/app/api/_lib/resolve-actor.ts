@@ -143,8 +143,8 @@ export async function resolveActor(req: NextRequest): Promise<ActorContext | nul
  * Verifica que el actor tenga rol permitido para una operación.
  * Lanza un Error si no — el caller debe convertirlo en 403.
  *
- * resolveActor() sólo retorna role "owner" hoy; el tipo Role sigue incluyendo
- * "employee" por compatibilidad (ver role-contract.ts, stage-2 cleanup).
+ * resolveActor() sólo retorna role "owner"; el tipo Role es "owner"-only
+ * (ver role-contract.ts, stage-2 cleanup).
  */
 export function assertRole(actor: ActorContext, allowed: ActorRole[]): void {
   if (!allowed.includes(actor.role)) {

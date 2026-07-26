@@ -123,11 +123,9 @@ export function createSaleUseCase(ports: Ports) {
             if (validateSaleItemQuantity(item.quantity)) throw new InvalidItemQuantityError();
             const inv = inventoryMap.get(item.productId);
             if (!inv || inv.product.businessId !== businessId) throw new ProductNotOwnedError();
-            if (actorRole === "employee") {
-              const outlier = detectPriceOutlier(item.unitPrice, inv.product.price, DEFAULT_PRICE_OUTLIER_THRESHOLD);
-              if (outlier) throw new PriceOutlierError(item.productId, outlier.direction, outlier.expected);
-            } else {
-              // Owner path: soft price-integrity check (defense-in-depth).
+            {
+              // Owner path (only path — employee role removed, stage 2 cleanup):
+              // soft price-integrity check (defense-in-depth).
               //
               // The primary guard is guardSaleUnitPrice in supervisor-action-mapper.money-guard.ts,
               // which strips LLM-invented unitPrice values before they reach this use-case when

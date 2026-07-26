@@ -5,7 +5,7 @@ import type { ChatHistoryEntry } from "../../lib/types";
 import { useRole } from "../../lib/contexts";
 import { useT } from "../../lib/DashboardLangContext";
 import { formatDateLabel } from "../../lib/helpers";
-import { formatTraceText, formatTimestamp, formatTimeAgo, extractSuggestion, BUBBLE_TEXT_BASE } from "./chat-helpers";
+import { formatTraceText, formatTimestamp, formatTimeAgo, BUBBLE_TEXT_BASE } from "./chat-helpers";
 import { ActivityRow } from "./ActivityRow";
 import { AgentActivityCard } from "./AgentActivityCard";
 import { ChipButtons } from "./ChipButtons";
@@ -42,8 +42,10 @@ export const ChatRow = React.memo(function ChatRow({
   const t = useT();
   const isUser = entry.kind === "user";
   const isManager = entry.source === "manager";
-  const suggestion = isManager && role === "employee" && onSuggest ? extractSuggestion(entry.text) : null;
-  const showAck = isManager && role === "employee";
+  // Manager-broadcast suggestion/ack UI was employee-only — no employee role
+  // exists anymore, so these never render (stage 2 cleanup).
+  const suggestion: string | null = null;
+  const showAck = false;
   const [acked, setAcked] = useState(() => {
     if (typeof window === "undefined") return false;
     try { return window.localStorage.getItem(`acked-msg-${entry.id}`) === "1"; } catch { return false; }

@@ -7,7 +7,6 @@ import { SegmentControl } from "./SettingsShared";
 import { SettingsNegocioSection } from "./SettingsNegocioSection";
 import { SettingsAplicacionSection } from "./SettingsAplicacionSection";
 import { SectionMarker } from "./v2/SectionMarker";
-import { useRole } from "../lib/contexts";
 
 function buildSettingsFormFromBusiness(business: BusinessSummary): SettingsFormState {
   return {
@@ -61,14 +60,12 @@ export function SettingsTab({
   setSettingsNotice,
   t,
 }: SettingsTabProps) {
-  const role = useRole();
-  const isEmployee = role === "employee";
   const initialSettingsForm = buildSettingsFormFromBusiness(business);
   const isSettingsDirty = Object.entries(settingsForm).some(
     ([field, value]) => value !== initialSettingsForm[field as keyof SettingsFormState]
   );
 
-  const [activeSection, setActiveSection] = useState<"negocio" | "aplicacion">(isEmployee ? "aplicacion" : "negocio");
+  const [activeSection, setActiveSection] = useState<"negocio" | "aplicacion">("negocio");
   const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
 
   useEffect(() => {
@@ -81,7 +78,7 @@ export function SettingsTab({
   // handler emit these. Without scroll, the owner lands on Settings but has to
   // hunt the card manually.
   useEffect(() => {
-    if (isEmployee || typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const panel = params.get("panel");
     if (!panel) return;
@@ -106,7 +103,7 @@ export function SettingsTab({
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
     return () => clearTimeout(timer);
-  }, [isEmployee]);
+  }, []);
 
   const updateApp = useCallback(<K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     setAppSettings((prev) => {
@@ -131,15 +128,15 @@ export function SettingsTab({
       </div>
 
       <SegmentControl
-        options={([
-          ...(!isEmployee ? [{ value: "negocio" as const, label: t("Business", "Negocio") }] : []),
+        options={[
+          { value: "negocio" as const, label: t("Business", "Negocio") },
           { value: "aplicacion" as const, label: t("App", "Aplicación") },
-        ] as Array<{ value: "negocio" | "aplicacion"; label: string }>)}
+        ]}
         value={activeSection}
         onChange={setActiveSection}
       />
 
-      {activeSection === "negocio" && role !== "employee" && (
+      {activeSection === "negocio" && (
         <SettingsNegocioSection
           settingsForm={settingsForm}
           settingsSaving={settingsSaving}

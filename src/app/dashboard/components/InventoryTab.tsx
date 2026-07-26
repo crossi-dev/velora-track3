@@ -20,7 +20,7 @@ import { ProductDetailSheet } from "./ProductDetailSheet";
 import { LowStockRow } from "./LowStockRow";
 import { SectionMarker } from "./v2/SectionMarker";
 import { ImportButton } from "./ImportButton";
-import { useRole, useBusinessActionsContext } from "../lib/contexts";
+import { useBusinessActionsContext } from "../lib/contexts";
 
 interface InventoryTabProps {
   business: BusinessSummary;
@@ -54,7 +54,6 @@ export function InventoryTab({
   formatTime,
   t,
 }: InventoryTabProps) {
-  const role = useRole();
   const { performImport, reloadData } = useBusinessActionsContext();
   const [reorderPickerProductId, setReorderPickerProductId] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
@@ -237,25 +236,21 @@ export function InventoryTab({
             className="pl-9 h-10 bg-[var(--surface-subtle)] border-transparent focus-visible:border-input focus-visible:bg-background"
           />
         </div>
-        {role !== "employee" && (
-          <>
-            <Button
-              type="button"
-              onClick={() => setQuickAction("product")}
-              className="flex-shrink-0 gap-1.5"
-              aria-label={t("New product", "Nuevo producto")}
-            >
-              <PlusIcon weight="bold" aria-hidden />
-              {t("New", "Nuevo")}
-            </Button>
-            <ImportButton
-              type="products"
-              label={t("Import", "Importar")}
-              performImport={performImport}
-              onSuccess={reloadData}
-            />
-          </>
-        )}
+        <Button
+          type="button"
+          onClick={() => setQuickAction("product")}
+          className="flex-shrink-0 gap-1.5"
+          aria-label={t("New product", "Nuevo producto")}
+        >
+          <PlusIcon weight="bold" aria-hidden />
+          {t("New", "Nuevo")}
+        </Button>
+        <ImportButton
+          type="products"
+          label={t("Import", "Importar")}
+          performImport={performImport}
+          onSuccess={reloadData}
+        />
       </div>
 
       {/* v3 — banner sticky para que el aviso de stock bajo no se entierre
@@ -322,7 +317,7 @@ export function InventoryTab({
         business={business}
         moneyFmt={moneyFmt}
         t={t}
-        onAddProduct={role !== "employee" ? () => setQuickAction("product") : undefined}
+        onAddProduct={() => setQuickAction("product")}
       />
 
       {selectedProduct && (

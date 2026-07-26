@@ -111,7 +111,6 @@ export function buildDashboardReturn(ctx: DashboardReturnContext) {
     invoiceSheetOpen: ctx.invoiceSheetOpen,
     setInvoiceSheetOpen: ctx.setInvoiceSheetOpen,
     business: businessData.business,
-    employeeName: businessData.employeeName,
     products: businessData.products,
     clients: businessData.clients,
     clientDrafts: contacts.clientDrafts,

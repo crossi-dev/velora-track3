@@ -9,7 +9,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SectionMarker } from "./v2/SectionMarker";
 import { AgentCard, type ProviderStatus } from "./ServiciosTab.cards";
 import { ConnectServiceModal } from "./ServiciosTab.connect-modal";
-import { useRole } from "../lib/contexts";
 import {
   buildSupervisorMessage,
   type ConnectedServices,
@@ -106,7 +105,6 @@ async function fetchServiciosStatus(): Promise<ServiciosStatusResponse> {
 }
 
 export function ServiciosTab() {
-  const role = useRole();
   const queryClient = useQueryClient();
   const [activeProvider, setActiveProvider] = useState<ProviderStatus | null>(null);
 
@@ -126,30 +124,6 @@ export function ServiciosTab() {
     setActiveProvider(null);
     void queryClient.invalidateQueries({ queryKey: SERVICIOS_QUERY_KEY });
   }, [queryClient]);
-
-  if (role === "employee") {
-    return (
-      <div
-        style={{
-          maxWidth: "640px",
-          margin: "0 auto",
-          width: "100%",
-          paddingTop: "2rem",
-        }}
-      >
-        <p
-          style={{
-            fontFamily: "var(--font-dm-sans)",
-            fontSize: "0.875rem",
-            color: "var(--tone-muted)",
-            textAlign: "center",
-          }}
-        >
-          Esta sección es solo para el dueño del negocio.
-        </p>
-      </div>
-    );
-  }
 
   const supervisorMsg = status
     ? buildSupervisorMessage(

@@ -43,8 +43,6 @@ export function useBusinessData(opts: useBusinessDataOptions) {
   
   const [dataStale, setDataStale] = useState(false);
 
-  const [employeeName, setEmployeeName] = useState<string>("");
-
   const [settingsForm, setSettingsForm] = useState<SettingsForm | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [settingsNotice, setSettingsNotice] = useState<string | null>(null);
@@ -294,7 +292,6 @@ export function useBusinessData(opts: useBusinessDataOptions) {
 
   return {
     businessId,
-    employeeName,
     business, setBusiness,
     products, setProducts,
     clients, setClients,

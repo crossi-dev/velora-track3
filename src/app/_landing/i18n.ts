@@ -49,23 +49,16 @@ export function pickLocale(acceptLanguage: string | null, cookieLocale: string |
   return DEFAULT_LOCALE;
 }
 
+// Employee/staff PIN-login fields removed (Stage 1 cleanup) — RolePicker only
+// renders the owner sign-in card now (see role-picker.tsx). This dict used
+// to also carry the staff-code form copy (staffLabel, codeLabel,
+// submitLabel, noCodeHelp, backLabel, invalidCode, etc.) — all unused since
+// no employee sign-in UI exists anymore.
 export interface RolePickerDict {
   groupLabel: string;
   ownerLabel: string;
   ownerSub: string;
   ownerAriaLabel: string;
-  staffLabel: string;
-  staffSub: string;
-  staffAriaLabel: string;
-  staffFormLabel: string;
-  codeLabel: string;
-  codePlaceholder: string;
-  submitLabel: string;
-  submitLoading: string;
-  noCodeHelp: string;
-  backLabel: string;
-  backAriaLabel: string;
-  invalidCode: string;
 }
 
 export interface LandingDict {
@@ -129,18 +122,6 @@ const ES_AR: LandingDict = {
     ownerLabel: "Soy dueño",
     ownerSub: "Entrar con Google",
     ownerAriaLabel: "Entrar como dueño con Google",
-    staffLabel: "Soy staff",
-    staffSub: "Ingresá con tu código",
-    staffAriaLabel: "Entrar como empleado con código de negocio",
-    staffFormLabel: "Ingresar como empleado",
-    codeLabel: "Código de tu negocio",
-    codePlaceholder: "Pegá el código de tu negocio",
-    submitLabel: "Entrar",
-    submitLoading: "Validando…",
-    noCodeHelp: "¿Primera vez? Pedile el link a tu dueño — la próxima entrás directo.",
-    backLabel: "Volver",
-    backAriaLabel: "Volver al selector de rol",
-    invalidCode: "Código inválido. Pedí el código a tu dueño.",
   },
   hero: {
     tagline: "Comercio agéntico, de punta a punta",
@@ -242,18 +223,6 @@ const EN: LandingDict = {
     ownerLabel: "I am the owner",
     ownerSub: "Sign in with Google",
     ownerAriaLabel: "Sign in as owner with Google",
-    staffLabel: "I am staff",
-    staffSub: "Enter with your business code",
-    staffAriaLabel: "Sign in as employee with business code",
-    staffFormLabel: "Employee sign in",
-    codeLabel: "Your business code",
-    codePlaceholder: "Paste your business code",
-    submitLabel: "Enter",
-    submitLoading: "Validating…",
-    noCodeHelp: "First time? Ask your owner for the link — next time you skip this step.",
-    backLabel: "Back",
-    backAriaLabel: "Back to role selector",
-    invalidCode: "Invalid code. Ask your owner for the correct code.",
   },
   hero: {
     tagline: "Agentic Commerce, end-to-end",
