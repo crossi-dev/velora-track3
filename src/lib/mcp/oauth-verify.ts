@@ -78,23 +78,49 @@ function getJwks(): ReturnType<typeof createRemoteJWKSet> | null {
 // Sources: workos.com/docs/authkit/mcp (use payload.sub as identity),
 //          workos.com/docs/user-management/sessions/integrating-sessions/access-token
 //          (access-token claims list — email is not among them).
+//
+// PERF FIX (2026-07-26): because `email` is never on the token, this Management
+// API call fired on EVERY /api/mcp request from OAuth clients (Claude hosted
+// connectors) — confirmed live via Cloud Run logs: every 200/202 response on
+// /api/mcp was 3-8s, including bare JSON-RPC notifications, and three requests
+// 140ms apart landed on the SAME Cloud Run instanceId at the same latency,
+// which rules out cold start. That pointed at a fixed per-request cost paid
+// before any tool logic runs — this uncached third-party network round trip
+// in the auth gate. A short in-memory TTL cache keyed by `sub` removes it from
+// the hot path for any client polling within the window; email/verification
+// status changing mid-window is an accepted staleness tradeoff (5 min is well
+// under a WorkOS access token's own lifetime, so this never outlives the token
+// it was resolved for).
 
 type WorkosUser = { email?: string; email_verified?: boolean };
+
+const WORKOS_USER_CACHE_TTL_MS = 5 * 60 * 1000;
+const workosUserCache = new Map<string, { user: WorkosUser | null; expiresAt: number }>();
 
 async function fetchWorkosUser(sub: unknown): Promise<WorkosUser | null> {
   const apiKey = process.env.WORKOS_API_KEY;
   if (!apiKey || typeof sub !== "string" || !sub) return null;
+
+  const cached = workosUserCache.get(sub);
+  if (cached && cached.expiresAt > Date.now()) return cached.user;
+
   const base = process.env.WORKOS_API_BASE_URL ?? "https://api.workos.com";
+  let user: WorkosUser | null;
   try {
     const res = await fetch(
       `${base}/user_management/users/${encodeURIComponent(sub)}`,
       { headers: { Authorization: `Bearer ${apiKey}` } },
     );
-    if (!res.ok) return null;
-    return (await res.json()) as WorkosUser;
+    user = res.ok ? ((await res.json()) as WorkosUser) : null;
   } catch {
-    return null;
+    user = null;
   }
+
+  // Only cache a successful lookup — do not cache nulls, so a transient WorkOS
+  // outage or misconfiguration doesn't pin every request to "not found" for
+  // the full TTL.
+  if (user) workosUserCache.set(sub, { user, expiresAt: Date.now() + WORKOS_USER_CACHE_TTL_MS });
+  return user;
 }
 
 // ── Public API ─────────────────────────────────────────────────────────────────
