@@ -149,7 +149,9 @@ interface Prefill {
     ventasHoy: VentasPeriodo;
     ventasSemana: VentasPeriodo;
     pendingCount: number;
+    pendingTotalARS: number;
     lowStock: LowStockItem[];
+    topLowStockName: string | null;
   };
   cliente360: Cliente360Data;
   cierreDia: { caja: CajaSummary; ventasHoy: VentasPeriodo; pendingOrders: PendingSummary[]; pendingCount: number };
@@ -174,6 +176,11 @@ const ars = (n: number | null | undefined) =>
 
 function ventasLabel(v: VentasPeriodo): string {
   if (v.failed) return "no pudimos cargar";
+  // JD finding (2026-07-26): a bare "0 ventas · $ 0,00" reads as alarming on the
+  // single most emotionally-loaded card — every sibling card (Cobros, Stock)
+  // already frames its zero state with words instead of a flat number. This
+  // mirrors that: honest (no sales yet), not falsely upbeat.
+  if (v.saleCount === 0) return "Sin ventas por ahora";
   return `${v.saleCount} venta${v.saleCount !== 1 ? "s" : ""} · ${v.totalRevenueFormatted || ars(v.totalRevenue)}`;
 }
 
@@ -271,6 +278,13 @@ function InlineSummary({
             {data.pendingCount === 0 ? "Al día, sin nada pendiente" : "esperando pago"}
           </span>
         </div>
+        {/* JD finding (2026-07-26): the count alone can't answer "how much" —
+         * pendingTotalARS was already fetched for the fullscreen tab, just not
+         * surfaced here. One extra line, still one data point (the card's theme
+         * stays "cobros pendientes"), well under the doc's 4-5 data point cap. */}
+        {data.pendingCount > 0 && (
+          <div className="text-sm font-medium tabular-nums text-ink-soft">{ars(data.pendingTotalARS)} en total</div>
+        )}
       </SectionCard>
 
       <SectionCard title="Stock bajo">
@@ -280,6 +294,16 @@ function InlineSummary({
             {data.lowStock.length === 0 ? "Todo por encima del mínimo" : "producto(s) bajo mínimo"}
           </span>
         </div>
+        {/* JD finding (2026-07-26): "4 productos" doesn't say which ones — the
+         * name was already in the payload. Naming the most urgent one (list is
+         * ordered by the backend) turns a count into something actionable
+         * without a tap, same one-data-point budget as above. */}
+        {data.topLowStockName && (
+          <div className="truncate text-sm font-medium text-ink-soft">
+            {data.topLowStockName}
+            {data.lowStock.length > 1 ? ` y ${data.lowStock.length - 1} más` : ""}
+          </div>
+        )}
       </SectionCard>
 
       {canExpand && (

@@ -34,7 +34,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { Card, PrimaryButton, SecondaryButton, Centered, StatusBanner, StatusChip } from "./_widget-primitives";
+import { Card, PrimaryButton, SecondaryButton, Centered, ReturnHint, StatusBanner, StatusChip } from "./_widget-primitives";
 
 type CajaState = "OPEN" | "CLOSED" | "NO_SESSION";
 
@@ -212,16 +212,18 @@ function CajaStatusWidget(): React.JSX.Element {
       }
     : {};
 
-  const supersededBanner = superseded && (
+  const topHint = superseded ? (
     <div className="rounded-control bg-surface-2 p-3 text-sm text-ink-soft" role="status">
       Esta vista quedó vieja — hay una más nueva en este chat.
     </div>
+  ) : (
+    <ReturnHint />
   );
 
   if (doneBanner) {
     return (
       <Card title="Estado de caja" style={safeAreaStyle}>
-        {supersededBanner}
+        {topHint}
         <StatusBanner tone="success">{doneBanner}</StatusBanner>
         <p className="text-center text-sm text-ink-soft">Refrescá el estado para ver los datos actualizados.</p>
       </Card>
@@ -232,10 +234,15 @@ function CajaStatusWidget(): React.JSX.Element {
     const isAbrir = actionMode === "abrir";
     return (
       <Card title={isAbrir ? "Abrir caja" : "Cerrar caja"} style={safeAreaStyle}>
-        {supersededBanner}
+        {topHint}
         <MontoForm
           label={isAbrir ? "Fondo inicial (ARS)" : "Efectivo contado (ARS)"}
-          defaultValue={(!isAbrir && prefill.expectedCashAmount != null) ? String(prefill.expectedCashAmount) : "0"}
+          // JD finding (2026-07-26): this used to pre-fill with expectedCashAmount —
+          // the system's OWN number — on close. A till count exists to verify that
+          // number independently; pre-filling it meant a tap-through-without-typing
+          // always reported variance $0, silently defeating the one control this
+          // widget exists to enforce. Starts empty on both paths now, same as "abrir".
+          defaultValue="0"
           onSubmit={doAction} onCancel={() => { setActionMode(null); setActionErr(null); }}
           submitting={actioning || superseded} errMsg={actionErr}
         />
@@ -249,7 +256,7 @@ function CajaStatusWidget(): React.JSX.Element {
   if (prefill.state === "NO_SESSION") {
     return (
       <Card title="Estado de caja" style={safeAreaStyle}>
-        {supersededBanner}
+        {topHint}
         <div className="flex items-center justify-center rounded-control bg-surface-2 px-4 py-3 text-base text-ink-soft">Sin historial de caja</div>
         <p className="text-sm text-ink-soft">Aún no se registraron turnos en esta caja.</p>
         <PrimaryButton disabled={superseded} onClick={() => { setActionMode("abrir"); setActionErr(null); }}>Abrir caja</PrimaryButton>
@@ -260,14 +267,28 @@ function CajaStatusWidget(): React.JSX.Element {
   if (prefill.state === "CLOSED") {
     return (
       <Card title="Estado de caja" style={safeAreaStyle}>
-        {supersededBanner}
+        {topHint}
         <section aria-label="Estado del turno" className="flex items-center justify-center rounded-control bg-surface-2 px-4 py-3 text-base font-semibold text-ink-soft">Cerrada</section>
+        {/* JD finding (2026-07-26): a cash discrepancy used to be a same-weight
+         * `dl` row, just recolored — the least visually weighted fact on a screen
+         * where it's the most consequential one. StatusBanner (already used
+         * elsewhere for "this just happened" states) gives it real prominence.
+         * variance = contado - esperado: negative means cash is MISSING (the
+         * actionable, alarming case) — positive just means extra cash landed in
+         * the drawer, which is not the same problem and shouldn't wear the same
+         * alarm-red the shortfall gets (second follow-up JD pass, same night). */}
+        {prefill.variance != null && prefill.variance < 0 && (
+          <StatusBanner tone="danger">Faltan {ars(Math.abs(prefill.variance))} — revisá los movimientos del turno</StatusBanner>
+        )}
+        {prefill.variance != null && prefill.variance > 0 && (
+          <StatusBanner tone="neutral">Sobran {ars(prefill.variance)} respecto a lo esperado</StatusBanner>
+        )}
         <dl className="flex flex-col gap-2 rounded-control bg-surface-2 px-4 py-3">
           <Row label="Cerrada" value={fmtDate(prefill.closedAt)} />
           <Row label="Efectivo contado" value={ars(prefill.closedCashAmount)} numeric />
           {prefill.variance != null && (
             <Row label="Diferencia" numeric value={
-              <span className={prefill.variance !== 0 ? "text-danger-ink" : undefined}>{ars(prefill.variance)}</span>
+              <span className={prefill.variance < 0 ? "text-danger-ink" : undefined}>{ars(prefill.variance)}</span>
             } />
           )}
         </dl>
@@ -279,7 +300,7 @@ function CajaStatusWidget(): React.JSX.Element {
   // OPEN state
   return (
     <Card title="Estado de caja" style={safeAreaStyle}>
-      {supersededBanner}
+      {topHint}
       <section aria-label="Saldo actual" className="flex flex-col items-center gap-1 rounded-control bg-surface-2 px-4 py-4">
         <span className="text-sm text-ink-soft">Efectivo esperado</span>
         <span className="text-4xl font-bold tabular-nums text-ink">{ars(prefill.expectedCashAmount)}</span>

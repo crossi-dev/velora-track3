@@ -65,6 +65,14 @@ const STOCK_ACTIONS: StockActionDef[] = [
   { key: "upload-file", label: "Subir archivo de stock", path: "/dashboard?tab=inventario" },
 ];
 
+// The guidance copy (connection-tools.ts) is authored for the AI agent and ends
+// with "Entrá acá: <url>". In-widget each row already carries its own Conectar
+// button, so we surface only the WHY (the reason), not the redundant raw URL.
+function guidanceReason(guidance: string): string {
+  const marker = guidance.indexOf("Entrá acá:");
+  return (marker === -1 ? guidance : guidance.slice(0, marker)).trim();
+}
+
 // ── Main widget ───────────────────────────────────────────────────────────────
 
 function OnboardingHub(): React.JSX.Element {
@@ -151,28 +159,35 @@ function OnboardingHub(): React.JSX.Element {
         {integrations.map((item) => (
           <li
             key={item.key}
-            className="flex items-center justify-between gap-3 rounded-control bg-surface-2 px-4 py-3"
+            className="flex flex-col gap-2 rounded-control bg-surface-2 px-4 py-3"
           >
-            <span className="text-base text-ink">{item.label}</span>
-            {item.connected ? (
-              <span aria-label="Conectado" className="shrink-0">
-                <StatusChip tone="success">
-                  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="currentColor" className="mr-1">
-                    <path d="M10 3L5 8.5 2 5.5l-.7.7 3.7 3.7 5.7-5.7L10 3z" />
-                  </svg>
-                  Conectado
-                </StatusChip>
-              </span>
-            ) : item.connectUrl ? (
-              <button
-                type="button"
-                onClick={() => handleOpenLink(item.connectUrl)}
-                className="shrink-0 rounded-control border border-line bg-surface px-3 py-1.5 text-sm font-medium text-ink"
-              >
-                Conectar
-              </button>
-            ) : (
-              <span className="shrink-0 text-sm font-medium text-ink-soft">Sin conectar</span>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-base text-ink">{item.label}</span>
+              {item.connected ? (
+                <span aria-label="Conectado" className="shrink-0">
+                  <StatusChip tone="success">
+                    <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="currentColor" className="mr-1">
+                      <path d="M10 3L5 8.5 2 5.5l-.7.7 3.7 3.7 5.7-5.7L10 3z" />
+                    </svg>
+                    Conectado
+                  </StatusChip>
+                </span>
+              ) : item.connectUrl ? (
+                <button
+                  type="button"
+                  onClick={() => handleOpenLink(item.connectUrl)}
+                  className="shrink-0 rounded-control border border-line bg-surface px-3 py-1.5 text-sm font-medium text-ink"
+                >
+                  Conectar
+                </button>
+              ) : (
+                <span className="shrink-0 text-sm font-medium text-ink-soft">Sin conectar</span>
+              )}
+            </div>
+            {/* Guidance note — the WHY behind connecting this service. Only
+             * pending rows carry non-empty guidance (connected rows return ""). */}
+            {!item.connected && guidanceReason(item.guidance) && (
+              <p className="text-sm text-ink-soft">{guidanceReason(item.guidance)}</p>
             )}
           </li>
         ))}

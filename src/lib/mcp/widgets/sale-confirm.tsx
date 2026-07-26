@@ -28,6 +28,11 @@ import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
 import { Card, Field, PrimaryButton, Centered } from "./_widget-primitives";
 
+// Same cap convention as pending-orders.tsx's DISPLAY_CAP — the host clips
+// (doesn't scroll) inline content past its height, so an uncapped item list
+// can push "Total a cobrar" and the confirm button off-screen (JD, 2026-07-26).
+const LINE_ITEMS_CAP = 10;
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface PrefillItem {
@@ -186,11 +191,11 @@ function SaleConfirmWidget(): React.JSX.Element {
         <span className="text-base font-medium text-ink">{prefill.customerName}</span>
       </Field>
 
-      {/* Line items */}
+      {/* Line items — capped (see LINE_ITEMS_CAP above). */}
       <div>
         <div className="mb-1 text-sm text-ink-soft">Productos</div>
         <ul className="flex flex-col gap-2">
-          {prefill.items.map((it) => (
+          {prefill.items.slice(0, LINE_ITEMS_CAP).map((it) => (
             <li
               key={it.productId}
               className="flex items-center justify-between gap-3 rounded-control bg-surface-2 p-3"
@@ -208,6 +213,11 @@ function SaleConfirmWidget(): React.JSX.Element {
             </li>
           ))}
         </ul>
+        {prefill.items.length > LINE_ITEMS_CAP && (
+          <p className="mt-2 text-sm text-ink-soft">
+            y {prefill.items.length - LINE_ITEMS_CAP} producto{prefill.items.length - LINE_ITEMS_CAP !== 1 ? "s" : ""} más
+          </p>
+        )}
       </div>
 
       {/* Total */}
@@ -219,13 +229,23 @@ function SaleConfirmWidget(): React.JSX.Element {
         Método de pago: efectivo. El total se calcula con los precios del catálogo.
       </p>
 
+      {/* JD finding (2026-07-26): this screen fires a real register_sale mutation
+       * with zero guardrail on a $0 total — far more likely a forgotten price than
+       * an intentional freebie. Block confirm and say why, instead of registering
+       * a free sale silently. */}
+      {prefill.totalARS <= 0 && (
+        <div className="rounded-control bg-danger-surface p-3 text-sm text-danger-ink" role="alert">
+          El total es $0 — revisá los precios del catálogo antes de confirmar.
+        </div>
+      )}
+
       {errMsg && (
         <div className="rounded-control bg-danger-surface p-3 text-sm text-danger-ink" role="alert">
           {errMsg}
         </div>
       )}
 
-      <PrimaryButton disabled={submitting} onClick={onConfirm}>
+      <PrimaryButton disabled={submitting || prefill.totalARS <= 0} onClick={onConfirm}>
         {submitting ? "Registrando…" : "Confirmar venta"}
       </PrimaryButton>
     </Card>

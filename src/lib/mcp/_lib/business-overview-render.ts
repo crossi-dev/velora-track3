@@ -289,7 +289,13 @@ export function registerBusinessOverviewRenderTool(
             ventasHoy,
             ventasSemana,
             pendingCount: pendingOrders.length,
+            // Inline JD finding (2026-07-26): the amount owed and the top item to
+            // reorder were already fetched above but discarded before reaching the
+            // inline card, forcing 2 taps through fullscreen to answer "how much"
+            // / "which product" — the two questions the counts alone can't answer.
+            pendingTotalARS: pendingOrders.reduce((sum, po) => sum + po.totalARS, 0),
             lowStock,
+            topLowStockName: lowStock[0]?.name ?? null,
           },
           cliente360,
           cierreDia: {

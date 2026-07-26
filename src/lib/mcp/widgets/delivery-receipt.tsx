@@ -23,7 +23,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { SecondaryButton, Centered, StatusChip, type StatusTone } from "./_widget-primitives";
+import { SecondaryButton, Centered, ReturnHint, StatusChip, type StatusTone } from "./_widget-primitives";
 import type { UCPOrder, UCPTotal } from "../_lib/ucp-types";
 
 // ── Velora display extensions ─────────────────────────────────────────────────
@@ -61,6 +61,9 @@ function resolveTotal(totals: UCPTotal[]): number {
   const t = totals.find((x) => x.type === "total") ?? totals[0];
   return t ? t.amount : 0;
 }
+
+// Same cap convention as pending-orders.tsx's DISPLAY_CAP.
+const LINE_ITEMS_CAP = 10;
 
 function formatARS(minorUnits: number): string {
   const pesos = minorUnits / 100;
@@ -179,6 +182,7 @@ function DeliveryReceiptWidget(): React.JSX.Element {
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-5 p-5 text-ink" style={safeAreaStyle}>
+      <ReturnHint />
 
       {/* Comprobante block */}
       <section
@@ -210,12 +214,15 @@ function DeliveryReceiptWidget(): React.JSX.Element {
         <span className="text-xl font-bold tabular-nums text-ink">{formatARS(total)}</span>
       </section>
 
-      {/* Line items */}
+      {/* Line items — capped per pending-orders.tsx's DISPLAY_CAP convention.
+       * JD finding (2026-07-26): the host clips inline content that exceeds its
+       * height, it doesn't scroll it — an uncapped list here could push the
+       * envío/WhatsApp action below the clip line on any order with a few items. */}
       {detail.ucp.line_items.length > 0 && (
         <section>
           <h2 className="mb-2 text-sm font-medium text-ink-soft">Productos</h2>
           <ul className="flex flex-col gap-2">
-            {detail.ucp.line_items.map((li) => (
+            {detail.ucp.line_items.slice(0, LINE_ITEMS_CAP).map((li) => (
               <li
                 key={li.id}
                 className="flex items-center justify-between gap-2 rounded-control bg-surface-2 px-4 py-3"
@@ -229,6 +236,11 @@ function DeliveryReceiptWidget(): React.JSX.Element {
               </li>
             ))}
           </ul>
+          {detail.ucp.line_items.length > LINE_ITEMS_CAP && (
+            <p className="mt-2 text-sm text-ink-soft">
+              y {detail.ucp.line_items.length - LINE_ITEMS_CAP} producto{detail.ucp.line_items.length - LINE_ITEMS_CAP !== 1 ? "s" : ""} más
+            </p>
+          )}
         </section>
       )}
 

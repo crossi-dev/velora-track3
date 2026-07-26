@@ -58,6 +58,29 @@ export function Centered({ children }: { children: React.ReactNode }): React.JSX
   return <div className="mx-auto max-w-md p-8 text-center text-base text-ink-soft">{children}</div>;
 }
 
+// ── Return hint ──────────────────────────────────────────────────────────────
+// Discoverability nudge for widgets reached by jumping from another widget
+// (pending-orders → cobro-status → delivery-receipt, business-overview → caja-status).
+// There is NO in-widget "back" primitive in the MCP Apps SDK: the App surface
+// exposes only requestDisplayMode (inline/fullscreen/pip), requestTeardown,
+// callServerTool and sendMessage — no history/stack/goBack. Official guidance
+// treats the conversation itself as the navigation surface: "Deep navigation
+// (no drill-ins, breadcrumbs, or multiple views)" is a listed pattern to AVOID,
+// and "Fullscreen close returns to the conversation at the same scroll position"
+// (claude.com/docs/connectors/building/mcp-apps/design-guidelines). A prior
+// tool-result widget is not destroyed when a newer one renders — that is exactly
+// why the BroadcastChannel supersede pattern can still reach it — so the way back
+// is to scroll the chat up. This line just makes that discoverable; it is not a
+// custom router. Placed at the TOP because the host clips inline content past its
+// height (a bottom footer could fall below the clip line and never be seen).
+export function ReturnHint(): React.JSX.Element {
+  return (
+    <p className="text-center text-xs text-ink-soft" role="note">
+      Para volver a la vista anterior, scrolleá el chat hacia arriba.
+    </p>
+  );
+}
+
 // ── Status chip / banner ─────────────────────────────────────────────────────
 // Consolidates the ad-hoc `style={{ color: "light-dark(...)" }}` chips that
 // used to be hand-rolled per widget (caja-status, cobro-status, sale-confirm,

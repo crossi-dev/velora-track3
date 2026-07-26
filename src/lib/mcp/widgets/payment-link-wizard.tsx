@@ -57,6 +57,11 @@ function errorCopy(code: string, fallback: string): string {
 
 const ars = (n: number) => Number.isFinite(n) ? "$ " + n.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : "—";
 
+// Same cap convention as cobro-status.tsx's LINE_ITEMS_CAP — the host clips
+// overflow content instead of scrolling it, so an uncapped cart could push
+// the confirm button below the clip line.
+const CART_CAP = 10;
+
 function PaymentLinkWizard(): React.JSX.Element {
   const { app, isConnected, error } = useApp({
     appInfo: { name: "payment-link-wizard", version: "1.0.0" },
@@ -261,8 +266,9 @@ function PaymentLinkWizard(): React.JSX.Element {
 
       <div>
         <div className="mb-1 text-sm text-ink-soft">Productos</div>
+        {/* Cart capped per CART_CAP — same convention as cobro-status.tsx's LINE_ITEMS_CAP. */}
         <ul className="flex flex-col gap-2">
-          {items.map((it, i) => (
+          {items.slice(0, CART_CAP).map((it, i) => (
             <li key={it.productId} className="flex items-center justify-between gap-3 rounded-control bg-surface-2 p-3">
               <div className="min-w-0">
                 <div className="truncate text-base text-ink">{it.name}</div>
@@ -282,6 +288,11 @@ function PaymentLinkWizard(): React.JSX.Element {
             </li>
           ))}
         </ul>
+        {items.length > CART_CAP && (
+          <p className="mt-2 text-sm text-ink-soft">
+            y {items.length - CART_CAP} producto{items.length - CART_CAP !== 1 ? "s" : ""} más
+          </p>
+        )}
       </div>
 
       <Field label="Total a cobrar">

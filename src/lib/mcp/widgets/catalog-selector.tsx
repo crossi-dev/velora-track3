@@ -79,6 +79,10 @@ function stockLabel(variant: UCPVariant): string {
   return qty !== undefined ? `Stock: ${qty}` : "En stock";
 }
 
+// Same cap convention as cobro-status.tsx's LINE_ITEMS_CAP — shared by the
+// catalog product list and the selected-items list below.
+const LIST_CAP = 10;
+
 // ── Main widget ───────────────────────────────────────────────────────────────
 
 function CatalogSelector(): React.JSX.Element {
@@ -193,8 +197,9 @@ function CatalogSelector(): React.JSX.Element {
             <p className="text-sm text-ink-soft">
               Decile a Velora a qué cliente querés cobrarle y generamos el link.
             </p>
+            {/* Selected items — capped per cobro-status.tsx's LINE_ITEMS_CAP convention. */}
             <ul className="flex flex-col gap-2">
-              {selectedItems.map((p) => {
+              {selectedItems.slice(0, LIST_CAP).map((p) => {
                 const qty = quantities[p.id] ?? 0;
                 const unitAmount = p.price_range.min.amount;
                 const subtotal: UCPAmount = {
@@ -217,6 +222,11 @@ function CatalogSelector(): React.JSX.Element {
                 );
               })}
             </ul>
+            {selectedItems.length > LIST_CAP && (
+              <p className="mt-2 text-sm text-ink-soft">
+                y {selectedItems.length - LIST_CAP} producto{selectedItems.length - LIST_CAP !== 1 ? "s" : ""} más
+              </p>
+            )}
             <div className="flex items-center justify-between rounded-control bg-surface-2 p-3">
               <span className="text-base text-ink-soft">Total</span>
               <span className="text-lg font-semibold tabular-nums text-ink">{formatAmount(grandTotal)}</span>
@@ -246,8 +256,9 @@ function CatalogSelector(): React.JSX.Element {
 
   return (
     <Card title="Catálogo de productos" style={safeAreaStyle}>
+      {/* Products — capped per cobro-status.tsx's LINE_ITEMS_CAP convention. */}
       <ul className="flex flex-col gap-2">
-        {products.map((p) => {
+        {products.slice(0, LIST_CAP).map((p) => {
           const variant = p.variants[0];
           const qty = quantities[p.id] ?? 0;
           const inStock = variant?.availability.in_stock ?? false;
@@ -273,7 +284,7 @@ function CatalogSelector(): React.JSX.Element {
                   min={0}
                   inputMode="numeric"
                   disabled={!inStock}
-                  className="w-16 rounded-control border border-line bg-surface px-2 py-2 text-center text-base text-ink outline-none focus:border-accent disabled:opacity-40"
+                  className="w-16 min-h-[44px] rounded-control border border-line bg-surface px-2 py-2 text-center text-base text-ink outline-none focus:border-accent disabled:opacity-40"
                   value={qty}
                   onChange={(e) => setQty(p.id, parseInt(e.target.value, 10))}
                 />
@@ -282,6 +293,11 @@ function CatalogSelector(): React.JSX.Element {
           );
         })}
       </ul>
+      {products.length > LIST_CAP && (
+        <p className="mt-2 text-sm text-ink-soft">
+          y {products.length - LIST_CAP} producto{products.length - LIST_CAP !== 1 ? "s" : ""} más
+        </p>
+      )}
 
       {selectedItems.length > 0 && (
         <div className="text-sm text-ink-soft">

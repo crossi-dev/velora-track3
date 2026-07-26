@@ -68,6 +68,9 @@ function formatWeight(grams: number): string {
   return grams >= 1000 ? `${(grams / 1000).toLocaleString("es-AR", { maximumFractionDigits: 2 })} kg` : `${grams} g`;
 }
 
+// Same cap convention as cobro-status.tsx's LINE_ITEMS_CAP / pending-orders.tsx's DISPLAY_CAP.
+const LIST_CAP = 10;
+
 // ── Main widget ───────────────────────────────────────────────────────────────
 
 function ShipmentPrepWidget(): React.JSX.Element {
@@ -123,7 +126,7 @@ function ShipmentPrepWidget(): React.JSX.Element {
       <section aria-label="Productos">
         <h2 className="mb-2 text-sm font-medium text-ink-soft">Productos</h2>
         <ul className="flex flex-col gap-2">
-          {items.map((it, idx) => (
+          {items.slice(0, LIST_CAP).map((it, idx) => (
             <li
               key={`${it.productId}:${idx}`}
               className="flex items-center justify-between gap-3 rounded-control bg-surface-2 p-3"
@@ -144,6 +147,11 @@ function ShipmentPrepWidget(): React.JSX.Element {
             </li>
           ))}
         </ul>
+        {items.length > LIST_CAP && (
+          <p className="mt-2 text-sm text-ink-soft">
+            y {items.length - LIST_CAP} producto{items.length - LIST_CAP !== 1 ? "s" : ""} más
+          </p>
+        )}
         {anyInsufficientStock && (
           <p className="mt-2 text-sm text-danger-ink" role="alert">
             Algunos productos no tienen stock suficiente para esta cantidad.
@@ -177,7 +185,7 @@ function ShipmentPrepWidget(): React.JSX.Element {
           </div>
         ) : (
           <ul className="flex flex-col gap-2">
-            {shipping.options.map((opt, idx) => (
+            {shipping.options.slice(0, LIST_CAP).map((opt, idx) => (
               <li
                 key={`${opt.provider}:${opt.service}:${idx}`}
                 className="flex items-center justify-between gap-3 rounded-control bg-surface-2 p-3"
@@ -199,6 +207,11 @@ function ShipmentPrepWidget(): React.JSX.Element {
               </li>
             ))}
           </ul>
+        )}
+        {shipping.options.length > LIST_CAP && (
+          <p className="mt-2 text-sm text-ink-soft">
+            y {shipping.options.length - LIST_CAP} opci{shipping.options.length - LIST_CAP !== 1 ? "ones" : "ón"} más
+          </p>
         )}
       </section>
     </Card>
