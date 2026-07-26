@@ -150,7 +150,7 @@ export const defaultCopyEn: LandingCopy = {
       },
       {
         q: "Where can I use Velora?",
-        a: "From your Claude, ChatGPT or Gemini, via the open MCP standard — connect them today with the public endpoint (Gemini connects directly today, no directory needed; official ChatGPT and Claude directory listings are on the way). You can also go straight in through the Velora App (available now, sign in with Google). Same business from any of the four.",
+        a: "From your Claude or ChatGPT, via the open MCP standard — connect them today with the public endpoint; official directory listings are on the way. Gemini also connects today, directly and with no directory needed (see Integrations). You can also go straight in through the Velora App (available now, sign in with Google). Same business from whichever you use.",
       },
       {
         q: "Are the chat widgets real?",

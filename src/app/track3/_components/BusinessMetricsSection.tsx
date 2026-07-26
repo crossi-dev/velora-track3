@@ -235,8 +235,8 @@ export function BusinessMetricsSection() {
       <div style={s.card}>
         <p style={s.cardTitle}>Google always in the equation</p>
         <p style={s.p}>
-          Whichever door the customer enters through — the Velora App, ChatGPT, Claude, or
-          Gemini — every action executes on Google Cloud: Gemini inference on Vertex AI, compute
+          Whichever door the customer enters through — Claude, ChatGPT, Gemini, or the Velora
+          App — every action executes on Google Cloud: Gemini inference on Vertex AI, compute
           on Cloud Run, distribution through Google Cloud Marketplace. Velora&apos;s
           competitors&apos; AI surfaces become acquisition channels for Google compute. Every sale
           registered via an external MCP client, every invoice emitted through a third-party
