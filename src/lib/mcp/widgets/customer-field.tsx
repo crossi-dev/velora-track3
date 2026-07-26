@@ -84,7 +84,7 @@ export function CustomerField({
               type="button"
               onClick={onSearch}
               disabled={searchingCustomer || !customerQuery.trim()}
-              className="rounded-control bg-accent px-3 py-2 text-sm font-medium text-on-accent disabled:opacity-60"
+              className="rounded-control bg-brand px-3 py-2 text-sm font-medium text-on-brand disabled:opacity-60"
             >
               {searchingCustomer ? "…" : "Buscar"}
             </button>

@@ -28,7 +28,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
 import { CustomerField, type CustomerMatch } from "./customer-field";
-import { Card, Field, PrimaryButton, SecondaryButton, Centered, ReturnHint } from "./_widget-primitives";
+import { Card, Field, PrimaryButton, SecondaryButton, Centered, ReturnHint, SupersededNotice } from "./_widget-primitives";
 
 interface PrefillItem {
   productId: string;
@@ -43,6 +43,12 @@ interface Prefill {
   customerName?: string;
   items: PrefillItem[];
   totalARS: number;
+  /** Server-assigned render timestamp (epoch ms), used ONLY as the widget
+   * instance-supersession election key (claude.com/docs/connectors/building/
+   * mcp-apps/instance-supersession) — NOT a business date. Optional because an
+   * unpatched server degrades to "no supersession" instead of crashing;
+   * guarded with Number.isFinite below. */
+  createdAt?: number;
 }
 
 function errorCopy(code: string, fallback: string): string {
@@ -87,6 +93,54 @@ function PaymentLinkWizard(): React.JSX.Element {
   const [errMsg, setErrMsg] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const idempotencyKey = useRef<string>(crypto.randomUUID());
+  const [superseded, setSuperseded] = useState(false);
+
+  // Widget instance supersession (claude.com/docs/connectors/building/mcp-apps/
+  // instance-supersession) — this widget fires a REAL money mutation
+  // (create_tracked_payment_link). If the owner re-opens the same cobro
+  // mid-conversation, only the newest copy should stay interactive — an older
+  // copy must not also confirm the link. Same election pattern as
+  // cobro-status.tsx / delivery-receipt.tsx. Channel is scoped per-conversation
+  // by default (no fixed _meta.ui.domain set on this resource).
+  const instanceIdRef = useRef<string>(crypto.randomUUID());
+  const orderKeyRef = useRef<number | undefined>(undefined);
+  const keyFinalizedRef = useRef(false);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const peersRef = useRef(new Map<string, { orderKey: number; instanceId: string }>());
+
+  useEffect(() => {
+    const channel = new BroadcastChannel("velora-payment-link-wizard-supersede");
+    channelRef.current = channel;
+    const instanceId = instanceIdRef.current;
+
+    function isYounger(other: { orderKey: number; instanceId: string }) {
+      if (!keyFinalizedRef.current || orderKeyRef.current == null) return false;
+      if (other.orderKey !== orderKeyRef.current) return other.orderKey > orderKeyRef.current!;
+      return other.instanceId > instanceId;
+    }
+
+    channel.onmessage = (ev) => {
+      const msg = ev.data as { type?: string; instanceId?: string; orderKey?: number } | undefined;
+      if (!msg?.instanceId || msg.instanceId === instanceId || !keyFinalizedRef.current) return;
+      if (msg.type === "hello") {
+        channel.postMessage({ type: "born", instanceId, orderKey: orderKeyRef.current });
+      }
+      if (Number.isFinite(msg.orderKey)) {
+        peersRef.current.set(msg.instanceId, { orderKey: msg.orderKey!, instanceId: msg.instanceId });
+        setSuperseded([...peersRef.current.values()].some(isYounger));
+      }
+    };
+
+    return () => channel.close();
+  }, []);
+
+  function announceInstance() {
+    const channel = channelRef.current;
+    if (!channel || orderKeyRef.current == null) return;
+    const instanceId = instanceIdRef.current;
+    channel.postMessage({ type: "hello", instanceId, orderKey: orderKeyRef.current });
+    channel.postMessage({ type: "born", instanceId, orderKey: orderKeyRef.current });
+  }
 
   useEffect(() => {
     if (!app) return;
@@ -100,6 +154,11 @@ function PaymentLinkWizard(): React.JSX.Element {
       setItems(args.items ?? []);
       setCustomerId(args.customerId ?? "");
       setCustomerName(args.customerName ?? "Cliente sin nombre");
+      if (Number.isFinite(args.createdAt)) {
+        orderKeyRef.current = args.createdAt;
+        keyFinalizedRef.current = true;
+        announceInstance();
+      }
     };
     app.ontoolresult = (params) => apply(params);
   }, [app]);
@@ -161,7 +220,7 @@ function PaymentLinkWizard(): React.JSX.Element {
   function onCancelPicker() { setPickingCustomer(false); setCustomerQuery(""); setCustomerMatches([]); setCustomerSearchError(null); }
 
   async function onConfirm() {
-    if (!app || !prefill) return;
+    if (!app || !prefill || superseded) return;
     setSubmitting(true);
     setErrMsg(null);
     try {
@@ -251,7 +310,7 @@ function PaymentLinkWizard(): React.JSX.Element {
 
   return (
     <Card title="Revisá el cobro" style={safeAreaStyle}>
-      <ReturnHint />
+      {superseded ? <SupersededNotice /> : <ReturnHint />}
       <CustomerField
         customerName={customerName}
         pickingCustomer={pickingCustomer}
@@ -307,7 +366,7 @@ function PaymentLinkWizard(): React.JSX.Element {
       )}
       {errMsg && <div className="rounded-control bg-danger-surface p-3 text-sm text-danger-ink" role="alert">{errMsg}</div>}
       {/* SAFETY: confirm is blocked until a customer is selected — charging without a customer is not allowed. */}
-      <PrimaryButton disabled={submitting || !customerId} onClick={onConfirm}>
+      <PrimaryButton disabled={submitting || superseded || !customerId} onClick={onConfirm}>
         {submitting ? "Generando…" : "Confirmar y generar link"}
       </PrimaryButton>
     </Card>

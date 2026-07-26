@@ -78,7 +78,10 @@ export async function handleOpenPaymentLinkWizard(businessId: string, args: Open
   return {
     content: [{ type: "text", text: "Abrí el asistente de cobro para revisar y confirmar." }],
     structuredContent: {
-      prefill: result.prefill,
+      // createdAt is the instance-supersession election key (Velora display
+      // extension, not a business date) — same convention as
+      // cobro-status-render.ts / delivery-receipt-render.ts.
+      prefill: { ...result.prefill, createdAt: Date.now() },
     },
   };
 }

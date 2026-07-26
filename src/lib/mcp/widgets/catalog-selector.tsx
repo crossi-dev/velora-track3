@@ -19,10 +19,10 @@
 //
 // CSP: no `allowUnsafeEval`. Do NOT add it without a CSP audit.
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { Card, PrimaryButton, SecondaryButton, Centered } from "./_widget-primitives";
+import { Card, PrimaryButton, SecondaryButton, Centered, SupersededNotice } from "./_widget-primitives";
 
 // ── Cobrar action state ───────────────────────────────────────────────────────
 // open_payment_link_wizard input item shape (matches WIZARD_ITEM_SCHEMA in payments-tools.ts)
@@ -60,6 +60,12 @@ interface UCPProduct {
 
 interface Prefill {
   products: UCPProduct[];
+  /** Server-assigned render timestamp (epoch ms), used ONLY as the widget
+   * instance-supersession election key (claude.com/docs/connectors/building/
+   * mcp-apps/instance-supersession) — NOT a business date. Optional because an
+   * unpatched server degrades to "no supersession" instead of crashing;
+   * guarded with Number.isFinite below. */
+  createdAt?: number;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -99,6 +105,55 @@ function CatalogSelector(): React.JSX.Element {
   const [toolResultReceived, setToolResultReceived] = useState(false);
   const [openingWizard, setOpeningWizard] = useState(false);
   const [wizardErrMsg, setWizardErrMsg] = useState<string | null>(null);
+  const [superseded, setSuperseded] = useState(false);
+
+  // Widget instance supersession (claude.com/docs/connectors/building/mcp-apps/
+  // instance-supersession) — this widget's confirm step opens the payment-link
+  // wizard (open_payment_link_wizard) on the owner's behalf. If the owner
+  // re-opens the same catalog selector mid-conversation, only the newest copy
+  // should stay interactive — an older copy must not also open its own wizard
+  // instance. Same election pattern as cobro-status.tsx / delivery-receipt.tsx.
+  // Channel is scoped per-conversation by default (no fixed _meta.ui.domain set
+  // on this resource).
+  const instanceIdRef = useRef<string>(crypto.randomUUID());
+  const orderKeyRef = useRef<number | undefined>(undefined);
+  const keyFinalizedRef = useRef(false);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const peersRef = useRef(new Map<string, { orderKey: number; instanceId: string }>());
+
+  useEffect(() => {
+    const channel = new BroadcastChannel("velora-catalog-selector-supersede");
+    channelRef.current = channel;
+    const instanceId = instanceIdRef.current;
+
+    function isYounger(other: { orderKey: number; instanceId: string }) {
+      if (!keyFinalizedRef.current || orderKeyRef.current == null) return false;
+      if (other.orderKey !== orderKeyRef.current) return other.orderKey > orderKeyRef.current!;
+      return other.instanceId > instanceId;
+    }
+
+    channel.onmessage = (ev) => {
+      const msg = ev.data as { type?: string; instanceId?: string; orderKey?: number } | undefined;
+      if (!msg?.instanceId || msg.instanceId === instanceId || !keyFinalizedRef.current) return;
+      if (msg.type === "hello") {
+        channel.postMessage({ type: "born", instanceId, orderKey: orderKeyRef.current });
+      }
+      if (Number.isFinite(msg.orderKey)) {
+        peersRef.current.set(msg.instanceId, { orderKey: msg.orderKey!, instanceId: msg.instanceId });
+        setSuperseded([...peersRef.current.values()].some(isYounger));
+      }
+    };
+
+    return () => channel.close();
+  }, []);
+
+  function announceInstance() {
+    const channel = channelRef.current;
+    if (!channel || orderKeyRef.current == null) return;
+    const instanceId = instanceIdRef.current;
+    channel.postMessage({ type: "hello", instanceId, orderKey: orderKeyRef.current });
+    channel.postMessage({ type: "born", instanceId, orderKey: orderKeyRef.current });
+  }
 
   useEffect(() => {
     if (!app) return;
@@ -118,6 +173,11 @@ function CatalogSelector(): React.JSX.Element {
       for (const p of list) initial[p.id] = 0;
       setQuantities(initial);
       setConfirmed(false);
+      if (Number.isFinite(args.createdAt)) {
+        orderKeyRef.current = args.createdAt;
+        keyFinalizedRef.current = true;
+        announceInstance();
+      }
     };
     app.ontoolresult = (params) => apply(params);
   }, [app]);
@@ -140,7 +200,7 @@ function CatalogSelector(): React.JSX.Element {
   // Map selected items to the wizard's expected item shape (productId + quantity).
   // The wizard resolves prices server-side (NABAOS) — we send IDs only.
   async function onCobrarCliente() {
-    if (!app || selectedItems.length === 0) return;
+    if (!app || selectedItems.length === 0 || superseded) return;
     setOpeningWizard(true);
     setWizardErrMsg(null);
     const wizardItems: WizardItem[] = selectedItems.map((p) => ({
@@ -190,6 +250,7 @@ function CatalogSelector(): React.JSX.Element {
   if (confirmed) {
     return (
       <Card title="Selección lista" style={safeAreaStyle}>
+        {superseded && <SupersededNotice />}
         {selectedItems.length === 0 ? (
           <p className="text-base text-ink-soft">No seleccionaste ningún producto.</p>
         ) : (
@@ -244,7 +305,7 @@ function CatalogSelector(): React.JSX.Element {
               <p className="text-sm text-danger-ink" role="alert">{wizardErrMsg}</p>
             )}
             {/* Cobrar: opens payment-link wizard without a customer — the owner picks one in-widget */}
-            <PrimaryButton disabled={openingWizard} onClick={onCobrarCliente}>
+            <PrimaryButton disabled={openingWizard || superseded} onClick={onCobrarCliente}>
               {openingWizard ? "Abriendo…" : "Cobrar a cliente"}
             </PrimaryButton>
           </>

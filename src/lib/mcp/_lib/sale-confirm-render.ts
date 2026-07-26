@@ -198,7 +198,10 @@ export function registerSaleConfirmRenderTool(
 
         return {
           content: [{ type: "text" as const, text: JSON.stringify(prefill) }],
-          structuredContent: { prefill },
+          // createdAt is the instance-supersession election key (Velora display
+          // extension, not a business date) — same convention as
+          // cobro-status-render.ts / delivery-receipt-render.ts.
+          structuredContent: { prefill: { ...prefill, createdAt: Date.now() } },
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";

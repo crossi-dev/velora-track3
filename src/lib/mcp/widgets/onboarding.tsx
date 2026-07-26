@@ -179,7 +179,12 @@ function OnboardingHub(): React.JSX.Element {
                 <button
                   type="button"
                   onClick={() => handleOpenLink(item.connectUrl)}
-                  className="shrink-0 rounded-control border border-line bg-surface px-3 py-1.5 text-sm font-medium text-ink"
+                  // min-h-[44px]: touch-target minimum (same convention as the
+                  // quantity inputs in catalog-selector.tsx). Focus/hover/motion
+                  // classes mirror _widget-primitives.tsx's shared INTERACTIVE +
+                  // SecondaryButton hover treatment so this row action behaves
+                  // like every other button in the Velora widgets.
+                  className="flex min-h-[44px] shrink-0 items-center justify-center rounded-control border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-[background-color,border-color,opacity,transform] duration-[var(--widget-duration)] ease-[var(--widget-ease)] hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.98]"
                 >
                   Conectar
                 </button>

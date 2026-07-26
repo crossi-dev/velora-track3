@@ -187,7 +187,10 @@ export function registerVentasTools(
         const products = raw.map(toUCPProduct);
         return {
           content: [{ type: "text" as const, text: JSON.stringify({ products, total: products.length }) }],
-          structuredContent: { prefill: { products } },
+          // createdAt is the instance-supersession election key (Velora display
+          // extension, not a business date) — same convention as
+          // cobro-status-render.ts / delivery-receipt-render.ts.
+          structuredContent: { prefill: { products, createdAt: Date.now() } },
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";

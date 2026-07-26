@@ -38,7 +38,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { Card, Field, PrimaryButton, SecondaryButton, Centered } from "./_widget-primitives";
+import { Card, Field, PrimaryButton, SecondaryButton, Centered, SupersededNotice } from "./_widget-primitives";
 
 // Same cap convention as pending-orders.tsx's DISPLAY_CAP — the host clips
 // (doesn't scroll) inline content past its height, so an uncapped item list
@@ -62,6 +62,12 @@ interface Prefill {
   customerName: string;
   customerPhone: string | null;
   totalARS: number;
+  /** Server-assigned render timestamp (epoch ms), used ONLY as the widget
+   * instance-supersession election key (claude.com/docs/connectors/building/
+   * mcp-apps/instance-supersession) — NOT a business date. Optional because an
+   * unpatched server degrades to "no supersession" instead of crashing;
+   * guarded with Number.isFinite below. */
+  createdAt?: number;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -106,6 +112,54 @@ function SaleConfirmWidget(): React.JSX.Element {
   const [paymentMethod, setPaymentMethod] = useState<PaymentChoice>("efectivo");
   const [submitting, setSubmitting] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
+  const [superseded, setSuperseded] = useState(false);
+
+  // Widget instance supersession (claude.com/docs/connectors/building/mcp-apps/
+  // instance-supersession) — this widget fires REAL money mutations
+  // (register_sale, create_tracked_payment_link). If the owner re-asks for the
+  // same sale mid-conversation, only the newest copy should stay interactive —
+  // an older copy must not also fire the mutation. Same election pattern as
+  // cobro-status.tsx / delivery-receipt.tsx. Channel is scoped per-conversation
+  // by default (no fixed _meta.ui.domain set on this resource).
+  const instanceIdRef = useRef<string>(crypto.randomUUID());
+  const orderKeyRef = useRef<number | undefined>(undefined);
+  const keyFinalizedRef = useRef(false);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const peersRef = useRef(new Map<string, { orderKey: number; instanceId: string }>());
+
+  useEffect(() => {
+    const channel = new BroadcastChannel("velora-sale-confirm-supersede");
+    channelRef.current = channel;
+    const instanceId = instanceIdRef.current;
+
+    function isYounger(other: { orderKey: number; instanceId: string }) {
+      if (!keyFinalizedRef.current || orderKeyRef.current == null) return false;
+      if (other.orderKey !== orderKeyRef.current) return other.orderKey > orderKeyRef.current!;
+      return other.instanceId > instanceId;
+    }
+
+    channel.onmessage = (ev) => {
+      const msg = ev.data as { type?: string; instanceId?: string; orderKey?: number } | undefined;
+      if (!msg?.instanceId || msg.instanceId === instanceId || !keyFinalizedRef.current) return;
+      if (msg.type === "hello") {
+        channel.postMessage({ type: "born", instanceId, orderKey: orderKeyRef.current });
+      }
+      if (Number.isFinite(msg.orderKey)) {
+        peersRef.current.set(msg.instanceId, { orderKey: msg.orderKey!, instanceId: msg.instanceId });
+        setSuperseded([...peersRef.current.values()].some(isYounger));
+      }
+    };
+
+    return () => channel.close();
+  }, []);
+
+  function announceInstance() {
+    const channel = channelRef.current;
+    if (!channel || orderKeyRef.current == null) return;
+    const instanceId = instanceIdRef.current;
+    channel.postMessage({ type: "hello", instanceId, orderKey: orderKeyRef.current });
+    channel.postMessage({ type: "born", instanceId, orderKey: orderKeyRef.current });
+  }
 
   // Cash branch state.
   const [confirmed, setConfirmed] = useState(false);
@@ -133,13 +187,18 @@ function SaleConfirmWidget(): React.JSX.Element {
       const raw = (params.structuredContent ?? params.arguments ?? {}) as { prefill?: Prefill } & Prefill;
       const args = (raw.prefill ?? raw) as Prefill;
       setPrefill(args);
+      if (Number.isFinite(args.createdAt)) {
+        orderKeyRef.current = args.createdAt;
+        keyFinalizedRef.current = true;
+        announceInstance();
+      }
     };
     app.ontoolresult = (params) => apply(params);
   }, [app]);
 
   // ── Cash branch: register_sale ────────────────────────────────────────────
   const onConfirm = useCallback(async () => {
-    if (!app || !prefill) return;
+    if (!app || !prefill || superseded) return;
     setSubmitting(true);
     setErrMsg(null);
     try {
@@ -182,7 +241,7 @@ function SaleConfirmWidget(): React.JSX.Element {
     } finally {
       setSubmitting(false);
     }
-  }, [app, prefill]);
+  }, [app, prefill, superseded]);
 
   // ── QR branch: create_tracked_payment_link ────────────────────────────────
   // Same write tool the payment-link wizard confirms with. Records Sale+Invoice+
@@ -190,7 +249,7 @@ function SaleConfirmWidget(): React.JSX.Element {
   // Blocked (button disabled) when there is no customer — the backend rejects
   // anonymous cobros, so we never fire a call that is guaranteed to fail.
   const onGenerateLink = useCallback(async () => {
-    if (!app || !prefill || !prefill.customerId) return;
+    if (!app || !prefill || !prefill.customerId || superseded) return;
     setSubmitting(true);
     setErrMsg(null);
     try {
@@ -230,7 +289,7 @@ function SaleConfirmWidget(): React.JSX.Element {
     } finally {
       setSubmitting(false);
     }
-  }, [app, prefill]);
+  }, [app, prefill, superseded]);
 
   // Carlos (2026-07-26): the confirmed screen previously left the customer with
   // nothing — no receipt, no confirmation on their end, even though a phone was
@@ -422,6 +481,7 @@ function SaleConfirmWidget(): React.JSX.Element {
 
   return (
     <Card title="Confirmar venta" style={safeAreaStyle}>
+      {superseded && <SupersededNotice />}
       {/* Customer */}
       <Field label="Cliente">
         <span className="text-base font-medium text-ink">{prefill.customerName}</span>
@@ -515,11 +575,11 @@ function SaleConfirmWidget(): React.JSX.Element {
       )}
 
       {paymentMethod === "efectivo" ? (
-        <PrimaryButton disabled={submitting || prefill.totalARS <= 0} onClick={onConfirm}>
+        <PrimaryButton disabled={submitting || superseded || prefill.totalARS <= 0} onClick={onConfirm}>
           {submitting ? "Registrando…" : "Confirmar venta"}
         </PrimaryButton>
       ) : (
-        <PrimaryButton disabled={submitting || prefill.totalARS <= 0 || !hasCustomer} onClick={onGenerateLink}>
+        <PrimaryButton disabled={submitting || superseded || prefill.totalARS <= 0 || !hasCustomer} onClick={onGenerateLink}>
           {submitting ? "Generando…" : "Generar link de cobro"}
         </PrimaryButton>
       )}
