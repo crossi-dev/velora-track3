@@ -86,7 +86,7 @@ steps:
       # probe checking an external dependency would restart the container on a
       # transient DB blip, which doesn't fix the DB and just adds a restart storm
       # on top of an outage. Startup probe safely delays traffic until genuinely ready.
-      - --startup-probe=httpGet.path=/api/health,httpGet.port=8080,timeoutSeconds=10,periodSeconds=5,failureThreshold=6
+      - --startup-probe=httpGet.path=/api/health,httpGet.port=8080,timeoutSeconds=5,periodSeconds=10,failureThreshold=6
       - --project=$PROJECT_ID
       # Explicit — Cloud Run "no flag = keep prior revision's value" previously made
       # this work by accident (a pre-existing manual deploy had set it); relying on
@@ -159,7 +159,7 @@ steps:
       - --concurrency=80
       - --port=8080
       - --cpu-boost
-      - --startup-probe=httpGet.path=/api/health,httpGet.port=8080,timeoutSeconds=10,periodSeconds=5,failureThreshold=6
+      - --startup-probe=httpGet.path=/api/health,httpGet.port=8080,timeoutSeconds=5,periodSeconds=10,failureThreshold=6
       - --project=$PROJECT_ID
       # Run as velora-runtime (same SA as the velora service) — it already holds
       # secretAccessor on every secret below. A new service defaults to the compute
