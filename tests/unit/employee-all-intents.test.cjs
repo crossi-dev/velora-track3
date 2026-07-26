@@ -4,8 +4,8 @@
  * Two groups:
  *   A) ALLOWED intents — handler executes and returns a valid response (same
  *      handlers as owner; role check is upstream in gateIntentByRole, not inside).
- *   B) BLOCKED intents — isIntentAllowedForRole("employee", intent) === false
- *      AND buildEmployeeRefusal returns a warm message (no "permiso denegado").
+ *   B) BLOCKED intents — isIntentAllowedForRole("companion", intent) === false
+ *      AND buildCompanionRefusal returns a warm message (no "permiso denegado").
  */
 
 "use strict";
@@ -61,7 +61,7 @@ const { handleBusinessQuery } = require("../../src/app/api/business-assistant/_l
 const { handleReportEvent } = require("../../src/app/api/business-assistant/_lib/intent-handlers/event-report.ts");
 
 // RBAC gate helpers
-const { isIntentAllowedForRole, buildEmployeeRefusal } = require("../../src/app/api/business-assistant/_lib/intent-permissions.ts");
+const { isIntentAllowedForRole, buildCompanionRefusal } = require("../../src/app/api/business-assistant/_lib/intent-permissions.ts");
 
 // Remove injected stubs after all real modules are loaded; functions retain
 // references via closure so removing cache entries doesn't affect them.
@@ -136,11 +136,11 @@ function assertWarmRefusal(refusal, intent) {
 
 // ─── register_sale ──────────────────────────────────────────────────────────
 
-test("employee/register_sale: isIntentAllowedForRole → true", () => {
-  assert.ok(isIntentAllowedForRole("employee", "register_sale"), "register_sale must be allowed for employee");
+test("companion/register_sale: isIntentAllowedForRole → true", () => {
+  assert.ok(isIntentAllowedForRole("companion", "register_sale"), "register_sale must be allowed for employee");
 });
 
-test("employee/register_sale: handler executes and returns sale draft", async () => {
+test("companion/register_sale: handler executes and returns sale draft", async () => {
   // Must include matchedProductId resolved to a real catalog entry.
   // The handler's money-path guard rejects sales with null/hallucinated IDs
   // (added alongside saleDraft pre-confirm logic — null ID → clarification,
@@ -160,11 +160,11 @@ test("employee/register_sale: handler executes and returns sale draft", async ()
 
 // ─── stock_load ─────────────────────────────────────────────────────────────
 
-test("employee/stock_load: isIntentAllowedForRole → true", () => {
-  assert.ok(isIntentAllowedForRole("employee", "stock_load"), "stock_load must be allowed for employee");
+test("companion/stock_load: isIntentAllowedForRole → true", () => {
+  assert.ok(isIntentAllowedForRole("companion", "stock_load"), "stock_load must be allowed for employee");
 });
 
-test("employee/stock_load: handler executes and returns primaryAction", async () => {
+test("companion/stock_load: handler executes and returns primaryAction", async () => {
   const r = handleStockLoad(makeParams({
     safeIntent: "stock_load",
     parsed: {
@@ -178,11 +178,11 @@ test("employee/stock_load: handler executes and returns primaryAction", async ()
 
 // ─── business_query ──────────────────────────────────────────────────────────
 
-test("employee/business_query: isIntentAllowedForRole → true", () => {
-  assert.ok(isIntentAllowedForRole("employee", "business_query"), "business_query must be allowed for employee");
+test("companion/business_query: isIntentAllowedForRole → true", () => {
+  assert.ok(isIntentAllowedForRole("companion", "business_query"), "business_query must be allowed for employee");
 });
 
-test("employee/business_query: stock query returns answer", async () => {
+test("companion/business_query: stock query returns answer", async () => {
   const r = handleBusinessQuery(makeParams({
     safeIntent: "business_query",
     text: "qué hay en stock",
@@ -195,11 +195,11 @@ test("employee/business_query: stock query returns answer", async () => {
 
 // ─── report_event ─────────────────────────────────────────────────────────────
 
-test("employee/report_event: isIntentAllowedForRole → true", () => {
-  assert.ok(isIntentAllowedForRole("employee", "report_event"), "report_event must be allowed for employee");
+test("companion/report_event: isIntentAllowedForRole → true", () => {
+  assert.ok(isIntentAllowedForRole("companion", "report_event"), "report_event must be allowed for employee");
 });
 
-test("employee/report_event: handler executes, no primaryAction", async () => {
+test("companion/report_event: handler executes, no primaryAction", async () => {
   const r = handleReportEvent(makeParams({
     safeIntent: "report_event",
     parsed: {
@@ -213,8 +213,8 @@ test("employee/report_event: handler executes, no primaryAction", async () => {
 
 // ─── answer (conversational) ──────────────────────────────────────────────────
 
-test("employee/answer: isIntentAllowedForRole → true", () => {
-  assert.ok(isIntentAllowedForRole("employee", "answer"), "answer must always be allowed");
+test("companion/answer: isIntentAllowedForRole → true", () => {
+  assert.ok(isIntentAllowedForRole("companion", "answer"), "answer must always be allowed");
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -238,16 +238,16 @@ const OWNER_ONLY = [
 ];
 
 for (const intent of OWNER_ONLY) {
-  test(`employee/${intent}: isIntentAllowedForRole("employee") → false`, () => {
+  test(`companion/${intent}: isIntentAllowedForRole("companion") → false`, () => {
     assert.equal(
-      isIntentAllowedForRole("employee", intent),
+      isIntentAllowedForRole("companion", intent),
       false,
       `${intent} must be blocked for employee`
     );
   });
 
-  test(`employee/${intent}: buildEmployeeRefusal → warm message`, () => {
-    const refusal = buildEmployeeRefusal(intent);
+  test(`companion/${intent}: buildCompanionRefusal → warm message`, () => {
+    const refusal = buildCompanionRefusal(intent);
     assertWarmRefusal(refusal, intent);
   });
 }

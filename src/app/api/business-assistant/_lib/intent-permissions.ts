@@ -1,4 +1,4 @@
-// RBAC layer del agente Empleado — gating de intents según rol del actor.
+// RBAC layer del agente Companion — gating de intents según rol del actor.
 //
 // Defense-in-depth: los endpoints downstream también deben gatear con
 // assertRole (resolve-actor.ts). Esto es la primera línea — no la única.
@@ -19,21 +19,21 @@ export function isIntentAllowedForRole(
   return canRoleExecuteIntent(role, intent);
 }
 
-export interface EmployeeRefusal {
+export interface CompanionRefusal {
   answer: string;
   inputHint?: string;
   forbiddenIntent: AssistantIntent;
 }
 
 /**
- * Construye respuesta cálida para cuando un empleado pide algo que sólo
+ * Construye respuesta cálida para cuando el companion pide algo que sólo
  * puede hacer el dueño. Tono = compañero de turno (warm, no condescending).
  *
  * El mensaje propone la acción concreta: "avisale al dueño" o "el dueño
  * lo carga desde su panel". Evita lenguaje burocrático ("permiso denegado",
  * "no autorizado") que rompe la sensación del demo.
  */
-export function buildEmployeeRefusal(intent: AssistantIntent): EmployeeRefusal {
+export function buildCompanionRefusal(intent: AssistantIntent): CompanionRefusal {
   switch (intent) {
     case "edit_product":
     case "bulk_price_update":
@@ -122,10 +122,10 @@ export function buildEmployeeRefusal(intent: AssistantIntent): EmployeeRefusal {
 /**
  * Gate de alto nivel — chequea si el actor tiene permiso para el intent
  * resuelto. Si no, retorna un NextResponse 200 con la respuesta cálida del
- * Empleado. Si pasa, retorna null y el caller continua al dispatch.
+ * Companion. Si pasa, retorna null y el caller continua al dispatch.
  *
  * Logea en nivel info (no warning) — los rebotes RBAC son normales
- * en operación; un empleado preguntándole al chat por un cambio de precio
+ * en operación; el companion preguntándole al chat por un cambio de precio
  * es esperable, no es un incidente de seguridad.
  */
 interface RbacGateOptions {
@@ -139,7 +139,7 @@ interface RbacGateOptions {
 export function gateIntentByRole(opts: RbacGateOptions): NextResponse | null {
   if (opts.intent === "answer") return null;
   if (isIntentAllowedForRole(opts.role, opts.intent)) return null;
-  const refusal = buildEmployeeRefusal(opts.intent as AssistantIntent);
+  const refusal = buildCompanionRefusal(opts.intent as AssistantIntent);
   opts.trace.add("rbac", `blocked intent=${opts.intent} role=${opts.role}`);
   cloudLog({
     severity: "INFO",

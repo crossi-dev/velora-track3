@@ -6,7 +6,7 @@
 
 import { NextResponse } from "next/server";
 import { cloudLog, logUnauthorizedAccess } from "@/lib/cloud-logger";
-import { buildEmployeeRefusal, gateIntentByRole } from "../intent-permissions";
+import { buildCompanionRefusal, gateIntentByRole } from "../intent-permissions";
 import { resolveCustomerCreateRequest } from "../handlers/customers";
 import { executeInvoice, executePurchaseRequest } from "./execute-invoice-and-purchase";
 import { executeCobroQr } from "../handlers/cobro-qr-handler";
@@ -178,7 +178,7 @@ function executeDeleteSaleItemEscalation(): NextResponse {
 }
 
 function executeUndo(intent: UndoIntent, params: PreModelIntentParams): NextResponse {
-  // RBAC custom — undo tiene mensaje específico (no usa buildEmployeeRefusal).
+  // RBAC custom — undo tiene mensaje específico (no usa buildCompanionRefusal).
   if (params.actorRole !== "owner") {
     logUnauthorizedAccess({
       attemptedAction: `undo:${intent.target}`,
@@ -285,8 +285,8 @@ function executeSinglePriceEdit(params: PreModelIntentParams): NextResponse | nu
   if (params.actorRole === "owner") {
     return null;
   }
-  // Employee → warm reject canónico.
-  const refusal = buildEmployeeRefusal("edit_product");
+  // Companion → warm reject canónico.
+  const refusal = buildCompanionRefusal("edit_product");
   logUnauthorizedAccess({
     attemptedAction: "edit_product",
     actorRole: params.actorRole,

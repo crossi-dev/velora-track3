@@ -7,13 +7,11 @@
 // to any location that has diverged.
 //
 // Employee role removed (0 rows in production, Stage 1 cleanup; Stage 2
-// removed the remaining owner/employee branches from shared code). The
-// legacy companion-agent RPC path (src/app/api/agents/companion/**,
-// rbac-policy.ts) still models an "employee" actor kind as a plain string —
-// that subsystem has no live caller from the owner path and was left
-// untouched here; canRoleExecuteIntent()'s parameter is typed `string`
-// (not `Role`) so it stays compatible with that legacy caller without
-// reintroducing "employee" into the canonical Role type.
+// removed the remaining owner/employee branches from shared code). The live
+// companion-agent RPC path (src/app/api/agents/companion/**, rbac-policy.ts)
+// models a "companion" actor kind as a plain string; canRoleExecuteIntent()'s
+// parameter is typed `string` (not `Role`) so it stays compatible with that
+// caller without reintroducing "companion" into the canonical Role type.
 
 // ─── Roles ───────────────────────────────────────────────────────────────────
 
@@ -37,12 +35,12 @@ export type AgentName = (typeof AGENT_FOR_ROLE)[Role];
 //
 // USAGE RULES (post 2026-05-23 cleanup):
 // - For RUNTIME permission checks, ALWAYS call `canRoleExecuteIntent(role, intent)`.
-//   That function is derived from EMPLOYEE_ALLOWED_INTENTS and stays in sync
+//   That function is derived from COMPANION_ALLOWED_INTENTS and stays in sync
 //   even when new intents are added.
 // - For ENUMERATING the blocked set (companion-rules-summary, rbac-policy
 //   re-export, debug pages), this set IS the right reference. It does not drift
-//   as long as new owner-only intents are added here AND new employee-allowed
-//   intents go to EMPLOYEE_ALLOWED_INTENTS — same author, same PR, same review.
+//   as long as new owner-only intents are added here AND new companion-allowed
+//   intents go to COMPANION_ALLOWED_INTENTS — same author, same PR, same review.
 // - Do NOT add `if (OWNER_ONLY_INTENTS.has(x))` as a guard. Use canRoleExecuteIntent.
 
 export const OWNER_ONLY_INTENTS: ReadonlySet<string> = new Set([
@@ -64,23 +62,20 @@ export const OWNER_ONLY_INTENTS: ReadonlySet<string> = new Set([
   "create_purchase_request",
 ]);
 
-// ─── RBAC: explicit allowlist for the legacy companion-agent RPC path ────────
+// ─── RBAC: explicit allowlist for the live companion-agent RPC path ─────────
 //
 // New intents default to OWNER-ONLY unless added here. There is no employee
 // role in the live app anymore (resolveActor() only ever returns "owner");
-// this set is only still consulted by the legacy companion-agent RPC gate
-// (src/app/api/agents/companion/**, via rbac-policy.ts), which has no live
-// caller from the owner path. Kept as-is (out of scope for the employee
-// removal — see file header) rather than silently changing that subsystem's
-// behavior.
+// this set is consulted by the companion-agent RPC gate
+// (src/app/api/agents/companion/**, via rbac-policy.ts).
 
-const EMPLOYEE_ALLOWED_INTENTS: ReadonlySet<string> = new Set([
+const COMPANION_ALLOWED_INTENTS: ReadonlySet<string> = new Set([
   "answer",
   "register_sale",
   "stock_load",
   "business_query",
   "report_event",
-  // cobro_qr: employees are the primary point-of-sale actors — they need to
+  // cobro_qr: companion users are the primary point-of-sale actors — they need to
   // charge via QR or alias. Opened 2026-05-11 (demo viernes invariant).
   "cobro_qr",
 ]);
@@ -124,12 +119,12 @@ export type ActorRole = Role;
 
 // ─── Pure guard ──────────────────────────────────────────────────────────────
 //
-// `role` is typed `string` (not `Role`) so the legacy companion-agent RPC
-// path (which still models an "employee" actor kind, see EMPLOYEE_ALLOWED_INTENTS
-// above) keeps compiling against this guard without reintroducing "employee"
+// `role` is typed `string` (not `Role`) so the companion-agent RPC
+// path (which models a "companion" actor kind, see COMPANION_ALLOWED_INTENTS
+// above) keeps compiling against this guard without reintroducing "companion"
 // into the canonical Role type used by the owner path.
 
 export function canRoleExecuteIntent(role: string, intent: string): boolean {
   if (role === "owner") return true;
-  return EMPLOYEE_ALLOWED_INTENTS.has(intent);
+  return COMPANION_ALLOWED_INTENTS.has(intent);
 }

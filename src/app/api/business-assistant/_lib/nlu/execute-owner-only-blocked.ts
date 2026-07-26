@@ -8,7 +8,7 @@
 
 import { NextResponse } from "next/server";
 import { cloudLog, logUnauthorizedAccess } from "@/lib/cloud-logger";
-import { buildEmployeeRefusal } from "../intent-permissions";
+import { buildCompanionRefusal } from "../intent-permissions";
 import type { OwnerOnlyBlockedIntent } from "./types";
 import type { PreModelIntentParams } from "../router-params";
 
@@ -22,7 +22,7 @@ export function executeOwnerOnlyBlocked(
   if (params.actorRole === "owner") {
     return NextResponse.json({ answer: "" });
   }
-  const refusal = buildEmployeeRefusal(intent.blockedIntent);
+  const refusal = buildCompanionRefusal(intent.blockedIntent);
   logUnauthorizedAccess({
     attemptedAction: intent.blockedIntent,
     actorRole: params.actorRole,

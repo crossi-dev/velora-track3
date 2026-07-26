@@ -23,7 +23,6 @@ export const POST = createAgentRpcRoute({
     "fiscal",
     "logistica",
     "communications",
-    "equipo",
     "companion",
   ],
   rateLimit: { bucket: "supervisor-a2a", max: 20, windowSec: 60 },

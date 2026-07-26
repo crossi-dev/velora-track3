@@ -1,6 +1,6 @@
 // Synthesizer: tool-result → AssistantTaskModelResponse JSON string.
 //
-// When the ADK employee agent calls a FunctionTool, ADK's post-tool-call
+// When the ADK companion agent calls a FunctionTool, ADK's post-tool-call
 // final turn returns conversational text, NOT the JSON schema the pipeline
 // expects. Instead of parsing that text (which always fails), we synthesize
 // the AssistantTaskModelResponse directly from the tool's execute() return
@@ -63,7 +63,7 @@ export function synthesizeFromToolResult(toolResult: ToolCallResult): string {
     if (productName === null) {
       cloudLog({
         severity: "ERROR",
-        component: "Employee",
+        component: "Companion",
         action: "SYNTHESIZER_MALFORMED_REGISTER_SALE",
         a2a_transfer: false,
         message: "register_sale tool returned success shape but resolvedProductName is missing — treating as error",
@@ -135,10 +135,10 @@ export function synthesizeFromToolResult(toolResult: ToolCallResult): string {
   // here before a silent no-op goes to production, then fall back gracefully.
   cloudLog({
     severity: "WARNING",
-    component: "Employee",
+    component: "Companion",
     action: "SYNTHESIZER_UNKNOWN_TOOL",
     a2a_transfer: false,
-    message: `synthesizeFromToolResult received unknown tool '${name}' — add a case to employee-agent.synthesize.ts`,
+    message: `synthesizeFromToolResult received unknown tool '${name}' — add a case to companion-agent.synthesize.ts`,
     data: { toolName: name, responseKeys: Object.keys(r) },
   });
   return JSON.stringify({

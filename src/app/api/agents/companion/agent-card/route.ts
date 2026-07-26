@@ -39,8 +39,8 @@ export function GET() {
     defaultOutputModes: ["text", "data"],
     skills: [
       {
-        id: "assist.employee.turn",
-        name: "Process Employee Turn",
+        id: "assist.companion.turn",
+        name: "Process Companion Turn",
         description:
           "Accepts a natural-language employee message and returns the Companion's response: " +
           "plain-text answer plus optional structured actions (intent, matched entities, " +

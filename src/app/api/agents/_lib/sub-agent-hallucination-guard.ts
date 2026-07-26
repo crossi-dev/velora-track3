@@ -11,7 +11,6 @@
 //   logistica — trackingNumbers[] + shipmentIds[]
 //   fiscal    — invoiceNumbers[] + customerCuit
 //   ventas    — customerNames[] + productNames[]
-//   equipo    — employeeNames[]
 //
 // Legacy Payments callers may pass SubAgentGuardCatalog directly (no agent discriminant).
 //
@@ -106,10 +105,6 @@ export type AgentGuardCatalog =
       agent: "ventas";
       customerNames: string[];
       productNames: string[];
-    }
-  | {
-      agent: "equipo";
-      employeeNames: string[];
     };
 
 export interface SubAgentGuardResult {

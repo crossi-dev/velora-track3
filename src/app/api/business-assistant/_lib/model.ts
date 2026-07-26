@@ -4,11 +4,11 @@ import { callGemini } from "./gemini-wrapper";
 import { normalizeActionText, sanitizeUserInput } from "./shared";
 import { trimContextProducts } from "./prompt-optimizer";
 import { truncateHistory } from "./router-history";
-import { runEmployeeAgentViaAdk, EMPLOYEE_ADK_TIMEOUT_MS } from "@/lib/adk/employee-agent";
+import { runCompanionAgentViaAdk, COMPANION_ADK_TIMEOUT_MS } from "@/lib/adk/companion-agent";
 import type { RegisterSaleToolContext } from "@/lib/adk/tools/register-sale-tool";
 import type { BusinessQueryToolContext } from "@/lib/adk/tools/business-query-tool";
 import type { EscalateToOwnerToolContext } from "@/lib/adk/tools/escalate-to-owner-tool";
-import { EMPLOYEE_SYSTEM_PROMPT } from "./employee-system-prompt";
+import { COMPANION_SYSTEM_PROMPT } from "./employee-system-prompt";
 import type {
   AssistantBusinessPromptContext,
   AssistantIntent,
@@ -24,14 +24,14 @@ export interface AdkToolContext {
 
 // Feature flag — re-evaluado en cada call (no module-load capture per
 // nuestro convention de feature flags). Default TRUE: el path ADK del
-// Employee Agent es el activo, satisfaciendo Track 3 #1 (judging
+// Companion Agent es el activo, satisfaciendo Track 3 #1 (judging
 // criteria 30% weight). USE_ADK=false lo desactiva explícitamente.
 // Simétrico con el Supervisor (supervisor-runner.ts).
 function isAdkEnabled(): boolean {
   return process.env.USE_ADK !== "false";
 }
 
-const EMPLOYEE_ALLOWED_INTENTS = new Set<AssistantIntent>([
+const COMPANION_ALLOWED_INTENTS = new Set<AssistantIntent>([
   "answer",
   "register_sale",
   "stock_load",
@@ -81,9 +81,9 @@ export async function runBusinessAssistantModel(
 
   const langLock = lang === "en" ? LANGUAGE_LOCK_EN : "";
   const systemPrompt = documentContext
-    ? `${EMPLOYEE_SYSTEM_PROMPT}\n\n## Reglas y procedimientos del negocio\n${documentContext}${langLock}`
-    : `${EMPLOYEE_SYSTEM_PROMPT}${langLock}`;
-  const allowedIntents = EMPLOYEE_ALLOWED_INTENTS;
+    ? `${COMPANION_SYSTEM_PROMPT}\n\n## Reglas y procedimientos del negocio\n${documentContext}${langLock}`
+    : `${COMPANION_SYSTEM_PROMPT}${langLock}`;
+  const allowedIntents = COMPANION_ALLOWED_INTENTS;
 
   const trimmedContext = trimContextProducts(context, text);
 
@@ -125,9 +125,9 @@ export async function runBusinessAssistantModel(
   // Outer wrapper must always exceed the inner ADK timeout so the inner cleanup
   // fires first before this fallback triggers. Derived from the exported constant
   // to make the ordering invariant explicit and compiler-enforced: if
-  // EMPLOYEE_ADK_TIMEOUT_MS grows, ADK_TIMEOUT_MS grows with it automatically.
-  // INVARIANT: ADK_TIMEOUT_MS > EMPLOYEE_ADK_TIMEOUT_MS (outer > inner).
-  const ADK_TIMEOUT_MS = EMPLOYEE_ADK_TIMEOUT_MS + 3_000;
+  // COMPANION_ADK_TIMEOUT_MS grows, ADK_TIMEOUT_MS grows with it automatically.
+  // INVARIANT: ADK_TIMEOUT_MS > COMPANION_ADK_TIMEOUT_MS (outer > inner).
+  const ADK_TIMEOUT_MS = COMPANION_ADK_TIMEOUT_MS + 3_000;
   const RETRY_BACKOFF_MS = 2_000;
   const MAX_ATTEMPTS = 2;
 
@@ -187,7 +187,7 @@ export async function runBusinessAssistantModel(
           setTimeout(() => reject(Object.assign(new Error("ADK call timed out"), { name: "TimeoutError" })), ADK_TIMEOUT_MS),
         );
         const adkResult = await Promise.race([
-          runEmployeeAgentViaAdk({
+          runCompanionAgentViaAdk({
             systemPrompt,
             history,
             userMessage: currentUserMessage,
@@ -199,10 +199,10 @@ export async function runBusinessAssistantModel(
       } catch (adkErr) {
         cloudLog({
           severity: "WARNING",
-          component: "Employee",
+          component: "Companion",
           action: "ADK_FALLBACK_TO_GEMINI",
           a2a_transfer: false,
-          message: "ADK employee path failed — falling back to direct Gemini",
+          message: "ADK companion path failed — falling back to direct Gemini",
           data: {
             error: adkErr instanceof Error ? adkErr.message : String(adkErr),
             errorName: adkErr instanceof Error ? adkErr.name : "unknown",

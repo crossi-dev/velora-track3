@@ -179,7 +179,7 @@ test("cobro_qr owner happy path — modo alias usa alias del negocio", async () 
 // so employees can charge via QR. The test below verifies the current behavior:
 // employees reach the use-case and get a valid payment response.
 // Role-based RBAC enforcement for this intent lives at the chat-layer
-// (role-contract.ts EMPLOYEE_ALLOWED_INTENTS) — not inside the handler.
+// (role-contract.ts COMPANION_ALLOWED_INTENTS) — not inside the handler.
 test("cobro_qr employee → use-case invocado (employee puede cobrar QR desde feat/rbac f774190e)", async () => {
   const useCaseMock = makeUseCaseMock();
   const { executeCobroQr } = loadHandler(makePrismaMock(), useCaseMock);

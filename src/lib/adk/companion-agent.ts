@@ -1,4 +1,4 @@
-// Velora Employee Agent — versión ADK.
+// Velora Companion Agent — versión ADK.
 // ADK orquesta el LLM call (Track 3 judging requirement).
 // Feature flag USE_ADK=true activa este path; default = legacy.
 // Fachada idéntica al path legacy: devuelve { text } al caller.
@@ -6,7 +6,7 @@
 import { Agent, Runner, InMemorySessionService, isFinalResponse, getFunctionResponses } from "@google/adk";
 import type { Event } from "@google/adk";
 import { cloudLog } from "@/lib/cloud-logger";
-import { getAdkEmployeeModel } from "./gemini-config";
+import { getAdkCompanionModel } from "./gemini-config";
 import {
   createRegisterSaleTool,
   createBusinessQueryTool,
@@ -16,10 +16,10 @@ import { createSessionServiceWithFallback } from "./session-service";
 import type { RegisterSaleToolContext } from "./tools/register-sale-tool";
 import type { BusinessQueryToolContext } from "./tools/business-query-tool";
 import type { EscalateToOwnerToolContext } from "./tools/escalate-to-owner-tool";
-import { synthesizeFromToolResult, type ToolCallResult } from "./employee-agent.synthesize";
-import { buildEmployeeInstruction } from "./employee-agent.instruction";
+import { synthesizeFromToolResult, type ToolCallResult } from "./companion-agent.synthesize";
+import { buildCompanionInstruction } from "./companion-agent.instruction";
 
-interface RunEmployeeAgentArgs {
+interface RunCompanionAgentArgs {
   systemPrompt: string;
   history: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>;
   userMessage: string;
@@ -35,29 +35,29 @@ interface RunEmployeeAgentArgs {
   businessId?: string;
 }
 
-interface RunEmployeeAgentResult {
+interface RunCompanionAgentResult {
   text: string;
 }
 
-const APP_NAME = "velora-employee-agent";
+const APP_NAME = "velora-companion-agent";
 
-// ADK runner timeout for the Companion (Employee) agent.
+// ADK runner timeout for the Companion agent.
 // Gemini Flash is faster than Pro, but the Companion request still competes
 // inside the same Cloud Run 40s budget. 25s leaves ~15s for upstream overhead
 // (auth, NLU, DB, post-model routing). A timeout here throws a TimeoutError
 // that the caller (model.ts geminiCall wrapper) catches and retries via the
 // direct-Gemini fallback path — identical to the Supervisor pattern.
-// Exported so model.ts can derive ADK_TIMEOUT_MS = EMPLOYEE_ADK_TIMEOUT_MS + 3_000,
+// Exported so model.ts can derive ADK_TIMEOUT_MS = COMPANION_ADK_TIMEOUT_MS + 3_000,
 // locking the invariant that the outer wrapper always exceeds the inner timeout.
-export const EMPLOYEE_ADK_TIMEOUT_MS = 25_000;
+export const COMPANION_ADK_TIMEOUT_MS = 25_000;
 
 // Warm fallback message shown when the ADK runner times out AND no direct
 // Gemini retry is available from the caller. In practice, model.ts always
 // catches and retries — this string is the last-resort safety net.
-const EMPLOYEE_ADK_TIMEOUT_FALLBACK = "Dame un segundo, reintentá en un momento.";
+const COMPANION_ADK_TIMEOUT_FALLBACK = "Dame un segundo, reintentá en un momento.";
 
 /**
- * Ejecuta el Employee Agent vía ADK. Devuelve el texto plano que el LLM
+ * Ejecuta el Companion Agent vía ADK. Devuelve el texto plano que el LLM
  * generó — el caller sigue parseándolo igual que con el path legacy.
  *
  * El history se concatena al systemPrompt como contexto previo. ADK no
@@ -74,19 +74,19 @@ const EMPLOYEE_ADK_TIMEOUT_FALLBACK = "Dame un segundo, reintentá en un momento
  * - https://adk.dev/sessions/session/ (redirige desde google.github.io/adk-docs)
  * - Runner.runAsync vs runEphemeral: node_modules/@google/adk/dist/types/runner/runner.d.ts
  */
-export async function runEmployeeAgentViaAdk(
-  args: RunEmployeeAgentArgs,
-): Promise<RunEmployeeAgentResult> {
+export async function runCompanionAgentViaAdk(
+  args: RunCompanionAgentArgs,
+): Promise<RunCompanionAgentResult> {
   const { systemPrompt, history, userMessage, toolContext, sessionId, businessId } = args;
 
   // Delegate business-context parsing and history rendering to the sibling
   // module to keep this file under the 300-line guardrail.
-  const { fullInstruction } = buildEmployeeInstruction({ systemPrompt, history });
+  const { fullInstruction } = buildCompanionInstruction({ systemPrompt, history });
 
   // Build FunctionTool list when request-scoped context is provided.
   // Tools are omitted when toolContext is absent (e.g. legacy callers or
   // test stubs) — the agent falls back to pure text generation as before.
-  // Employee tool set: check_stock, register_sale, business_query only.
+  // Companion tool set: check_stock, register_sale, business_query only.
   // create_customer and create_purchase_request are owner-only intents;
   // their FunctionTools are excluded here so the RBAC gate cannot be bypassed
   // at the tool-execute level before any permission check runs.
@@ -104,8 +104,8 @@ export async function runEmployeeAgentViaAdk(
   // (e.g. "{product}" or JSON snippets). A callback bypasses this entirely.
   const instructionFn = () => fullInstruction;
   const agent = new Agent({
-    name: "velora_employee",
-    model: getAdkEmployeeModel(),
+    name: "velora_companion",
+    model: getAdkCompanionModel(),
     instruction: instructionFn,
     ...(tools.length > 0 ? { tools } : {}),
   });
@@ -117,7 +117,7 @@ export async function runEmployeeAgentViaAdk(
   // IMPORTANT: InMemoryRunner hardcodes its own InMemorySessionService and
   // ignores any sessionService passed to it — it cannot be used here.
   // We use Runner directly so the wired sessionService is actually invoked.
-  // Pass agent.name so replayed history events carry author="velora_employee" (not "model").
+  // Pass agent.name so replayed history events carry author="velora_companion" (not "model").
   // ADK contract: event.author must equal the agent name — https://adk.dev/events/
   const resolvedSessionService = businessId
     ? createSessionServiceWithFallback(businessId, agent.name)
@@ -169,8 +169,8 @@ export async function runEmployeeAgentViaAdk(
   let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutHandle = setTimeout(
-      () => reject(Object.assign(new Error("ADK employee timed out"), { name: "TimeoutError" })),
-      EMPLOYEE_ADK_TIMEOUT_MS,
+      () => reject(Object.assign(new Error("ADK companion timed out"), { name: "TimeoutError" })),
+      COMPANION_ADK_TIMEOUT_MS,
     );
   });
 
@@ -190,7 +190,7 @@ export async function runEmployeeAgentViaAdk(
         } else {
           cloudLog({
             severity: "WARNING",
-            component: "Employee",
+            component: "Companion",
             action: "ADK_MULTIPLE_TOOLS",
             a2a_transfer: false,
             message: "Multiple function responses in Companion stream — keeping first, ignoring rest",
@@ -215,17 +215,17 @@ export async function runEmployeeAgentViaAdk(
     if (isTimeout) {
       cloudLog({
         severity: "WARNING",
-        component: "Employee",
-        action: "EMPLOYEE_ADK_TIMEOUT",
+        component: "Companion",
+        action: "COMPANION_ADK_TIMEOUT",
         a2a_transfer: false,
-        message: "Employee ADK runner timed out — caller should fall back to direct Gemini",
+        message: "Companion ADK runner timed out — caller should fall back to direct Gemini",
         businessId,
-        data: { timeoutMs: EMPLOYEE_ADK_TIMEOUT_MS },
+        data: { timeoutMs: COMPANION_ADK_TIMEOUT_MS },
       });
       // Surface the TimeoutError so model.ts can catch it and retry via
       // direct Gemini. If the caller does not handle it, the fallback text
       // provides a safe last-resort response.
-      if (!finalText) finalText = EMPLOYEE_ADK_TIMEOUT_FALLBACK;
+      if (!finalText) finalText = COMPANION_ADK_TIMEOUT_FALLBACK;
       throw err;
     }
     throw err;

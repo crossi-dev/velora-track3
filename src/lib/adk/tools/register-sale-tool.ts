@@ -86,7 +86,7 @@ export function createRegisterSaleTool(ctx: RegisterSaleToolContext) {
       const confirmMessage = `Te paso a confirmar la venta de ${itemsLabel} a ${customerName}.`;
 
       // Include resolved productName and customerName so the synthesizer
-      // (employee-agent.synthesize.ts) can emit a valid saleDraft without
+      // (companion-agent.synthesize.ts) can emit a valid saleDraft without
       // needing access to the product directory a second time.
       const resolvedCustomerName = input.customer_id
         ? (ctx.customers.find((c) => c.id === input.customer_id)?.name ?? input.customer_name ?? null)

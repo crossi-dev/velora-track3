@@ -36,7 +36,7 @@ export async function executeCobroQr(
 ): Promise<NextResponse> {
   // cobro_qr is allowed for both owner and employee — employees are the
   // primary point-of-sale actors. RBAC gate was removed 2026-05-11.
-  // Defense-in-depth: role-contract.ts lists "cobro_qr" in EMPLOYEE_ALLOWED_INTENTS;
+  // Defense-in-depth: role-contract.ts lists "cobro_qr" in COMPANION_ALLOWED_INTENTS;
   // gateIntentByRole() enforces this at the chat layer before we arrive here.
 
   // UUID por turno: la use-case hace insert-or-replay por idempotencyKey, así

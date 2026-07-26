@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 import { findProductInfoMatch } from "../handlers/inventory-matching";
 import { publishStockIngressRequest } from "@/app/api/_lib/agent-event-publishers";
 import { logUnauthorizedAccess } from "@/lib/cloud-logger";
-import { buildEmployeeRefusal } from "../intent-permissions";
+import { buildCompanionRefusal } from "../intent-permissions";
 import type { StockLoadIntent } from "./types";
 import type { PreModelIntentParams } from "../router-params";
 
@@ -19,7 +19,7 @@ export async function executeStockLoadFastPath(
 
   // Warm reject if role has no permission (edge case — belt-and-suspenders).
   if (params.actorRole && params.actorRole !== "owner" && params.actorRole !== "employee") {
-    const refusal = buildEmployeeRefusal("stock_load");
+    const refusal = buildCompanionRefusal("stock_load");
     logUnauthorizedAccess({
       attemptedAction: "stock_load_fast_path",
       actorRole: params.actorRole,

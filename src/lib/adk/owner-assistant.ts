@@ -35,7 +35,7 @@ import "server-only";
 
 import { Runner, isFinalResponse, getFunctionCalls } from "@google/adk";
 import { createAdkAgent } from "./agent-factory";
-import { getAdkEmployeeModel } from "./gemini-config";
+import { getAdkCompanionModel } from "./gemini-config";
 import { cloudLog } from "@/lib/cloud-logger";
 import { buildOwnerAssistantTools } from "./owner-assistant-tools";
 import { buildOwnerCatalogSummary } from "./owner-assistant-catalog";
@@ -81,7 +81,7 @@ export async function runOwnerAssistant(
       "Owner Assistant: extracts create_product, stock_load, and adjust_stock intents " +
       "from the owner's free-text messages using typed function schemas. " +
       "Invoked before the Supervisor for these 3 intents when USE_OWNER_ASSISTANT=true.",
-    model: getAdkEmployeeModel(), // Gemini Flash — same tier as Ventas today
+    model: getAdkCompanionModel(), // Gemini Flash — same tier as Ventas today
     instruction: OWNER_ASSISTANT_SYSTEM_PROMPT.replaceAll(
       OWNER_CATALOG_PLACEHOLDER,
       catalogSummary,

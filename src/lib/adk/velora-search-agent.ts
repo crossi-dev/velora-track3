@@ -21,7 +21,7 @@ import "server-only";
 import { AgentTool, VertexAiSearchTool } from "@google/adk";
 import type { BaseTool } from "@google/adk";
 import { createAdkAgent } from "./agent-factory";
-import { getAdkEmployeeModel } from "./gemini-config";
+import { getAdkCompanionModel } from "./gemini-config";
 import { isVertexSearchEnabled, _datastoreIdForTesting as datastoreId } from "@/lib/vertex-search";
 
 const SEARCH_AGENT_INSTRUCTION =
@@ -58,7 +58,7 @@ export function buildVeloraSearchAgent(businessId: string): BaseTool | null {
     description:
       "Searches the tenant's grounded business knowledge (products, customers, suppliers, rules). " +
       "Use this for any natural-language lookup over business data when exact name matching is insufficient.",
-    model: getAdkEmployeeModel(), // Gemini Flash — cheap; only needs to relay tool output
+    model: getAdkCompanionModel(), // Gemini Flash — cheap; only needs to relay tool output
     instruction: SEARCH_AGENT_INSTRUCTION,
     // Cast required: VertexAiSearchTool is BaseTool from @google/adk; createAdkAgent
     // accepts BaseTool[]. The runtime shape is compatible; the nominal mismatch is

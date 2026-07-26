@@ -21,7 +21,7 @@ export { clearKeyPairCache } from "@/lib/agent-identity-key-cache";
 // inbound customer interactions delegated from the Supervisor via A2A.
 export type AgentId =
   | "supervisor" | "companion" | "payments" | "fiscal"
-  | "logistica" | "onboarding" | "ventas" | "equipo" | "communications"
+  | "logistica" | "onboarding" | "ventas" | "communications"
   | "customer" | "caja" | "inventario";
 
 export interface JwkPublicKey {
@@ -41,7 +41,6 @@ export const AGENT_KEY_ENV: Record<AgentId, string> = {
   logistica:      "AGENT_IDENTITY_KEY_LOGISTICA",
   onboarding:     "AGENT_IDENTITY_KEY_ONBOARDING",
   ventas:         "AGENT_IDENTITY_KEY_VENTAS",
-  equipo:         "AGENT_IDENTITY_KEY_EQUIPO",
   // AGENT_IDENTITY_KEY_COMMUNICATIONS is provisioned in Secret Manager and Cloud Run (2026-05-27).
   // The agent is LEAF_ONLY — it receives inbound A2A calls but never initiates outbound ones.
   // signAgentAssertion("communications",...) returns null (LEAF_ONLY_AGENTS guard below).

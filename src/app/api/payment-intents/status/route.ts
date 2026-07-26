@@ -22,7 +22,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (rl) return rl;
   // EMPLOYEE_ALLOWED: polling de estado de cobro QR — read-only, sin mutación.
   // El empleado hace polling cada ~4s mientras el intent está pending.
-  // (role-contract.ts EMPLOYEE_ALLOWED_INTENTS: "cobro_qr")
+  // (role-contract.ts COMPANION_ALLOWED_INTENTS: "cobro_qr")
 
   const id = req.nextUrl.searchParams.get("id");
   if (!id || typeof id !== "string" || id.length > 64) {

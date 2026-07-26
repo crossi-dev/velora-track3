@@ -1,4 +1,4 @@
-// Employee Agent instruction builder — extracted from employee-agent.ts.
+// Companion Agent instruction builder — extracted from companion-agent.ts.
 //
 // Builds the full instruction string passed to the ADK Agent, combining the
 // system prompt, the business context block (catalog + time), and the
@@ -25,13 +25,13 @@ type ParsedContext = {
 };
 
 /**
- * Builds the full instruction string for the Employee ADK Agent.
+ * Builds the full instruction string for the Companion ADK Agent.
  *
  * Separates the "Business context:" first turn from conversational history,
  * renders the catalog as a human-readable block (instead of raw JSON which
  * Flash parses unreliably), and appends the filtered conversational turns.
  */
-export function buildEmployeeInstruction(args: BuildInstructionArgs): BuildInstructionResult {
+export function buildCompanionInstruction(args: BuildInstructionArgs): BuildInstructionResult {
   const { systemPrompt, history } = args;
 
   // Separamos el contexto del negocio (primer turno "Business context:") del

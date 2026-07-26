@@ -1,16 +1,16 @@
-// RBAC policy — capa pura para gating de intents destructivos del empleado.
+// RBAC policy — capa pura para gating de intents destructivos del companion.
 //
-// La lista canónica de intents permitidos al empleado vive en
-// `@/domain/role-contract` (EMPLOYEE_ALLOWED_INTENTS / canRoleExecuteIntent).
+// La lista canónica de intents permitidos al companion vive en
+// `@/domain/role-contract` (COMPANION_ALLOWED_INTENTS / canRoleExecuteIntent).
 // Este archivo expone guards reutilizables sin side-effects (sin Prisma,
 // sin NextResponse, sin loggers), pero TODA decisión de autorización delega
 // al contrato canónico para que no pueda divergir.
 //
-// Antes de 2026-05-09 EMPLOYEE_DESTRUCTIVE_INTENTS se definía localmente y
+// Antes de 2026-05-09 COMPANION_DESTRUCTIVE_INTENTS se definía localmente y
 // excluía `edit_customer` (y `create_customer`) por una nota antigua sobre el
 // "flujo de venta". Esa lista contradecía OWNER_ONLY_INTENTS y permitía que
-// `rbacGuard` (la API pública pensada como "guard reutilizable") aprobara a
-// un empleado para edit_customer mientras `gateIntentByRole` (canon, vía
+// `rbacGuard` (la API pública pensada como "guard reutilizable") aprobara al
+// companion para edit_customer mientras `gateIntentByRole` (canon, vía
 // role-contract) lo bloqueaba. La auditoría 2026-05-09 marcó esa
 // inconsistencia: defense-in-depth solo funciona si todas las capas coinciden,
 // sino una capa nueva confiando en `rbacGuard` filtraría el rol.
@@ -18,17 +18,17 @@
 import { canRoleExecuteIntent, OWNER_ONLY_INTENTS } from "@/domain/role-contract";
 
 /**
- * Intents que los empleados NO pueden ejecutar directamente.
+ * Intents que el companion NO puede ejecutar directamente.
  * Re-export del contrato canónico (`OWNER_ONLY_INTENTS`) para callers que
  * históricamente importaban este símbolo. NO redefinir acá.
  */
-export const EMPLOYEE_DESTRUCTIVE_INTENTS: ReadonlySet<string> = OWNER_ONLY_INTENTS;
+export const COMPANION_DESTRUCTIVE_INTENTS: ReadonlySet<string> = OWNER_ONLY_INTENTS;
 
-export function canEmployeeExecuteIntent(intent: string): boolean {
-  return canRoleExecuteIntent("employee", intent);
+export function canCompanionExecuteIntent(intent: string): boolean {
+  return canRoleExecuteIntent("companion", intent);
 }
 
-export type RbacActorKind = "employee" | "owner";
+export type RbacActorKind = "companion" | "owner";
 
 export interface RbacGuardResult {
   allowed: boolean;

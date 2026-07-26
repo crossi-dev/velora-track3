@@ -1,5 +1,5 @@
-// Unit test: employee-agent.ts session wiring.
-// Verifies that runEmployeeAgentViaAdk resolves a session (getOrCreateSession)
+// Unit test: companion-agent.ts session wiring.
+// Verifies that runCompanionAgentViaAdk resolves a session (getOrCreateSession)
 // and uses runner.runAsync — NOT runEphemeral — when businessId is provided.
 
 process.env.AUTH_SECRET = process.env.AUTH_SECRET || "test-employee-sessions-secret-32x";
@@ -10,7 +10,7 @@ const test = require("node:test");
 const Module = require("node:module");
 const path = require("node:path");
 
-const SUT_PATH = path.resolve(__dirname, "../../src/lib/adk/employee-agent.ts");
+const SUT_PATH = path.resolve(__dirname, "../../src/lib/adk/companion-agent.ts");
 
 // ── Shared call-tracking state (reset per test) ──────────────────────────────
 let calls = { getOrCreate: 0, runAsync: 0, runEphemeral: 0 };
@@ -141,7 +141,7 @@ Module._load = function (request, parent, ...rest) {
   }
   // Stub gemini-config
   if (request.includes("gemini-config") || request.endsWith("gemini-config.ts")) {
-    return { getAdkEmployeeModel: () => "gemini-2.5-flash" };
+    return { getAdkCompanionModel: () => "gemini-2.5-flash" };
   }
   // Stub tools
   if (request.includes("/tools") && !request.includes("node_modules")) {
@@ -152,8 +152,8 @@ Module._load = function (request, parent, ...rest) {
       createEscalateToOwnerTool: () => ({}),
     };
   }
-  // Stub employee-agent.synthesize
-  if (request.includes("employee-agent.synthesize") || request.endsWith("employee-agent.synthesize.ts")) {
+  // Stub companion-agent.synthesize
+  if (request.includes("companion-agent.synthesize") || request.endsWith("companion-agent.synthesize.ts")) {
     return { synthesizeFromToolResult: (r) => JSON.stringify(r) };
   }
   // Stub cloud-logger
@@ -172,7 +172,7 @@ process.on("exit", () => { Module._load = origLoad; });
 function reload() {
   // Clear module cache for the SUT and its local deps so stubs are picked up fresh.
   Object.keys(Module._cache).forEach((k) => {
-    if (k.includes("employee-agent") || k.includes("session-service") || k.includes("gemini-config")) {
+    if (k.includes("companion-agent") || k.includes("session-service") || k.includes("gemini-config")) {
       delete Module._cache[k];
     }
   });
@@ -184,9 +184,9 @@ function reload() {
 
 test("runAsync is called (not runEphemeral) when businessId is provided", async () => {
   calls = { getOrCreate: 0, runAsync: 0, runEphemeral: 0 };
-  const { runEmployeeAgentViaAdk } = reload();
+  const { runCompanionAgentViaAdk } = reload();
 
-  await runEmployeeAgentViaAdk({
+  await runCompanionAgentViaAdk({
     systemPrompt: "Sos el companion.",
     history: [],
     userMessage: "vendí 2 cubiertas",
@@ -200,9 +200,9 @@ test("runAsync is called (not runEphemeral) when businessId is provided", async 
 
 test("getOrCreateSession is called before runAsync when businessId is provided", async () => {
   calls = { getOrCreate: 0, runAsync: 0, runEphemeral: 0 };
-  const { runEmployeeAgentViaAdk } = reload();
+  const { runCompanionAgentViaAdk } = reload();
 
-  await runEmployeeAgentViaAdk({
+  await runCompanionAgentViaAdk({
     systemPrompt: "Sos el companion.",
     history: [],
     userMessage: "chequeá el stock de gaseosas",
@@ -251,9 +251,9 @@ test("sessionId format includes businessId and employeeId", async () => {
     return savedLoad.call(this, request, parent, ...rest);
   };
 
-  const { runEmployeeAgentViaAdk } = reload();
+  const { runCompanionAgentViaAdk } = reload();
 
-  await runEmployeeAgentViaAdk({
+  await runCompanionAgentViaAdk({
     systemPrompt: "Sos el companion.",
     history: [],
     userMessage: "hola",
@@ -271,9 +271,9 @@ test("sessionId format includes businessId and employeeId", async () => {
 
 test("runAsync is still called when no businessId (ephemeral fallback path)", async () => {
   calls = { getOrCreate: 0, runAsync: 0, runEphemeral: 0 };
-  const { runEmployeeAgentViaAdk } = reload();
+  const { runCompanionAgentViaAdk } = reload();
 
-  await runEmployeeAgentViaAdk({
+  await runCompanionAgentViaAdk({
     systemPrompt: "Sos el companion.",
     history: [],
     userMessage: "hola",
@@ -286,9 +286,9 @@ test("runAsync is still called when no businessId (ephemeral fallback path)", as
 
 test("returns text from the final event", async () => {
   calls = { getOrCreate: 0, runAsync: 0, runEphemeral: 0 };
-  const { runEmployeeAgentViaAdk } = reload();
+  const { runCompanionAgentViaAdk } = reload();
 
-  const result = await runEmployeeAgentViaAdk({
+  const result = await runCompanionAgentViaAdk({
     systemPrompt: "Sos el companion.",
     history: [],
     userMessage: "cuánto cuesta la leche?",

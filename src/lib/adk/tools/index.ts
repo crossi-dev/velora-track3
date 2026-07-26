@@ -30,9 +30,6 @@ export type { CallVentasAgentToolContext } from "./call-ventas-agent-tool";
 export { createCallPaymentsAgentTool } from "./call-payments-agent-tool";
 export type { CallPaymentsAgentToolContext } from "./call-payments-agent-tool";
 
-export { createCallEquipoAgentTool } from "./call-equipo-agent-tool";
-export type { CallEquipoAgentToolContext } from "./call-equipo-agent-tool";
-
 export { createCallLogisticaAgentTool } from "./call-logistica-agent-tool";
 export type { CallLogisticaAgentToolContext } from "./call-logistica-agent-tool";
 

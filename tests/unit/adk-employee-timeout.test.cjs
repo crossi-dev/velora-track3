@@ -1,11 +1,11 @@
-// Unit tests — Employee Agent ADK timeout guard.
+// Unit tests — Companion Agent ADK timeout guard.
 //
-// Regression guard for the EMPLOYEE_ADK_TIMEOUT_MS fix (2026-05-18).
+// Regression guard for the COMPANION_ADK_TIMEOUT_MS fix (2026-05-18).
 // Tests the Promise.race + TimeoutError propagation pattern in isolation
 // without hitting Vertex AI or requiring a DB connection.
 //
 // Strategy: mirror the drainEvents + timeoutPromise pattern from
-// employee-agent.ts in a self-contained helper, verifying:
+// companion-agent.ts in a self-contained helper, verifying:
 //   1. Timeout fires and propagates when the drain hangs.
 //   2. TimeoutError name matches the expected "TimeoutError" convention.
 //   3. Happy path (fast drain) resolves without throwing.
@@ -16,9 +16,9 @@ const test = require("node:test");
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-// Simulates the Promise.race pattern from employee-agent.ts.
+// Simulates the Promise.race pattern from companion-agent.ts.
 // Returns { timedOut: boolean, text: string } or throws non-timeout errors.
-async function simulateEmployeeDrain({ events, timeoutMs }) {
+async function simulateCompanionDrain({ events, timeoutMs }) {
   let finalText = "";
   let timeoutHandle = null;
 
@@ -61,15 +61,15 @@ async function* fastGenerator(events) {
 
 // ── Tests ─────────────────────────────────────────────────────────────────
 
-test("Employee ADK timeout: fires when runner hangs, returns timedOut=true", async () => {
-  const result = await simulateEmployeeDrain({
+test("Companion ADK timeout: fires when runner hangs, returns timedOut=true", async () => {
+  const result = await simulateCompanionDrain({
     events: hangingGenerator(),
     timeoutMs: 20, // very short for test speed
   });
   assert.equal(result.timedOut, true);
 });
 
-test("Employee ADK timeout: error has name=TimeoutError (matches isTimeout check)", async () => {
+test("Companion ADK timeout: error has name=TimeoutError (matches isTimeout check)", async () => {
   let caughtErr = null;
   let timeoutHandle = null;
 
@@ -93,8 +93,8 @@ test("Employee ADK timeout: error has name=TimeoutError (matches isTimeout check
   assert.match(caughtErr.message, /timed out/);
 });
 
-test("Employee ADK happy path: fast drain resolves without timeout", async () => {
-  const result = await simulateEmployeeDrain({
+test("Companion ADK happy path: fast drain resolves without timeout", async () => {
+  const result = await simulateCompanionDrain({
     events: fastGenerator([{ text: '{"intent":"register_sale"}' }]),
     timeoutMs: 5_000,
   });
@@ -102,13 +102,13 @@ test("Employee ADK happy path: fast drain resolves without timeout", async () =>
   assert.equal(result.text, '{"intent":"register_sale"}');
 });
 
-test("Employee ADK timeout: timer is cleared after drain completes (no dangling handle)", async () => {
+test("Companion ADK timeout: timer is cleared after drain completes (no dangling handle)", async () => {
   // Verify: the finally block clears the timer. If it did NOT clear, Node's
   // open-handle detector would keep the process alive after the test. We can't
   // directly assert clearTimeout was called, but we can verify the happy path
   // exits cleanly in < 100ms — meaning the timer didn't fire post-resolution.
   const start = Date.now();
-  const result = await simulateEmployeeDrain({
+  const result = await simulateCompanionDrain({
     events: fastGenerator([{ text: "ok" }]),
     timeoutMs: 5_000,
   });
@@ -118,7 +118,7 @@ test("Employee ADK timeout: timer is cleared after drain completes (no dangling 
   assert.ok(elapsed < 200, `expected elapsed < 200ms, got ${elapsed}ms`);
 });
 
-test("Employee ADK: non-timeout error propagates verbatim", async () => {
+test("Companion ADK: non-timeout error propagates verbatim", async () => {
   const boom = new Error("unexpected ADK internal error");
 
   async function* explodingGenerator() {
@@ -128,7 +128,7 @@ test("Employee ADK: non-timeout error propagates verbatim", async () => {
 
   await assert.rejects(
     () =>
-      simulateEmployeeDrain({
+      simulateCompanionDrain({
         events: explodingGenerator(),
         timeoutMs: 5_000,
       }),

@@ -62,7 +62,7 @@ export function extractCuitMentions(text: string): string[] {
   return [...text.matchAll(CUIT_RE)].map((m) => m[0]);
 }
 
-// Proper-noun name extractor — shared by Ventas + Equipo checks.
+// Proper-noun name extractor — shared by Ventas checks.
 // Extracts capitalized 2-3 word sequences as candidate name mentions.
 const PROPER_NAME_RE =
   /\b([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){1,2})\b/g;
@@ -179,18 +179,3 @@ export function checkVentas(
   return {};
 }
 
-export function checkEquipo(
-  replyText: string,
-  catalog: Extract<AgentGuardCatalog, { agent: "equipo" }>,
-): { reason?: string; detail?: string } {
-  if (catalog.employeeNames.length === 0) return {};
-  const mentions = extractNameMentions(replyText);
-  const stray = mentions.find((m) => !mentionMatchesCatalog(m, catalog.employeeNames));
-  if (stray) {
-    return {
-      reason: "hallucinated_employee_name",
-      detail: `Reply mentions "${stray}" but tool calls used employeeNames: [${catalog.employeeNames.join(", ")}]`,
-    };
-  }
-  return {};
-}

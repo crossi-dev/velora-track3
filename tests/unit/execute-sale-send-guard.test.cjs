@@ -10,7 +10,7 @@ const path = require("path");
 // ─── require.cache injection ─────────────────────────────────────────────────
 // execute-sale-send.ts imports:
 //   - employee-welcome.ts → @/lib/prisma → env.ts (throws on AUTH_SECRET)
-//   - model.ts → employee-agent.ts → session-service.ts → @/lib/prisma
+//   - model.ts → companion-agent.ts → session-service.ts → @/lib/prisma
 // Inject a stub for prisma BEFORE any real module is loaded so env.ts is
 // never evaluated. Also stub markOnboardingTaskDone so the fire-and-forget
 // call in the success path doesn't reach a real DB.

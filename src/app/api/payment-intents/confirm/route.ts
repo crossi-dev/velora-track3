@@ -36,7 +36,7 @@ async function handlePost(req: NextRequest) {
   const rateLimited = checkRateLimit(req, undefined, undefined, undefined, bypassIfTester(ctx));
   if (rateLimited) return rateLimited;
   // EMPLOYEE_ALLOWED: cobro QR — el empleado en caja confirma el pago
-  // (role-contract.ts EMPLOYEE_ALLOWED_INTENTS: "cobro_qr").
+  // (role-contract.ts COMPANION_ALLOWED_INTENTS: "cobro_qr").
 
   try {
     const parsed = await parseZodBody(req, confirmPaymentIntentBodySchema);

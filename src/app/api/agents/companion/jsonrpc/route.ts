@@ -2,7 +2,7 @@
 // Auth: per-tenant derived X-API-Key (required) + X-Agent-Assertion JWT (Ed25519).
 // Rebuilt on agent-rpc-factory.ts — removes duplicated auth/rate-limit scaffold.
 // Accepts calls signed by the Supervisor only (iss=supervisor).
-// Skill: assist.employee.turn — employee message → Companion response + RBAC gate.
+// Skill: assist.companion.turn — employee message → Companion response + RBAC gate.
 
 export const maxDuration = 38;
 

@@ -218,7 +218,7 @@ export function createSessionService(
  * ChatMessageSessionService (Postgres) if the flag is off or the env var is
  * missing — making the rollout safe by default.
  *
- * Callers (supervisor-agent.ts, employee-agent.ts) should use this factory
+ * Callers (supervisor-agent.ts, companion-agent.ts) should use this factory
  * instead of createSessionService so the Agent Engine path is exercised when
  * the feature flag is on.
  *

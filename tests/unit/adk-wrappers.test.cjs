@@ -1,4 +1,4 @@
-// Unit tests for ADK Employee + Supervisor agent wrappers.
+// Unit tests for ADK Companion + Supervisor agent wrappers.
 // G3-1 — Phase 2-7 audit: ADK wrappers shipped sin tests.
 //
 // Strategy: mock @google/adk's Agent + InMemoryRunner to capture how the
@@ -28,7 +28,7 @@ function installAdkMock(captures) {
       Agent: class FakeAgent {
         constructor(config) { captures.lastAgentConfig = config; }
       },
-      // Runner is the canonical ADK runner (used by employee-agent.ts,
+      // Runner is the canonical ADK runner (used by companion-agent.ts,
       // supervisor-agent.ts). The refactor from InMemoryRunner → Runner
       // (commit 698e0a9b) required adding this stub.
       Runner: class FakeRunner {
@@ -64,7 +64,7 @@ function installAdkMock(captures) {
         return parts.filter((p) => p.functionCall != null).map((p) => p.functionCall);
       },
       // getFunctionResponses: returns any function responses in the event's content parts.
-      // Required by employee-agent.ts to capture tool results from the ADK stream.
+      // Required by companion-agent.ts to capture tool results from the ADK stream.
       getFunctionResponses: (event) => {
         const parts = event?.content?.parts ?? [];
         return parts.filter((p) => p.functionResponse != null).map((p) => p.functionResponse);
@@ -74,7 +74,7 @@ function installAdkMock(captures) {
       // real @google/adk import chain (which would pull in google-auth-library etc.).
       BaseSessionService: class FakeBaseSessionService {},
       createEvent: (e) => e,
-      // supervisor-agent.ts + employee-agent.ts use `new InMemorySessionService()`
+      // supervisor-agent.ts + companion-agent.ts use `new InMemorySessionService()`
       // as a fallback when no businessId is provided. Under ts-node CJS transform,
       // the static import resolves through this mock. Must be a valid constructor
       // with all session methods used by both agents.
@@ -107,13 +107,13 @@ function installGeminiConfigMock(captures) {
     filename: cfgPath,
     loaded: true,
     exports: {
-      getAdkEmployeeModel: () => captures.fakeEmployeeModel ?? { kind: "gemini-flash-mock" },
+      getAdkCompanionModel: () => captures.fakeCompanionModel ?? { kind: "gemini-flash-mock" },
       getAdkSupervisorModel: () => captures.fakeSupervisorModel ?? { kind: "gemini-pro-mock" },
     },
   };
 }
 
-const EMPLOYEE_PATH = path.resolve(__dirname, "../../src/lib/adk/employee-agent.ts");
+const COMPANION_PATH = path.resolve(__dirname, "../../src/lib/adk/companion-agent.ts");
 const SUPERVISOR_PATH = path.resolve(__dirname, "../../src/lib/adk/supervisor-agent.ts");
 // capability-toolset.ts is imported by supervisor-agent.ts. capability-toolset.test.cjs
 // evicts it from Module._cache in loadToolsetModule() so the real @google/adk is used
@@ -130,9 +130,9 @@ const CAPABILITY_TOOLSET_PATH = path.resolve(__dirname, "../../src/lib/adk/capab
 // Without this, a cached session-service.ts holds a reference to whatever
 // @google/adk was in cache when it first loaded — which may be an incomplete
 // mock missing BaseSessionService, causing a TypeError on class extend.
-function loadEmployee() {
-  clearCache(EMPLOYEE_PATH, SESSION_SERVICE_PATH);
-  return require(EMPLOYEE_PATH);
+function loadCompanion() {
+  clearCache(COMPANION_PATH, SESSION_SERVICE_PATH);
+  return require(COMPANION_PATH);
 }
 function loadSupervisor() {
   // Clear capability-toolset.ts as well: it imports BaseToolset from @google/adk at
@@ -143,14 +143,14 @@ function loadSupervisor() {
   return require(SUPERVISOR_PATH);
 }
 
-// ── Employee Agent tests ─────────────────────────────────────────────
+// ── Companion Agent tests ─────────────────────────────────────────────
 
-test("runEmployeeAgentViaAdk: creates Agent with system prompt + Gemini model", async () => {
+test("runCompanionAgentViaAdk: creates Agent with system prompt + Gemini model", async () => {
   const captures = { eventsToYield: [{ content: { parts: [{ text: '{"intent":"answer"}' }] } }] };
   installAdkMock(captures);
   installGeminiConfigMock(captures);
-  const { runEmployeeAgentViaAdk } = loadEmployee();
-  await runEmployeeAgentViaAdk({
+  const { runCompanionAgentViaAdk } = loadCompanion();
+  await runCompanionAgentViaAdk({
     systemPrompt: "Sos el empleado de Velora",
     history: [],
     userMessage: "vendí 2 cubiertas",
@@ -161,17 +161,17 @@ test("runEmployeeAgentViaAdk: creates Agent with system prompt + Gemini model", 
   const instruction = typeof captures.lastAgentConfig.instruction === "function"
     ? captures.lastAgentConfig.instruction()
     : captures.lastAgentConfig.instruction;
-  assert.equal(captures.lastAgentConfig.name, "velora_employee");
+  assert.equal(captures.lastAgentConfig.name, "velora_companion");
   assert.match(instruction, /Sos el empleado de Velora/);
   assert.equal(captures.lastAgentConfig.model.kind, "gemini-flash-mock");
 });
 
-test("runEmployeeAgentViaAdk: embeds history into instruction prefix", async () => {
+test("runCompanionAgentViaAdk: embeds history into instruction prefix", async () => {
   const captures = { eventsToYield: [{ content: { parts: [{ text: "{}" }] } }] };
   installAdkMock(captures);
   installGeminiConfigMock(captures);
-  const { runEmployeeAgentViaAdk } = loadEmployee();
-  await runEmployeeAgentViaAdk({
+  const { runCompanionAgentViaAdk } = loadCompanion();
+  await runCompanionAgentViaAdk({
     systemPrompt: "Base prompt",
     history: [
       { role: "user", parts: [{ text: "hola" }] },
@@ -186,7 +186,7 @@ test("runEmployeeAgentViaAdk: embeds history into instruction prefix", async () 
   assert.match(instruction, /Velora: Hola/);
 });
 
-test("runEmployeeAgentViaAdk: returns concatenated text from runner events", async () => {
+test("runCompanionAgentViaAdk: returns concatenated text from runner events", async () => {
   const captures = {
     eventsToYield: [
       { content: { parts: [{ text: "intermediate" }] } },
@@ -195,8 +195,8 @@ test("runEmployeeAgentViaAdk: returns concatenated text from runner events", asy
   };
   installAdkMock(captures);
   installGeminiConfigMock(captures);
-  const { runEmployeeAgentViaAdk } = loadEmployee();
-  const result = await runEmployeeAgentViaAdk({
+  const { runCompanionAgentViaAdk } = loadCompanion();
+  const result = await runCompanionAgentViaAdk({
     systemPrompt: "p",
     history: [],
     userMessage: "test",
@@ -205,12 +205,12 @@ test("runEmployeeAgentViaAdk: returns concatenated text from runner events", asy
   assert.equal(result.text, '{"intent":"register_sale"}');
 });
 
-test("runEmployeeAgentViaAdk: empty history → no historial block in instruction", async () => {
+test("runCompanionAgentViaAdk: empty history → no historial block in instruction", async () => {
   const captures = { eventsToYield: [{ content: { parts: [{ text: "{}" }] } }] };
   installAdkMock(captures);
   installGeminiConfigMock(captures);
-  const { runEmployeeAgentViaAdk } = loadEmployee();
-  await runEmployeeAgentViaAdk({ systemPrompt: "P", history: [], userMessage: "x" });
+  const { runCompanionAgentViaAdk } = loadCompanion();
+  await runCompanionAgentViaAdk({ systemPrompt: "P", history: [], userMessage: "x" });
   const instruction = typeof captures.lastAgentConfig.instruction === "function"
     ? captures.lastAgentConfig.instruction()
     : captures.lastAgentConfig.instruction;
@@ -218,22 +218,22 @@ test("runEmployeeAgentViaAdk: empty history → no historial block in instructio
   assert.doesNotMatch(instruction, /HISTORIAL DEL CHAT/);
 });
 
-test("runEmployeeAgentViaAdk: passes user message via runner.runEphemeral", async () => {
+test("runCompanionAgentViaAdk: passes user message via runner.runEphemeral", async () => {
   const captures = { eventsToYield: [{ content: { parts: [{ text: "{}" }] } }] };
   installAdkMock(captures);
   installGeminiConfigMock(captures);
-  const { runEmployeeAgentViaAdk } = loadEmployee();
-  await runEmployeeAgentViaAdk({ systemPrompt: "p", history: [], userMessage: "vendí 5 Y" });
+  const { runCompanionAgentViaAdk } = loadCompanion();
+  await runCompanionAgentViaAdk({ systemPrompt: "p", history: [], userMessage: "vendí 5 Y" });
   assert.equal(captures.lastRunParams.newMessage.role, "user");
   assert.equal(captures.lastRunParams.newMessage.parts[0].text, "vendí 5 Y");
 });
 
-test("runEmployeeAgentViaAdk: empty event stream returns empty text", async () => {
+test("runCompanionAgentViaAdk: empty event stream returns empty text", async () => {
   const captures = { eventsToYield: [] };
   installAdkMock(captures);
   installGeminiConfigMock(captures);
-  const { runEmployeeAgentViaAdk } = loadEmployee();
-  const result = await runEmployeeAgentViaAdk({ systemPrompt: "p", history: [], userMessage: "x" });
+  const { runCompanionAgentViaAdk } = loadCompanion();
+  const result = await runCompanionAgentViaAdk({ systemPrompt: "p", history: [], userMessage: "x" });
   assert.equal(result.text, "");
 });
 

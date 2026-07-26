@@ -148,7 +148,7 @@ function installGeminiConfigMock() {
   Module._cache[GEMINI_CONFIG_PATH] = {
     id: GEMINI_CONFIG_PATH, filename: GEMINI_CONFIG_PATH, loaded: true,
     exports: {
-      getAdkEmployeeModel: () => ({ kind: "gemini-flash-mock" }),
+      getAdkCompanionModel: () => ({ kind: "gemini-flash-mock" }),
       getAdkSupervisorModel: () => ({ kind: "gemini-pro-mock" }),
       getAdkVentasModel: () => ({ kind: "gemini-flash-mock" }),
       getAdkCustomerModel: () => ({ kind: "gemini-flash-mock" }),

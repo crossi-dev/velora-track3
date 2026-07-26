@@ -1,4 +1,4 @@
-// Unit tests for synthesizeFromToolResult (employee-agent.synthesize.ts).
+// Unit tests for synthesizeFromToolResult (companion-agent.synthesize.ts).
 // Covers all four tool branches and validates that the register_sale success
 // path produces a saleDraft that would survive extractSaleDraft's checks
 // (productName a non-empty string, customerName present when supplied).
@@ -10,7 +10,7 @@ const path = require("node:path");
 
 const SYNTHESIZE_PATH = path.resolve(
   __dirname,
-  "../../src/lib/adk/employee-agent.synthesize.ts",
+  "../../src/lib/adk/companion-agent.synthesize.ts",
 );
 
 function loadSynthesize() {
@@ -66,7 +66,7 @@ test("synthesize register_sale success: saleDraft has customerName when present"
   });
   const parsed = JSON.parse(result);
   // Finding 2: customerName must be set so sale-extractor does not default to
-  // Consumidor Final when the employee actually named a customer.
+  // Consumidor Final when the companion actually named a customer.
   assert.equal(parsed.saleDraft.customerName, "María López");
 });
 

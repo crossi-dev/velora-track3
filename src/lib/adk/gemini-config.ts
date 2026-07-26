@@ -1,5 +1,5 @@
 // ADK Gemini config para Velora — single source of truth para los modelos
-// que usa el employee + supervisor agent vía ADK. Misma configuración que
+// que usa el companion + supervisor agent vía ADK. Misma configuración que
 // nuestro `gemini-client.ts` pero expuesta a través del wrapper ADK.
 //
 // Por qué archivo separado: el ADK `Gemini` de `@google/adk` es un wrapper
@@ -31,7 +31,7 @@ const SUPERVISOR_LOCATION =
 // update takes effect without a redeploy. Singletons are invalidated when the
 // resolved model name differs from the one used at creation time.
 // The ADK Gemini wrapper is cheap to recreate (no persistent connection held).
-function resolveEmployeeModel(): string {
+function resolveCompanionModel(): string {
   return process.env.GEMINI_MODEL ?? GeminiModels.COMPANION;
 }
 function resolveSupervisorModel(): string {
@@ -45,28 +45,28 @@ function resolveSubAgentModel(): string {
 // A checkout turn makes ~8 LLM round-trips + nested A2A agent calls; on Pro
 // (3-8s/call) that blows the 60s budget and falls back to "no pude procesar".
 // Default to the proven Companion Flash config (fast, GA in southamerica-east1,
-// already calls tools reliably for the employee agent). Override with
+// already calls tools reliably for the companion agent). Override with
 // GEMINI_CUSTOMER_MODEL to force Pro if Flash ever misbehaves on tool calling.
 function resolveCustomerModel(): string {
-  return process.env.GEMINI_CUSTOMER_MODEL ?? resolveEmployeeModel();
+  return process.env.GEMINI_CUSTOMER_MODEL ?? resolveCompanionModel();
 }
 function resolveSubAgentLocation(model: string): string {
   return /pro/i.test(model) ? SUPERVISOR_LOCATION : COMPANION_LOCATION;
 }
 
-let _employeeGemini: BaseLlm | null = null;
-let _employeeGeminiModelName: string | null = null;
+let _companionGemini: BaseLlm | null = null;
+let _companionGeminiModelName: string | null = null;
 let _supervisorGemini: BaseLlm | null = null;
 let _supervisorGeminiModelName: string | null = null;
 
-/** Lazy singleton — Employee Agent (GeminiAdapter / Gemini Flash via Vertex AI). */
-export function getAdkEmployeeModel(): BaseLlm {
-  const model = resolveEmployeeModel();
-  if (!_employeeGemini || _employeeGeminiModelName !== model) {
-    _employeeGemini = createEngineModel({ model, project: PROJECT_ID, location: COMPANION_LOCATION });
-    _employeeGeminiModelName = model;
+/** Lazy singleton — Companion Agent (GeminiAdapter / Gemini Flash via Vertex AI). */
+export function getAdkCompanionModel(): BaseLlm {
+  const model = resolveCompanionModel();
+  if (!_companionGemini || _companionGeminiModelName !== model) {
+    _companionGemini = createEngineModel({ model, project: PROJECT_ID, location: COMPANION_LOCATION });
+    _companionGeminiModelName = model;
   }
-  return _employeeGemini;
+  return _companionGemini;
 }
 
 /** Lazy singleton — Supervisor Agent (GeminiAdapter / Gemini Pro via Vertex AI). */
@@ -87,8 +87,6 @@ let _logisticaGemini: BaseLlm | null = null;
 let _logisticaGeminiModelName: string | null = null;
 let _ventasGemini: BaseLlm | null = null;
 let _ventasGeminiModelName: string | null = null;
-let _equipoGemini: BaseLlm | null = null;
-let _equipoGeminiModelName: string | null = null;
 let _communicationsGemini: BaseLlm | null = null;
 let _communicationsGeminiModelName: string | null = null;
 
@@ -130,16 +128,6 @@ export function getAdkVentasModel(): BaseLlm {
     _ventasGeminiModelName = model;
   }
   return _ventasGemini;
-}
-
-/** Lazy singleton — Equipo Agent. Uses SUB_AGENT_MODEL for deterministic tool calling. */
-export function getAdkEquipoModel(): BaseLlm {
-  const model = resolveSubAgentModel();
-  if (!_equipoGemini || _equipoGeminiModelName !== model) {
-    _equipoGemini = createEngineModel({ model, project: PROJECT_ID, location: resolveSubAgentLocation(model) });
-    _equipoGeminiModelName = model;
-  }
-  return _equipoGemini;
 }
 
 /** Lazy singleton — Communications Agent. Uses SUB_AGENT_MODEL for deterministic tool calling. */

@@ -16,7 +16,6 @@
  * Logística       | LOGISTICA_ADK_TIMEOUT_MS = 35s | LOGISTICA_AGENT_TIMEOUT_MS= 47s | +12s
  * Fiscal/Contador | FISCAL_ADK_TIMEOUT_MS  = 40s   | CONTADOR_AGENT_TIMEOUT_MS = 52s | +12s
  * Communications  | COMMUNICATIONS_ADK_TIMEOUT_MS=20s|COMMUNICATIONS_AGENT_TIMEOUT_MS=32s|+12s
- * Equipo          | EQUIPO_ADK_TIMEOUT_MS  = 28s   | EQUIPO_AGENT_TIMEOUT_MS   = 40s | +12s
  * Payments        | PAYMENTS_ADK_TIMEOUT_MS= 60s   | PAYMENTS_AGENT_TIMEOUT_MS = 72s | +12s
  * Customer Agent  | CUSTOMER_AGENT_ADK=90s         | CUSTOMER_AGENT_DISPATCH=100s    | +10s
  * Caja            | CAJA_ADK_TIMEOUT_MS    = 25s   | CAJA_AGENT_TIMEOUT_MS     = 32s | +7s
@@ -131,16 +130,6 @@ export const COMMUNICATIONS_AGENT_TIMEOUT_MS = Number(
  */
 export const CUSTOMER_AGENT_DISPATCH_TIMEOUT_MS = Number(
   process.env.CUSTOMER_AGENT_DISPATCH_TIMEOUT_MS ?? "100000",
-);
-
-/**
- * Equipo agent: employee management (shelved — included for completeness).
- * Inner ADK = 28s (EQUIPO_ADK_TIMEOUT_MS in handle-equipo-rpc.ts).
- * Outer = 40s = 28s inner + 12s margin. < SUPERVISOR_ADK 65s ✓.
- * Env-overridable for live tuning without redeploy.
- */
-export const EQUIPO_AGENT_TIMEOUT_MS = Number(
-  process.env.EQUIPO_AGENT_TIMEOUT_MS ?? "40000",
 );
 
 /**

@@ -197,8 +197,8 @@ export async function handleCompanionRpcAsync(
         const safeIntent = modelResult.safeIntent;
         intent = safeIntent;
 
-        // Apply the same RBAC guard the pipeline uses for employee turns.
-        const rbacResult = rbacGuard({ kind: "employee" }, safeIntent);
+        // Apply the same RBAC guard the pipeline uses for companion turns.
+        const rbacResult = rbacGuard({ kind: "companion" }, safeIntent);
         if (!rbacResult.allowed) {
           rbacBlocked = true;
           answer = rbacResult.reason ?? "Esa acción la tiene que hacer el dueño.";

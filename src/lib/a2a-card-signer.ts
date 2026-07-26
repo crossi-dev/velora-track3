@@ -64,8 +64,6 @@ const AGENT_KEY_ENV: Record<AgentId, string> = {
   // Ventas Agent — same provisioning gap; key gets minted in Commit 4 of the
   // Fase B strangler.
   ventas:       "AGENT_IDENTITY_KEY_VENTAS",
-  // Equipo Agent — Fase E role-agent for employee/RH operations.
-  equipo:       "AGENT_IDENTITY_KEY_EQUIPO",
   // Communications Agent — same provisioning gap; key minted when ready.
   communications: "AGENT_IDENTITY_KEY_COMMUNICATIONS",
   // Customer Agent — key provisioned post-deploy (Step 4, 2026-05-28).

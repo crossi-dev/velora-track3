@@ -138,7 +138,7 @@ export async function runSupervisorAgentViaAdk(
   });
 
   // Canonical Google ADK 2026 pattern: base Runner + persistent sessionService
-  // + runAsync with stable sessionId. Mirrors employee-agent.ts:121-152.
+  // + runAsync with stable sessionId. Mirrors companion-agent.ts:121-152.
   // InMemoryRunner ignores any sessionService passed to it (hardcodes its own).
   // PERF-T3-5: reuse session service per businessId:agentName (90s TTL, LRU-100).
   // agent.name passed → event.author in replayed history (ADK: https://adk.dev/events/)

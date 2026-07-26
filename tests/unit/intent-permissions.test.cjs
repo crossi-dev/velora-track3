@@ -3,7 +3,7 @@ const test = require("node:test");
 
 const {
   isIntentAllowedForRole,
-  buildEmployeeRefusal,
+  buildCompanionRefusal,
 } = require("../../src/app/api/business-assistant/_lib/intent-permissions.ts");
 
 // ── Owner: todo permitido ──────────────────────────────────────────────
@@ -28,85 +28,85 @@ test("owner: register_movement allowed", () => {
   assert.equal(isIntentAllowedForRole("owner", "register_movement"), true);
 });
 
-// ── Employee: only the safe whitelist ──────────────────────────────────
+// ── Companion: only the safe whitelist ──────────────────────────────────
 
-test("employee: answer always allowed", () => {
-  assert.equal(isIntentAllowedForRole("employee", "answer"), true);
+test("companion: answer always allowed", () => {
+  assert.equal(isIntentAllowedForRole("companion", "answer"), true);
 });
 
-test("employee: register_sale allowed (core del rol)", () => {
-  assert.equal(isIntentAllowedForRole("employee", "register_sale"), true);
+test("companion: register_sale allowed (core del rol)", () => {
+  assert.equal(isIntentAllowedForRole("companion", "register_sale"), true);
 });
 
-test("employee: business_query allowed (read)", () => {
-  assert.equal(isIntentAllowedForRole("employee", "business_query"), true);
+test("companion: business_query allowed (read)", () => {
+  assert.equal(isIntentAllowedForRole("companion", "business_query"), true);
 });
 
-test("employee: stock_load allowed (A2A supervisor intercept gestiona la autorización)", () => {
-  assert.equal(isIntentAllowedForRole("employee", "stock_load"), true);
+test("companion: stock_load allowed (A2A supervisor intercept gestiona la autorización)", () => {
+  assert.equal(isIntentAllowedForRole("companion", "stock_load"), true);
 });
 
-test("employee: report_event allowed", () => {
-  assert.equal(isIntentAllowedForRole("employee", "report_event"), true);
+test("companion: report_event allowed", () => {
+  assert.equal(isIntentAllowedForRole("companion", "report_event"), true);
 });
 
-test("employee: check_stock BLOCKED (owner-only per franchise model)", () => {
-  assert.equal(isIntentAllowedForRole("employee", "check_stock"), false);
+test("companion: check_stock BLOCKED (owner-only per franchise model)", () => {
+  assert.equal(isIntentAllowedForRole("companion", "check_stock"), false);
 });
 
-test("employee: create_customer BLOCKED (owner-only per franchise model)", () => {
-  assert.equal(isIntentAllowedForRole("employee", "create_customer"), false);
+test("companion: create_customer BLOCKED (owner-only per franchise model)", () => {
+  assert.equal(isIntentAllowedForRole("companion", "create_customer"), false);
 });
 
-test("employee: edit_customer BLOCKED (owner-only per industry standard)", () => {
-  assert.equal(isIntentAllowedForRole("employee", "edit_customer"), false);
-  const refusal = buildEmployeeRefusal("edit_customer");
+test("companion: edit_customer BLOCKED (owner-only per industry standard)", () => {
+  assert.equal(isIntentAllowedForRole("companion", "edit_customer"), false);
+  const refusal = buildCompanionRefusal("edit_customer");
   assert.match(refusal.answer, /dueño/i);
   assert.equal(refusal.forbiddenIntent, "edit_customer");
 });
 
-test("employee: edit_product BLOCKED (owner-only)", () => {
-  assert.equal(isIntentAllowedForRole("employee", "edit_product"), false);
+test("companion: edit_product BLOCKED (owner-only)", () => {
+  assert.equal(isIntentAllowedForRole("companion", "edit_product"), false);
 });
 
-test("employee: delete_product BLOCKED", () => {
-  assert.equal(isIntentAllowedForRole("employee", "delete_product"), false);
+test("companion: delete_product BLOCKED", () => {
+  assert.equal(isIntentAllowedForRole("companion", "delete_product"), false);
 });
 
-test("employee: bulk_price_update BLOCKED", () => {
-  assert.equal(isIntentAllowedForRole("employee", "bulk_price_update"), false);
+test("companion: bulk_price_update BLOCKED", () => {
+  assert.equal(isIntentAllowedForRole("companion", "bulk_price_update"), false);
 });
 
-test("employee: adjust_stock BLOCKED", () => {
-  assert.equal(isIntentAllowedForRole("employee", "adjust_stock"), false);
+test("companion: adjust_stock BLOCKED", () => {
+  assert.equal(isIntentAllowedForRole("companion", "adjust_stock"), false);
 });
 
-test("employee: register_movement BLOCKED (cash movements owner-only)", () => {
-  assert.equal(isIntentAllowedForRole("employee", "register_movement"), false);
+test("companion: register_movement BLOCKED (cash movements owner-only)", () => {
+  assert.equal(isIntentAllowedForRole("companion", "register_movement"), false);
 });
 
-test("employee: create_supplier BLOCKED", () => {
-  assert.equal(isIntentAllowedForRole("employee", "create_supplier"), false);
+test("companion: create_supplier BLOCKED", () => {
+  assert.equal(isIntentAllowedForRole("companion", "create_supplier"), false);
 });
 
-test("employee: edit_supplier BLOCKED", () => {
-  assert.equal(isIntentAllowedForRole("employee", "edit_supplier"), false);
+test("companion: edit_supplier BLOCKED", () => {
+  assert.equal(isIntentAllowedForRole("companion", "edit_supplier"), false);
 });
 
 // ── Refusal builders ───────────────────────────────────────────────────
 
-test("buildEmployeeRefusal: edit_product menciona dueño", () => {
-  const r = buildEmployeeRefusal("edit_product");
+test("buildCompanionRefusal: edit_product menciona dueño", () => {
+  const r = buildCompanionRefusal("edit_product");
   assert.match(r.answer, /dueño/i);
   assert.equal(r.forbiddenIntent, "edit_product");
 });
 
-test("buildEmployeeRefusal: register_movement menciona caja", () => {
-  const r = buildEmployeeRefusal("register_movement");
+test("buildCompanionRefusal: register_movement menciona caja", () => {
+  const r = buildCompanionRefusal("register_movement");
   assert.match(r.answer, /caja/i);
 });
 
-test("buildEmployeeRefusal: tono cálido — no usa 'permiso denegado' ni 'no autorizado'", () => {
+test("buildCompanionRefusal: tono cálido — no usa 'permiso denegado' ni 'no autorizado'", () => {
   const intents = [
     "edit_product",
     "delete_product",
@@ -117,7 +117,7 @@ test("buildEmployeeRefusal: tono cálido — no usa 'permiso denegado' ni 'no au
     "bulk_price_update",
   ];
   for (const intent of intents) {
-    const r = buildEmployeeRefusal(intent);
+    const r = buildCompanionRefusal(intent);
     assert.doesNotMatch(r.answer.toLowerCase(), /permiso denegado/);
     assert.doesNotMatch(r.answer.toLowerCase(), /no autorizado/);
     assert.doesNotMatch(r.answer.toLowerCase(), /forbidden/);
