@@ -77,6 +77,16 @@ steps:
       - --timeout=300s
       - --concurrency=80
       - --port=8080
+      # Doubles CPU during startup (+10s) — the documented Cloud Run mitigation
+      # for cold starts on scale-to-zero services (--min-instances=0 above is
+      # exactly that case). Only bills the boosted window.
+      - --cpu-boost
+      # Real readiness: /api/health checks DB reachability + auth/MP config, not
+      # just "process is up". Startup probe only (no liveness probe) — a liveness
+      # probe checking an external dependency would restart the container on a
+      # transient DB blip, which doesn't fix the DB and just adds a restart storm
+      # on top of an outage. Startup probe safely delays traffic until genuinely ready.
+      - --startup-probe=httpGet.path=/api/health,httpGet.port=8080,timeoutSeconds=10,periodSeconds=5,failureThreshold=6
       - --project=$PROJECT_ID
       # Explicit — Cloud Run "no flag = keep prior revision's value" previously made
       # this work by accident (a pre-existing manual deploy had set it); relying on
@@ -148,6 +158,8 @@ steps:
       - --timeout=300s
       - --concurrency=80
       - --port=8080
+      - --cpu-boost
+      - --startup-probe=httpGet.path=/api/health,httpGet.port=8080,timeoutSeconds=10,periodSeconds=5,failureThreshold=6
       - --project=$PROJECT_ID
       # Run as velora-runtime (same SA as the velora service) — it already holds
       # secretAccessor on every secret below. A new service defaults to the compute
