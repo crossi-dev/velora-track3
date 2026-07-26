@@ -11,17 +11,46 @@
 export const EMPLOYEE_COOKIE_NAME = "velora-employee-session";
 export const EMPLOYEE_SESSION_REFRESH_THRESHOLD_MS = 30 * 60 * 1000; // 30 min
 
+// Idle timeout (task #15): a shared/POS terminal must not stay authenticated
+// all day just because *some* request landed once every ~7.5h — that only
+// protects against the cookie's absolute exp. This is a second, independent
+// clock: no activity for EMPLOYEE_IDLE_TIMEOUT_MS means "walked away from an
+// unlocked register," even though the 8h absolute exp is nowhere near firing.
+// 30 min is the typical POS/register idle-lock convention. Business has no
+// existing configurable field for this (checked prisma/schema.prisma) so it's
+// a fixed constant rather than a per-business override, matching the scope of
+// this change. Must match IDLE_TIMEOUT_MS in employee-auth.ts.
+export const EMPLOYEE_IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 min
+
+// How often an active session's lastActivity gets re-stamped into a fresh
+// cookie. Re-signing on literally every request would work too (HMAC sign is
+// cheap, no DB round-trip) but churns a Set-Cookie header onto every response.
+// Refreshing every 5 min keeps lastActivity accurate to within 5 min, which is
+// precise enough against a 30 min idle window.
+export const EMPLOYEE_IDLE_REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 min
+
 export interface EmployeeSessionPayload {
   employeeId: string;
   businessId: string;
   role: string;
   exp: number;
   sv: number; // session revocation counter — must match Employee.sessionVersion (parity with node-side EmployeeSessionPayload)
+  // Wall-clock time (ms) of the last request that passed session verification.
+  // Optional for backward compat: cookies signed before this field existed
+  // (2026-07-26) won't have it. Those are grandfathered — idle-checked only
+  // once they carry a lastActivity value (see verifyEmployeeSession below) —
+  // rather than force-expiring every mid-shift POS session on deploy.
+  lastActivity?: number;
 }
 
 export interface VerifiedEmployeeSession {
   payload: EmployeeSessionPayload;
   shouldRefresh: boolean;
+  // true  = refresh should slide the absolute exp forward (near-expiry case,
+  //         existing behavior).
+  // false = refresh should only re-stamp lastActivity; exp is left untouched
+  //         so idle-activity refreshes can never extend the 8h absolute cap.
+  extendExpiry: boolean;
 }
 
 // RFC 5869 §3.1: fixed domain salt prevents extract-phase collapse when IKM
@@ -116,8 +145,23 @@ export async function verifyEmployeeSession(
   }
   if (parsed.exp < Date.now()) return null;
 
-  const shouldRefresh = parsed.exp - Date.now() < EMPLOYEE_SESSION_REFRESH_THRESHOLD_MS;
-  return { payload: parsed, shouldRefresh };
+  // Idle timeout: reject even though the absolute exp hasn't been reached
+  // yet if the session has had no activity for EMPLOYEE_IDLE_TIMEOUT_MS.
+  // lastActivity is optional (see EmployeeSessionPayload) — cookies without
+  // it predate this field and are not idle-checked until they next refresh.
+  if (
+    typeof parsed.lastActivity === "number" &&
+    Date.now() - parsed.lastActivity > EMPLOYEE_IDLE_TIMEOUT_MS
+  ) {
+    return null;
+  }
+
+  const nearExpiry = parsed.exp - Date.now() < EMPLOYEE_SESSION_REFRESH_THRESHOLD_MS;
+  const idleStale =
+    typeof parsed.lastActivity !== "number" ||
+    Date.now() - parsed.lastActivity > EMPLOYEE_IDLE_REFRESH_INTERVAL_MS;
+  const shouldRefresh = nearExpiry || idleStale;
+  return { payload: parsed, shouldRefresh, extendExpiry: nearExpiry };
 }
 
 /**
@@ -125,16 +169,30 @@ export async function verifyEmployeeSession(
  * Used by middleware to issue refreshed cookies without Node `crypto`.
  * Key is derived via HKDF with the same label + domain salt as the Node
  * path (employee-auth.ts) — producing byte-identical keys. (C2 fix)
- * TTL is taken from the original payload's remaining duration, extended
- * by the standard 8-hour shift duration.
+ *
+ * Always re-stamps lastActivity to now (this function is only ever called
+ * to refresh a cookie in response to a request, i.e. activity).
+ *
+ * extendExpiry controls whether the refresh also slides the absolute exp
+ * forward (near-expiry sliding renewal, existing behavior) or leaves exp
+ * untouched (idle-activity-only refresh). Defaulting to true preserves prior
+ * behavior for the one pre-existing call site; false is required for
+ * idle-only refreshes so they can never extend the 8h absolute cap — that
+ * cap must stay a real ceiling, independent of how often lastActivity ticks.
  */
 export async function signEmployeeSessionEdge(
   payload: EmployeeSessionPayload,
-  durationMs = 8 * 60 * 60 * 1000,
+  options: { extendExpiry?: boolean; durationMs?: number } = {},
 ): Promise<string> {
   const secret = process.env.AUTH_SECRET;
   if (!secret) throw new Error("AUTH_SECRET missing");
-  const fullPayload: EmployeeSessionPayload = { ...payload, exp: Date.now() + durationMs };
+  const extendExpiry = options.extendExpiry ?? true;
+  const durationMs = options.durationMs ?? 8 * 60 * 60 * 1000;
+  const fullPayload: EmployeeSessionPayload = {
+    ...payload,
+    exp: extendExpiry ? Date.now() + durationMs : payload.exp,
+    lastActivity: Date.now(),
+  };
   const encoder = new TextEncoder();
   const jsonBytes = encoder.encode(JSON.stringify(fullPayload));
   const payloadB64 = base64UrlEncode(jsonBytes);

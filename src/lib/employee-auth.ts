@@ -14,6 +14,12 @@ const SCRYPT_COST = 16384; // N parameter — balance entre seguridad y latencia
 const PIN_HASH_VERSION = "v1";
 const COOKIE_TTL_MS = 8 * 60 * 60 * 1000; // 8h — turno laboral típico
 
+// Idle timeout (task #15): independent of the 8h absolute exp above, a
+// session with no activity for this long is treated as expired — closes the
+// "unlocked POS terminal left alone all day" exposure. Must match
+// EMPLOYEE_IDLE_TIMEOUT_MS in employee-auth-edge.ts exactly.
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 min
+
 // HKDF domain separation: employee session signing uses a key derived from
 // AUTH_SECRET with this label, isolating it from NextAuth JWTs and from
 // owner-native tokens (which use "velora-owner-native-v1"). Per Google 2026
@@ -39,6 +45,13 @@ export interface EmployeeSessionPayload {
   role: string;
   exp: number;
   sv: number; // session revocation counter — must match Employee.sessionVersion
+  // Wall-clock time (ms) of the last request that passed verification.
+  // Optional for backward compat: cookies signed before this field existed
+  // (2026-07-26) won't carry it. Those are grandfathered rather than
+  // force-expired on deploy — see verifyEmployeeSession below. Unlike
+  // HKDF_SALT above (which deliberately breaks every existing cookie), idle
+  // timeout can't force a mass mid-shift re-login on a live POS terminal.
+  lastActivity?: number;
 }
 
 export class EmployeeAuthError extends Error {
@@ -104,7 +117,7 @@ export function verifyPin(pin: string, storedHash: string): boolean {
  *   Business.sessionDurationHours). Defaults to 8 if not provided.
  */
 export function signEmployeeSession(
-  payload: Omit<EmployeeSessionPayload, "exp">,
+  payload: Omit<EmployeeSessionPayload, "exp" | "lastActivity">,
   sessionDurationHours?: number | null,
 ): string {
   const secret = process.env.AUTH_SECRET;
@@ -115,6 +128,7 @@ export function signEmployeeSession(
   const fullPayload: EmployeeSessionPayload = {
     ...payload,
     exp: Date.now() + ttlMs,
+    lastActivity: Date.now(),
   };
   const payloadB64 = Buffer.from(JSON.stringify(fullPayload)).toString("base64url");
   // Sign with HKDF-derived key (domain-separated from AUTH_SECRET).
@@ -164,6 +178,18 @@ export function verifyEmployeeSession(cookie: string | null | undefined): Employ
     return null;
   }
   if (parsed.exp < Date.now()) return null;
+
+  // Idle timeout: reject even though the absolute exp hasn't been reached
+  // yet if the session has had no activity for IDLE_TIMEOUT_MS. lastActivity
+  // is optional (see EmployeeSessionPayload) — cookies without it predate
+  // this field and are grandfathered until they next refresh.
+  if (
+    typeof parsed.lastActivity === "number" &&
+    Date.now() - parsed.lastActivity > IDLE_TIMEOUT_MS
+  ) {
+    return null;
+  }
+
   return parsed;
 }
 
@@ -229,3 +255,4 @@ export async function rotateBusinessLoginToken(businessId: string): Promise<void
 
 export const EMPLOYEE_COOKIE_NAME = "velora-employee-session";
 export const EMPLOYEE_COOKIE_TTL_MS = COOKIE_TTL_MS;
+export const EMPLOYEE_IDLE_TIMEOUT_MS = IDLE_TIMEOUT_MS;
