@@ -152,6 +152,8 @@ interface Prefill {
     pendingTotalARS: number;
     lowStock: LowStockItem[];
     topLowStockName: string | null;
+    fiscalReady: boolean;
+    marginPercentMonth: number | null;
   };
   cliente360: Cliente360Data;
   cierreDia: { caja: CajaSummary; ventasHoy: VentasPeriodo; pendingOrders: PendingSummary[]; pendingCount: number };
@@ -258,6 +260,15 @@ function InlineSummary({
           {data.caja.state === "OPEN" && <span className="text-lg font-bold tabular-nums text-ink">{ars(data.caja.expectedCashAmount)}</span>}
           {data.caja.state === "CLOSED" && <span className="text-lg font-bold tabular-nums text-ink">{ars(data.caja.closedCashAmount)}</span>}
         </div>
+        {/* JD integration-map finding (2026-07-26): fiscal setup was invisible on the
+         * main dashboard — the owner only found out invoicing wasn't ready by asking
+         * explicitly. Stays silent when ready, per the same "clean when nothing's
+         * wrong" principle Cobros/Stock already follow. */}
+        {!data.fiscalReady && (
+          <p className="mt-2 text-sm text-danger-ink">
+            ⚠ Facturación electrónica sin configurar — pedime "cómo activo la facturación" para completarla.
+          </p>
+        )}
       </SectionCard>
 
       <SectionCard title="Ventas">
@@ -269,6 +280,14 @@ function InlineSummary({
           <dt className="text-sm text-ink-soft">Esta semana</dt>
           <dd className={`text-sm font-medium tabular-nums ${data.ventasSemana.failed ? "text-danger-ink" : "text-ink"}`}>{ventasLabel(data.ventasSemana)}</dd>
         </div>
+        {/* JD integration-map finding (2026-07-26): margin data was already fetched
+         * for the Dashboard tab (3 taps deep) and never surfaced inline. */}
+        {data.marginPercentMonth != null && (
+          <div className="flex items-center justify-between gap-2">
+            <dt className="text-sm text-ink-soft">Margen del mes</dt>
+            <dd className="text-sm font-medium tabular-nums text-ink">{data.marginPercentMonth.toFixed(0)}%</dd>
+          </div>
+        )}
       </SectionCard>
 
       <SectionCard title="Cobros pendientes">
@@ -490,23 +509,34 @@ function CierreDiaTab({
   );
 }
 
-function StockTab({ data }: { data: Prefill["reposicionStock"] }): React.JSX.Element {
+function StockTab({
+  data,
+  onRequestRestock,
+}: {
+  data: Prefill["reposicionStock"];
+  onRequestRestock: (productName: string) => void;
+}): React.JSX.Element {
   return (
     <div className="flex flex-col gap-3">
       <SectionCard title="Stock bajo">
         {data.lowStock.length === 0 ? (
           <p className="text-sm text-ink-soft">Todo el stock está por encima del mínimo.</p>
         ) : (
-          <ul className="flex flex-col gap-2">
-            {data.lowStock.map((p) => (
-              <li key={p.id} className="flex items-center justify-between gap-2">
-                <span className="text-sm text-ink">{p.name}</span>
-                <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-sm text-danger-ink">
-                  {p.stock} / {p.reorderThreshold}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="flex flex-col gap-2">
+              {data.lowStock.map((p) => (
+                <li key={p.id} className="flex items-center justify-between gap-2">
+                  <span className="text-sm text-ink">{p.name}</span>
+                  <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-sm text-danger-ink">
+                    {p.stock} / {p.reorderThreshold}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <SecondaryButton onClick={() => onRequestRestock(data.lowStock[0].name)}>
+              Pedir reposición de {data.lowStock[0].name}
+            </SecondaryButton>
+          </>
         )}
       </SectionCard>
 
@@ -732,6 +762,23 @@ function BusinessOverviewWidget(): React.JSX.Element {
     });
   }
 
+  // JD integration-map finding (2026-07-26): "Reposición" was pure-informational,
+  // no way to act on a low-stock alert without leaving the widget. create_purchase_request
+  // needs a supplier + unit price the low-stock payload doesn't carry, so a blind
+  // one-tap mutation isn't safe here — this pushes a suggested message to chat instead
+  // (app.sendMessage, the documented pattern for "benefits from Claude's interpretation"),
+  // letting Claude ask for supplier/price rather than guessing them.
+  async function requestRestock(productName: string) {
+    if (!app || superseded) return;
+    setNavError(null);
+    await app.sendMessage({
+      role: "user",
+      content: [{ type: "text", text: `Necesito pedir reposición de ${productName}.` }],
+    }).catch(() => {
+      setNavError("No se pudo enviar el pedido de reposición. Intentá de nuevo.");
+    });
+  }
+
   async function searchCliente() {
     if (!app || superseded || !clienteQuery.trim()) return;
     setNavError(null);
@@ -819,7 +866,9 @@ function BusinessOverviewWidget(): React.JSX.Element {
             <ClienteTab data={prefill.cliente360} query={clienteQuery} onQueryChange={setClienteQuery} onSearch={searchCliente} />
           )}
           {activeTab === "cierre_dia" && <CierreDiaTab data={prefill.cierreDia} onOpenCaja={openCajaStatus} onOpenPending={openPendingOrders} />}
-          {activeTab === "reposicion_stock" && <StockTab data={prefill.reposicionStock} />}
+          {activeTab === "reposicion_stock" && (
+            <StockTab data={prefill.reposicionStock} onRequestRestock={requestRestock} />
+          )}
           {activeTab === "dashboard_ventas" && <DashboardTab data={prefill.dashboardVentas} />}
         </>
       ) : (

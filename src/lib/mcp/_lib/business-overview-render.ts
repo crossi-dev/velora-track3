@@ -34,6 +34,7 @@ import type { VentasBackend, LowStockProductResult } from "./ventas-backend.port
 import type { ReportesBackend } from "./reportes-backend.port";
 import type { SupplierBackend, ListSuppliersResult } from "./supplier-backend.port";
 import type { CustomerBackend } from "./customer-backend.port";
+import { getFiscalReadiness } from "@/app/api/agents/fiscal/jsonrpc/_lib/fiscal-readiness";
 import { errResponse } from "./mcp-responses";
 import { BUSINESS_OVERVIEW_HTML } from "../widgets/generated/business-overview.html";
 
@@ -244,6 +245,7 @@ export function registerBusinessOverviewRenderTool(
           margenRaw,
           rankingRaw,
           porEmpleadoRaw,
+          fiscalReadiness,
         ] = await Promise.all([
           resolveCajaPrefill(businessId, backends.caja),
           backends.reportes.querySales({ tenantId: businessId, metrica: "ventas_periodo", preset: "hoy" }),
@@ -255,6 +257,10 @@ export function registerBusinessOverviewRenderTool(
           backends.reportes.querySales({ tenantId: businessId, metrica: "margen", preset: "mes" }),
           backends.reportes.querySales({ tenantId: businessId, metrica: "ranking_productos", preset: "mes" }),
           backends.reportes.querySales({ tenantId: businessId, metrica: "por_empleado", preset: "mes" }),
+          // JD integration-map finding (2026-07-26): the main dashboard had zero fiscal
+          // awareness — the owner only learned invoicing wasn't set up by explicitly
+          // asking. Pure/side-effect-free, same function get_fiscal_readiness itself calls.
+          getFiscalReadiness(businessId),
         ]);
 
         const pendingOrders = pendingOrdersRaw.map(toPendingSummary);
@@ -296,6 +302,11 @@ export function registerBusinessOverviewRenderTool(
             pendingTotalARS: pendingOrders.reduce((sum, po) => sum + po.totalARS, 0),
             lowStock,
             topLowStockName: lowStock[0]?.name ?? null,
+            fiscalReady: fiscalReadiness.ready,
+            // JD integration-map finding (2026-07-26): margin data was already fetched
+            // for the Dashboard tab (3 taps deep, not the default tab) and never
+            // surfaced inline. Already computed above — no new query, just threaded through.
+            marginPercentMonth: margen?.marginPercent ?? null,
           },
           cliente360,
           cierreDia: {

@@ -79,7 +79,9 @@ export function registerSalesTools(server: McpServer, businessId: string, backen
         "customerId is optional; omit for anonymous sales. " +
         "Idempotent: the same (products, qty, customerId) combination deduplicates. " +
         "Supply requestId to force a distinct sale when the same basket must be recorded twice. " +
-        "If the customer will pay via MercadoPago (online/Checkout Pro), use open_payment_link_wizard instead.",
+        "If the customer will pay via MercadoPago (online/Checkout Pro), use open_payment_link_wizard instead. " +
+        "If this sale needs shipping, use the returned saleId with get_package_profile, then quote_shipping, " +
+        "then create_shipment.",
       inputSchema: REGISTER_SALE_SCHEMA,
       // Standard MCP tool annotations — https://modelcontextprotocol.io/specification/2025-06-18/schema
       annotations: { readOnlyHint: false, idempotentHint: true, destructiveHint: true, openWorldHint: false },
