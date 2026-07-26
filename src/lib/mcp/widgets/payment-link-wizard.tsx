@@ -153,7 +153,11 @@ function PaymentLinkWizard(): React.JSX.Element {
       setPrefill(args);
       setItems(args.items ?? []);
       setCustomerId(args.customerId ?? "");
-      setCustomerName(args.customerName ?? "Cliente sin nombre");
+      // args.customerName is "" (not undefined) when no customer was resolved —
+      // resolveWizardPrefillImpl sends it that way on purpose (velora-wizard-prefill.ts).
+      // "??" doesn't catch "", so use "||" or the CustomerField "Cambiar" link renders
+      // with no name text before it and no visible affordance (real bug, 2026-07-26).
+      setCustomerName(args.customerName || "Cliente sin nombre");
       if (Number.isFinite(args.createdAt)) {
         orderKeyRef.current = args.createdAt;
         keyFinalizedRef.current = true;
@@ -313,6 +317,7 @@ function PaymentLinkWizard(): React.JSX.Element {
       {superseded ? <SupersededNotice /> : <ReturnHint />}
       <CustomerField
         customerName={customerName}
+        hasCustomer={!!customerId}
         pickingCustomer={pickingCustomer}
         customerQuery={customerQuery}
         customerMatches={customerMatches}

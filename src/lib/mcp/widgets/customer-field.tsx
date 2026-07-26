@@ -24,6 +24,14 @@ export interface CustomerMatch {
 
 export interface CustomerFieldProps {
   customerName: string;
+  /** True once a real customer is selected. When false, the trigger renders
+   * as a full button ("Elegir cliente") instead of a bare "Cambiar" text
+   * link next to an empty name — the empty-name case read as an orphaned
+   * word with no visible affordance (real bug found live 2026-07-26: the
+   * server sends customerName: "" when no customerId was resolved yet, and
+   * an empty string + a small underlined link alone gave no indication
+   * there was anything to click). */
+  hasCustomer: boolean;
   pickingCustomer: boolean;
   customerQuery: string;
   customerMatches: CustomerMatch[];
@@ -38,6 +46,7 @@ export interface CustomerFieldProps {
 
 export function CustomerField({
   customerName,
+  hasCustomer,
   pickingCustomer,
   customerQuery,
   customerMatches,
@@ -58,16 +67,26 @@ export function CustomerField({
     <div>
       <div className="mb-1 text-sm text-ink-soft">Cliente</div>
       {!pickingCustomer ? (
-        <div className="flex items-center gap-2">
-          <span className="text-base text-ink">{customerName}</span>
+        hasCustomer ? (
+          <div className="flex items-center gap-2">
+            <span className="text-base text-ink">{customerName}</span>
+            <button
+              type="button"
+              onClick={onStartPick}
+              className="text-sm text-accent underline-offset-2 hover:underline"
+            >
+              Cambiar
+            </button>
+          </div>
+        ) : (
           <button
             type="button"
             onClick={onStartPick}
-            className="text-sm text-accent underline-offset-2 hover:underline"
+            className="rounded-control border border-line bg-surface-2 px-3 py-2 text-sm font-medium text-ink hover:bg-line"
           >
-            Cambiar
+            Elegir cliente
           </button>
-        </div>
+        )
       ) : (
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
