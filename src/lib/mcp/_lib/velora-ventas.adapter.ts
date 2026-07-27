@@ -19,6 +19,8 @@ import type {
 import { queryCatalog } from "./ventas-queries";
 import { prisma } from "@/lib/prisma";
 
+type LowStockRow = { id: string; name: string; quantity: number; reorderThreshold: number };
+
 export class VeloraVentasAdapter implements VentasBackend {
   async queryCatalog(input: QueryCatalogInput): Promise<CatalogProductResult[]> {
     const { tenantId: businessId, search } = input;
@@ -27,16 +29,21 @@ export class VeloraVentasAdapter implements VentasBackend {
 
   async getLowStockProducts(input: GetLowStockProductsInput): Promise<LowStockProductResult[]> {
     const { tenantId: businessId } = input;
-    // Exact query moved from stock-consultar-tool.ts (filter=low_stock branch).
-    // in-memory snapshot does not carry reorderThreshold — DB read required.
-    const rows = await prisma.product.findMany({
-      where: { businessId },
-      select: { id: true, name: true, quantity: true, reorderThreshold: true },
-      orderBy: { name: "asc" },
-    });
-    return rows
-      .filter((p) => p.quantity <= p.reorderThreshold)
-      .map((p) => ({ id: p.id, name: p.name, stock: p.quantity, reorderThreshold: p.reorderThreshold }));
+    // Originally: findMany the WHOLE catalog, then filter quantity<=reorderThreshold
+    // in memory — Prisma's query API can't express a cross-column comparison
+    // (quantity vs. reorderThreshold, both columns on the same row) without a raw
+    // query. Fixed to filter in Postgres instead: same $queryRaw pattern already
+    // used for this exact comparison in src/app/api/scheduled/low-stock-alert/route.ts.
+    // Filter semantics unchanged from the original in-memory version (<=, no
+    // reorderThreshold>0 exclusion) — only the unbounded-fetch cost is fixed.
+    const rows = await prisma.$queryRaw<LowStockRow[]>`
+      SELECT "id", "name", "quantity", "reorderThreshold"
+      FROM "Product"
+      WHERE "businessId" = ${businessId}
+        AND "quantity" <= "reorderThreshold"
+      ORDER BY "name" ASC
+    `;
+    return rows.map((p) => ({ id: p.id, name: p.name, stock: p.quantity, reorderThreshold: p.reorderThreshold }));
   }
 
   async getProductStock(input: GetProductStockInput): Promise<ProductStockResult | null> {

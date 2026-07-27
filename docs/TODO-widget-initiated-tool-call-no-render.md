@@ -76,8 +76,11 @@ Confirming the exact host-side mechanism would need either:
   building/mcp-apps/troubleshooting.md documents a Desktop-only nested-iframe
   inspector via Cmd/Ctrl+Shift+I — not available from this automated
   environment, which drives Claude.ai web), or
-- Filing this as feedback/a bug report to Anthropic, since it may be a
-  platform behavior outside Velora's control.
+- Filing this as feedback/a bug report to **mcp-apps@anthropic.com** —
+  Anthropic's own listed feedback address for MCP Apps (getting-started.md),
+  since this is a platform behavior outside Velora's control, confirmed
+  reproducible in two independent widgets. See docs/testing-mcp-apps.md for
+  the general local-testing/debugging workflow this finding came out of.
 
 Same console.log/iframe-visibility limitation would apply to any other
 widget-initiated `callServerTool` flow in this codebase (e.g.
