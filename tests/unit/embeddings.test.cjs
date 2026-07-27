@@ -17,6 +17,18 @@ Module._load = function (request, parent, ...rest) {
           return { async getAccessToken() { return { token: "fake" }; } };
         }
       },
+      // OAuth2Client isn't used by this SUT, but this stub replaces
+      // Module._load globally for the rest of the in-process test run
+      // (restored only on `process.exit`, which doesn't fire between
+      // files under tests/unit/run-all.cjs). Omitting it here breaks
+      // `new OAuth2Client()` in cron-auth.ts / oidc-verifiers.ts for any
+      // test file that loads after this one.
+      OAuth2Client: class {
+        constructor() {}
+        async verifyIdToken() {
+          throw Object.assign(new Error("Token is invalid (test stub default)"), { code: 401 });
+        }
+      },
     };
   }
   return origLoad.call(this, request, parent, ...rest);
