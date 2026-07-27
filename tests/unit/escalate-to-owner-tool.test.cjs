@@ -34,6 +34,18 @@ function installMocks(prismaCreateFn) {
         constructor(config) { capturedExecuteFn = config.execute; }
       },
       Type: { OBJECT: "OBJECT", STRING: "STRING" },
+      // BaseSessionService / createEvent / BaseLlm: not used by this SUT, but
+      // this stub replaces Module._cache["@google/adk"] for the rest of the
+      // in-process run (restored only on process.exit, which doesn't fire
+      // between files under tests/unit/run-all.cjs). Omitting them here
+      // breaks `class VertexAgentEngineSessionService extends
+      // BaseSessionService` (agent-engine-session-service.ts) and
+      // `class VeloraEngineAdapter extends BaseLlm` (engine-adapter.ts) for
+      // any test file that loads them after this one (same pattern as the
+      // OAuth2Client stub gap).
+      BaseSessionService: class {},
+      createEvent: (e) => e,
+      BaseLlm: class {},
     },
   };
 
