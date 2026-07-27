@@ -215,11 +215,41 @@ function CatalogSelector(): React.JSX.Element {
       productId: p.id,
       quantity: quantities[p.id] ?? 1,
     }));
+    const summary = selectedItems.map((p) => `${quantities[p.id]}× ${p.title}`).join(", ");
+
+    // Chaining to a NEW widget via callServerTool from inside another widget
+    // was live-confirmed broken (2026-07-26, two independent flows — see
+    // docs/TODO-widget-initiated-tool-call-no-render.md): the server runs the
+    // render tool and returns a real prefill, but no new widget renders in
+    // the chat. sendMessage is the documented alternative for exactly this
+    // case (design-guidelines.md "Push to chat input: ...Anything that
+    // benefits from Claude's interpretation") — it posts as if the owner
+    // typed it, so Claude processes it as a normal turn and calls the tool
+    // itself, which DOES render (every Claude-initiated tool call in this
+    // session rendered correctly; only app-initiated ones failed to).
+    if (app.getHostCapabilities()?.message) {
+      try {
+        const result = await app.sendMessage({
+          role: "user",
+          content: [{ type: "text", text: `Confirmá la selección (${summary}) y abrí el asistente de link de pago para cobrársela a un cliente.` }],
+        });
+        if (result.isError) setWizardErrMsg("No se pudo abrir el asistente de cobro. Intentá de nuevo.");
+      } catch {
+        setWizardErrMsg("No se pudo abrir el asistente de cobro. Intentá de nuevo.");
+      } finally {
+        setOpeningWizard(false);
+      }
+      return;
+    }
+
+    // Fallback for hosts that don't support ui/message: try the direct call.
+    // Known-unreliable on hosts where it WAS supported and still failed to
+    // render, but better than nothing on a host with no message capability.
     try {
       const result = await app.callServerTool({
         name: "open_payment_link_wizard",
         arguments: {
-          description: selectedItems.map((p) => `${quantities[p.id]}× ${p.title}`).join(", "),
+          description: summary,
           items: wizardItems,
           // customerId intentionally omitted — wizard's in-widget customer picker handles selection
         },
@@ -230,13 +260,6 @@ function CatalogSelector(): React.JSX.Element {
         try { const p = JSON.parse(raw) as { message?: string }; msg = p.message ?? msg; } catch { /* default */ }
         setWizardErrMsg(msg);
       }
-      // NOTE (2026-07-26, live-verified via Cloud Run logs): this call reaches
-      // Velora and returns 200 with a full ~5KB prefill payload — the server
-      // side of open_payment_link_wizard works. But no new widget appears in
-      // the chat after a successful app-initiated callServerTool from inside
-      // catalog-selector. This looks like a Claude-host rendering gap around
-      // widget-initiated tool calls, not a Velora bug — see
-      // docs/TODO-widget-initiated-tool-call-no-render.md.
     } catch {
       setWizardErrMsg("No se pudo abrir el asistente de cobro. Intentá de nuevo.");
     } finally {
