@@ -143,7 +143,7 @@ export function registerVentasTools(
     // _meta.ui.csp: official MCP Apps sandbox CSP field (claude.com/docs/connectors/
     // building/mcp-apps/design-guidelines#content-security-policy). Self-contained widget
     // → no external origins needed. Without this the host shows "CSP desact." and skips render.
-    { _meta: { ui: { csp: { connectDomains: [], resourceDomains: [], frameDomains: [] } } } },
+    { _meta: { ui: { prefersBorder: false, csp: { connectDomains: [], resourceDomains: [], frameDomains: [] } } } },
     (uri) => ({
       contents: [{ uri: uri.href, mimeType: RESOURCE_MIME_TYPE, text: CATALOG_SELECTOR_HTML }],
     }),

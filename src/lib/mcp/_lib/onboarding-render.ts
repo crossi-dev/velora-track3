@@ -56,7 +56,7 @@ export function registerOnboardingRenderTool(
     server,
     "Conectá tu negocio",
     ONBOARDING_RESOURCE_URI,
-    { _meta: { ui: { csp: { connectDomains: [], resourceDomains: [], frameDomains: [] } } } },
+    { _meta: { ui: { prefersBorder: false, csp: { connectDomains: [], resourceDomains: [], frameDomains: [] } } } },
     (uri) => ({
       contents: [{ uri: uri.href, mimeType: RESOURCE_MIME_TYPE, text: ONBOARDING_HTML }],
     }),

@@ -117,6 +117,12 @@ function DeliveryReceiptWidget(): React.JSX.Element {
   const [sendingWa, setSendingWa] = useState(false);
   const [waSentMsg, setWaSentMsg] = useState<string | null>(null);
   const [superseded, setSuperseded] = useState(false);
+  // openLinkError: set when the host denies/doesn't support ui/open-link —
+  // same fallback pattern as onboarding.tsx. A raw <a target="_blank"> is not
+  // guaranteed to escape the sandboxed widget iframe (claude.com/docs/connectors/
+  // building/mcp-apps/external-links); it can look clickable and silently do
+  // nothing. Found live 2026-07-26 while chasing an unrelated click-does-nothing bug.
+  const [openLinkError, setOpenLinkError] = useState<string | null>(null);
 
   // Widget instance supersession (claude.com/docs/connectors/building/mcp-apps/
   // instance-supersession) — this widget fires a real mutating action
@@ -186,6 +192,12 @@ function DeliveryReceiptWidget(): React.JSX.Element {
     };
     app.ontoolresult = (params) => apply(params);
   }, [app]);
+
+  async function handleOpenLink(url: string) {
+    if (!app) return;
+    const result = await app.openLink({ url });
+    if (result?.isError) setOpenLinkError(url);
+  }
 
   async function onSendComprobante(phone: string, pdfUrl: string) {
     if (!app || superseded) return;
@@ -263,14 +275,16 @@ function DeliveryReceiptWidget(): React.JSX.Element {
           <span className="text-sm text-ink-soft">N.° {comprobante.number}</span>
         )}
         {comprobante.pdfUrl && (
-          <a
-            href={comprobante.pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-1 text-sm text-accent underline"
+          <button
+            type="button"
+            onClick={() => handleOpenLink(comprobante.pdfUrl!)}
+            className="mt-1 w-fit text-sm text-accent underline"
           >
             Ver comprobante AFIP
-          </a>
+          </button>
+        )}
+        {openLinkError && (
+          <span className="mt-1 break-all text-sm text-ink-soft">{openLinkError}</span>
         )}
       </section>
 

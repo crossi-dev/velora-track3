@@ -126,7 +126,7 @@ export function registerCajaStatusRenderTool(
     server,
     "Estado de caja",
     CAJA_STATUS_RESOURCE_URI,
-    { _meta: { ui: { csp: { connectDomains: [], resourceDomains: [], frameDomains: [] } } } },
+    { _meta: { ui: { prefersBorder: false, csp: { connectDomains: [], resourceDomains: [], frameDomains: [] } } } },
     (uri) => ({
       contents: [{ uri: uri.href, mimeType: RESOURCE_MIME_TYPE, text: CAJA_STATUS_HTML }],
     }),

@@ -71,12 +71,14 @@ export function PrimaryButton(props: React.ButtonHTMLAttributes<HTMLButtonElemen
   );
 }
 
+// min-h-11 (44px) — design-guidelines.md's minimum touch target; px-4 py-2
+// alone (~40px tall) fell short of it.
 export function SecondaryButton(props: React.ButtonHTMLAttributes<HTMLButtonElement>): React.JSX.Element {
   return (
     <button
       type="button"
       {...props}
-      className={`w-full rounded-control border border-line bg-surface px-4 py-2 text-base text-ink hover:bg-surface-2 disabled:opacity-60 disabled:active:scale-100 ${INTERACTIVE}`}
+      className={`min-h-11 w-full rounded-control border border-line bg-surface px-4 py-2 text-base text-ink hover:bg-surface-2 disabled:opacity-60 disabled:active:scale-100 ${INTERACTIVE}`}
     />
   );
 }

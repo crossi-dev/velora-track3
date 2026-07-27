@@ -87,7 +87,7 @@ export function registerDeliveryReceiptRenderTool(
     "Comprobante y envío",
     DELIVERY_RECEIPT_RESOURCE_URI,
     // _meta.ui.csp: official MCP Apps sandbox CSP field. Self-contained → no external origins.
-    { _meta: { ui: { csp: { connectDomains: [], resourceDomains: [], frameDomains: [] } } } },
+    { _meta: { ui: { prefersBorder: false, csp: { connectDomains: [], resourceDomains: [], frameDomains: [] } } } },
     (uri) => ({
       contents: [{ uri: uri.href, mimeType: RESOURCE_MIME_TYPE, text: DELIVERY_RECEIPT_HTML }],
     }),

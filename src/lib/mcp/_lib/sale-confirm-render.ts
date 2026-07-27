@@ -121,7 +121,7 @@ export function registerSaleConfirmRenderTool(
     server,
     "Confirmar venta",
     SALE_CONFIRM_RESOURCE_URI,
-    { _meta: { ui: { csp: { connectDomains: [], resourceDomains: [], frameDomains: [] } } } },
+    { _meta: { ui: { prefersBorder: false, csp: { connectDomains: [], resourceDomains: [], frameDomains: [] } } } },
     (uri) => ({
       contents: [{ uri: uri.href, mimeType: RESOURCE_MIME_TYPE, text: SALE_CONFIRM_HTML }],
     }),

@@ -359,7 +359,7 @@ function CatalogSelector(): React.JSX.Element {
                   aria-label={`Restar una unidad de ${p.title}`}
                   disabled={!inStock || qty <= 0}
                   onClick={() => setQty(p.id, qty - 1)}
-                  className="grid h-11 w-9 place-items-center rounded-control border border-line bg-surface text-base text-ink hover:bg-surface-2 disabled:opacity-40"
+                  className="grid h-11 w-11 place-items-center rounded-control border border-line bg-surface text-base text-ink hover:bg-surface-2 disabled:opacity-40"
                 >
                   −
                 </button>
@@ -380,7 +380,7 @@ function CatalogSelector(): React.JSX.Element {
                   aria-label={`Sumar una unidad de ${p.title}`}
                   disabled={!inStock}
                   onClick={() => setQty(p.id, qty + 1)}
-                  className="grid h-11 w-9 place-items-center rounded-control border border-line bg-surface text-base text-ink hover:bg-surface-2 disabled:opacity-40"
+                  className="grid h-11 w-11 place-items-center rounded-control border border-line bg-surface text-base text-ink hover:bg-surface-2 disabled:opacity-40"
                 >
                   +
                 </button>
