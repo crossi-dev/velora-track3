@@ -1,4 +1,3 @@
-{/* DRAFT — contenido legal pendiente de revisión legal. */}
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -41,13 +40,14 @@ export default function TermsOfServicePage() {
           Términos de Servicio
         </h1>
         <p style={{ fontSize: "0.875rem", color: "var(--tone-muted)", marginBottom: "2.5rem" }}>
-          Fecha de vigencia: 4 de junio de 2026
+          Fecha de vigencia: 27 de julio de 2026
         </p>
 
         <p style={pStyle}>
           Estos Términos de Servicio (&ldquo;Términos&rdquo;) regulan el acceso y uso de Velora
           (&ldquo;nosotros&rdquo;, &ldquo;nuestro&rdquo; o &ldquo;la aplicación&rdquo;), un asistente de inteligencia
-          artificial que ayuda a negocios a gestionar ventas, clientes, productos, stock, comprobantes y operaciones comerciales.
+          artificial que ayuda a negocios a gestionar ventas, clientes, productos, stock, comprobantes y operaciones
+          comerciales, operado desde Argentina.
         </p>
         <p style={pStyle}>
           Al usar Velora aceptás estos Términos. Si no estás de acuerdo, no utilices el servicio.
@@ -81,17 +81,34 @@ export default function TermsOfServicePage() {
         </p>
 
         {/* 4 */}
-        <h2 style={h2Style}>4. Pagos</h2>
+        <h2 style={h2Style}>4. Agentes de IA que actúan en tu nombre</h2>
         <p style={pStyle}>
-          Algunas funciones pueden ofrecerse de forma gratuita y otras pueden requerir un pago. Cuando corresponda, las
-          condiciones de precio y facturación se informarán antes de la contratación.
+          Velora opera mediante agentes de IA que ejecutan acciones en tu negocio en tu nombre — registrar ventas,
+          emitir facturas, coordinar envíos y comunicarse con clientes — según tus instrucciones y los permisos que
+          otorgues. Vos seguís siendo responsable de revisar la actividad de los agentes y de las decisiones
+          comerciales que esas acciones ejecutan.
         </p>
         <p style={pStyle}>
-          Los pagos a través de proveedores externos se rigen además por los términos de dichos proveedores.
+          Toda acción que ejecuta un agente queda registrada y es auditable desde tu cuenta. Los agentes operan
+          dentro del alcance de las integraciones que conectás (por ejemplo pagos, facturación, envíos, mensajería) y
+          no pueden actuar fuera de ese alcance. Podés revisar, deshacer cuando sea técnicamente posible, o revocar
+          el acceso de una integración en cualquier momento.
         </p>
 
         {/* 5 */}
-        <h2 style={h2Style}>5. Limitación de responsabilidad</h2>
+        <h2 style={h2Style}>5. Pagos</h2>
+        <p style={pStyle}>
+          Velora se ofrece actualmente sin costo durante la beta privada. El precio posterior a la beta todavía no
+          está definido y se informará antes de que se aplique cualquier cobro. Cuando una función tenga costo, las
+          condiciones de facturación se mostrarán antes de la contratación.
+        </p>
+        <p style={pStyle}>
+          Los pagos a través de proveedores externos (por ejemplo MercadoPago) se rigen además por los términos
+          propios de esos proveedores.
+        </p>
+
+        {/* 6 */}
+        <h2 style={h2Style}>6. Limitación de responsabilidad</h2>
         <p style={pStyle}>
           Velora se provee &ldquo;tal cual&rdquo; y &ldquo;según disponibilidad&rdquo;. En la máxima medida permitida por
           la ley, no garantizamos que el servicio sea ininterrumpido o libre de errores.
@@ -101,16 +118,24 @@ export default function TermsOfServicePage() {
           de uso del servicio.
         </p>
 
-        {/* 6 */}
-        <h2 style={h2Style}>6. Cambios</h2>
+        {/* 7 */}
+        <h2 style={h2Style}>7. Cambios</h2>
         <p style={pStyle}>
           Podemos modificar estos Términos o el servicio en cualquier momento. Si realizamos cambios importantes,
           actualizaremos la fecha de vigencia indicada arriba. El uso continuado del servicio implica la aceptación de
           los Términos vigentes.
         </p>
 
-        {/* 7 */}
-        <h2 style={h2Style}>7. Contacto</h2>
+        {/* 8 */}
+        <h2 style={h2Style}>8. Ley aplicable y jurisdicción</h2>
+        <p style={pStyle}>
+          Estos Términos se rigen por las leyes de la República Argentina. Cualquier controversia derivada de estos
+          Términos o del uso de Velora se someterá a los tribunales ordinarios de la Ciudad Autónoma de Buenos Aires,
+          Argentina, renunciando a cualquier otro fuero que pudiera corresponder.
+        </p>
+
+        {/* 9 */}
+        <h2 style={h2Style}>9. Contacto</h2>
         <p style={pStyle}>Si tenés preguntas sobre estos Términos, podés escribirnos a:</p>
         <p style={pStyle}>
           <a href="mailto:soporte@somosvelora.com" style={linkStyle}>soporte@somosvelora.com</a>

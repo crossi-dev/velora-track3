@@ -1,9 +1,22 @@
 # Widget-initiated tool calls succeed server-side but the resulting widget never renders
 
-Confirmed live (2026-07-26): clicking "Cobrar a cliente" in `catalog-selector.tsx`
-(calls `open_payment_link_wizard` via `app.callServerTool`) produces no visible
-change in the chat — no new widget, no error, no loading state that persists
-long enough to notice.
+Confirmed live (2026-07-26), TWO independent flows, same exact symptom —
+this is a systemic pattern, not a one-off bug in one widget's code:
+
+1. `catalog-selector.tsx` → `open_payment_link_wizard` ("Cobrar a cliente" button)
+2. `pending-orders.tsx` → `open_cobro_status` ("Ver estado" button)
+
+Both: click produces no visible change in the chat — no new widget, no
+error, no loading state that persists long enough to notice. Both: Cloud
+Run logs show a matching `POST /api/mcp` at the exact click timestamp,
+`200`, with a real non-trivial response body (2.6KB–5KB), not an empty or
+error-shaped payload.
+
+An earlier pre-compaction summary in this session claimed the
+pending-orders → cobro-status hop had been confirmed working live. That
+claim was NOT re-verified before being repeated — when actually re-tested
+live just now, it fails the same way. Don't trust that earlier claim;
+this doc's live-tested findings supersede it.
 
 ## What was actually verified
 
@@ -33,16 +46,28 @@ long enough to notice.
   available; removed after confirming this (see git history for
   commit `cf28ae9` / its revert).
 
-## Working theory, not confirmed
+## Working theory, strengthened but still not confirmed
 
-The server does its job. The gap looks like it's on Claude's host side:
-something about widget-initiated (`app.callServerTool`) tool calls, as
-opposed to Claude initiating a tool call from its own turn, may not always
-produce a new rendered tool-result turn in the current host version — or
-there's a timing/ordering issue between the host receiving the result and
-the conversation view updating. This is a *theory*, not verified against any
-doc or reproduced with full certainty of the exact mechanism — do not repeat
-it as fact without further evidence.
+The server does its job, twice, in two unrelated widgets. The gap looks
+like it's on Claude's host side: something about widget-initiated
+(`app.callServerTool`) tool calls, as opposed to Claude initiating a tool
+call from its own turn, may not always produce a new rendered tool-result
+turn in the current host version — or there's a timing/ordering issue
+between the host receiving the result and the conversation view updating.
+Reproducing it in two independent widgets rules out "bug specific to one
+tool's code" — it's some shared mechanism (the `App` class / host bridge
+behavior), not application logic. Still not confirmed against any doc or
+with certainty of the exact mechanism — do not repeat the specific
+mechanism as fact without further evidence, but the *pattern itself*
+(widget-initiated calls not rendering) is now confirmed twice, not once.
+
+**Practical implication for the product**: any "chain one widget into the
+next" flow in Velora — catalog-selector → payment-link-wizard,
+pending-orders → cobro-status, and likely others using the same
+`callServerTool` pattern — should currently be assumed unreliable. This is
+a real gap in "does Velora feel like one integrated system" today, not a
+one-off. Owners clicking these buttons get no feedback and no error; the
+UX reads as broken even though Velora's own code did its job correctly.
 
 ## Not investigated further here
 
