@@ -208,13 +208,22 @@ function CatalogSelector(): React.JSX.Element {
   // Map selected items to the wizard's expected item shape (productId + quantity).
   // The wizard resolves prices server-side (NABAOS) — we send IDs only.
   async function onCobrarCliente() {
-    if (!app || selectedItems.length === 0 || superseded) return;
+    // TEMP DIAGNOSTIC (2026-07-26) — clicking this button in live testing produced
+    // no visible effect and no error. Logging the guard + call lifecycle to find
+    // out whether it's short-circuiting here or hanging inside callServerTool.
+    // Remove once root-caused.
+    console.log("[velora-diag] onCobrarCliente click", { hasApp: !!app, selectedCount: selectedItems.length, superseded });
+    if (!app || selectedItems.length === 0 || superseded) {
+      console.log("[velora-diag] onCobrarCliente short-circuited by guard");
+      return;
+    }
     setOpeningWizard(true);
     setWizardErrMsg(null);
     const wizardItems: WizardItem[] = selectedItems.map((p) => ({
       productId: p.id,
       quantity: quantities[p.id] ?? 1,
     }));
+    console.log("[velora-diag] calling open_payment_link_wizard", wizardItems);
     try {
       const result = await app.callServerTool({
         name: "open_payment_link_wizard",
@@ -224,13 +233,15 @@ function CatalogSelector(): React.JSX.Element {
           // customerId intentionally omitted — wizard's in-widget customer picker handles selection
         },
       });
+      console.log("[velora-diag] open_payment_link_wizard resolved", result);
       if (result.isError) {
         const raw = (result.content?.[0] as { text?: string } | undefined)?.text ?? "{}";
         let msg = "No se pudo abrir el asistente de cobro.";
         try { const p = JSON.parse(raw) as { message?: string }; msg = p.message ?? msg; } catch { /* default */ }
         setWizardErrMsg(msg);
       }
-    } catch {
+    } catch (err) {
+      console.log("[velora-diag] open_payment_link_wizard threw", err);
       setWizardErrMsg("No se pudo abrir el asistente de cobro. Intentá de nuevo.");
     } finally {
       setOpeningWizard(false);
