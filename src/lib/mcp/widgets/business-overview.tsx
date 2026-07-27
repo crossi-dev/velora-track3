@@ -743,9 +743,22 @@ function BusinessOverviewWidget(): React.JSX.Element {
     setFullscreen(result ? result.mode === "fullscreen" : next);
   }
 
+  // Chaining into a DIFFERENT widget via a direct callServerTool from inside
+  // this one was live-confirmed to succeed server-side but never render a
+  // new widget (docs/TODO-widget-initiated-tool-call-no-render.md). Prefer
+  // app.sendMessage (posts as if the owner typed it, so Claude processes it
+  // as a real turn and calls the tool itself — Claude-initiated calls render
+  // correctly). Falls back to the direct call on hosts without the `message`
+  // capability. Confirmed working live 2026-07-27 for the same pattern in
+  // catalog-selector.tsx.
   async function openCajaStatus() {
     if (!app || superseded) return;
     setNavError(null);
+    if (app.getHostCapabilities()?.message) {
+      await app.sendMessage({ role: "user", content: [{ type: "text", text: "Mostrame el estado de la caja." }] })
+        .catch(() => setNavError("No se pudo abrir el estado de caja. Intentá de nuevo."));
+      return;
+    }
     await app.callServerTool({ name: "open_caja_status", arguments: {} }).catch(() => {
       setNavError("No se pudo abrir el estado de caja. Intentá de nuevo.");
     });
@@ -754,6 +767,11 @@ function BusinessOverviewWidget(): React.JSX.Element {
   async function openPendingOrders() {
     if (!app || superseded) return;
     setNavError(null);
+    if (app.getHostCapabilities()?.message) {
+      await app.sendMessage({ role: "user", content: [{ type: "text", text: "Mostrame los cobros pendientes." }] })
+        .catch(() => setNavError("No se pudieron abrir los cobros pendientes. Intentá de nuevo."));
+      return;
+    }
     await app.callServerTool({ name: "open_pending_orders", arguments: {} }).catch(() => {
       setNavError("No se pudieron abrir los cobros pendientes. Intentá de nuevo.");
     });

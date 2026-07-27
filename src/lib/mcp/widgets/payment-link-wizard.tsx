@@ -271,8 +271,21 @@ function PaymentLinkWizard(): React.JSX.Element {
     }
   }
 
+  // Chaining into a DIFFERENT widget via a direct callServerTool from inside
+  // this one was live-confirmed to succeed server-side but never render a
+  // new widget (docs/TODO-widget-initiated-tool-call-no-render.md). Prefer
+  // app.sendMessage — confirmed working live 2026-07-27 for the same pattern
+  // in catalog-selector.tsx. Falls back to the direct call on hosts without
+  // the `message` capability.
   async function onViewCobro() {
     if (!app || !paymentIntentId) return;
+    if (app.getHostCapabilities()?.message) {
+      await app.sendMessage({
+        role: "user",
+        content: [{ type: "text", text: `Mostrame el estado del cobro de ${customerName}.` }],
+      }).catch(() => setErrMsg("No se pudo abrir el estado del cobro. Intentá de nuevo."));
+      return;
+    }
     await app.callServerTool({ name: "open_cobro_status", arguments: { paymentIntentId } }).catch(() => {
       setErrMsg("No se pudo abrir el estado del cobro. Intentá de nuevo.");
     });

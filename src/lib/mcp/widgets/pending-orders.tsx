@@ -187,9 +187,22 @@ function PendingOrdersList(): React.JSX.Element {
 
   // HOP: pending-orders → cobro-status (verified: ucp.id = PaymentIntent id,
   // open_cobro_status accepts paymentIntentId — cobro-status-render.ts inputSchema).
-  const onViewStatus = useCallback(async (paymentIntentId: string) => {
+  // Chaining via a direct callServerTool from inside this widget was
+  // live-confirmed to succeed server-side but never render a new widget
+  // (docs/TODO-widget-initiated-tool-call-no-render.md). Prefer
+  // app.sendMessage — confirmed working live 2026-07-27 for the same
+  // pattern in catalog-selector.tsx. Falls back to the direct call on hosts
+  // without the `message` capability.
+  const onViewStatus = useCallback(async (paymentIntentId: string, customerName: string) => {
     if (!app || superseded) return;
     setNavErrors((prev) => ({ ...prev, [paymentIntentId]: "" }));
+    if (app.getHostCapabilities()?.message) {
+      await app.sendMessage({
+        role: "user",
+        content: [{ type: "text", text: `Mostrame el estado del cobro de ${customerName}.` }],
+      }).catch(() => setNavErrors((prev) => ({ ...prev, [paymentIntentId]: "No se pudo abrir el estado. Intentá de nuevo." })));
+      return;
+    }
     await app.callServerTool({ name: "open_cobro_status", arguments: { paymentIntentId } }).catch(() => {
       setNavErrors((prev) => ({ ...prev, [paymentIntentId]: "No se pudo abrir el estado. Intentá de nuevo." }));
     });
@@ -281,7 +294,7 @@ function PendingOrdersList(): React.JSX.Element {
                 </div>
 
                 {/* HOP: → cobro-status */}
-                <SecondaryButton onClick={() => onViewStatus(order.ucp.id)}>Ver estado</SecondaryButton>
+                <SecondaryButton onClick={() => onViewStatus(order.ucp.id, order.customerName)}>Ver estado</SecondaryButton>
                 {navErr && <p className="text-sm text-danger-ink">{navErr}</p>}
               </li>
             );

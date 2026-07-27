@@ -189,9 +189,25 @@ function CobroStatusWidget(): React.JSX.Element {
     app.ontoolresult = (params) => apply(params);
   }, [app]);
 
+  // Chaining into a DIFFERENT widget via a direct callServerTool from inside
+  // this one was live-confirmed to succeed server-side but never render a
+  // new widget (docs/TODO-widget-initiated-tool-call-no-render.md). Prefer
+  // app.sendMessage so Claude processes it as a real turn and calls the tool
+  // itself — confirmed working live 2026-07-27 for the same pattern in
+  // catalog-selector.tsx. Falls back to the direct call on hosts without the
+  // `message` capability. Uses customerName (not paymentIntentId) since
+  // that's what a typed message can carry naturally — open_delivery_receipt
+  // already resolves by customerName (most-recent confirmed cobro).
   const onViewReceipt = useCallback(async () => {
     if (!app || !order || superseded) return;
     setNavErr(null);
+    if (app.getHostCapabilities()?.message) {
+      await app.sendMessage({
+        role: "user",
+        content: [{ type: "text", text: `Mostrame el comprobante y envío del cobro de ${order.customerName}.` }],
+      }).catch(() => setNavErr("No se pudo abrir el comprobante. Intentá de nuevo."));
+      return;
+    }
     await app.callServerTool({ name: "open_delivery_receipt", arguments: { paymentIntentId: order.ucp.id } }).catch(() => {
       setNavErr("No se pudo abrir el comprobante. Intentá de nuevo.");
     });

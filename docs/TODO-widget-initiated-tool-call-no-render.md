@@ -1,6 +1,46 @@
 # Widget-initiated tool calls succeed server-side but the resulting widget never renders
 
-Confirmed live (2026-07-26), TWO independent flows, same exact symptom —
+## RESOLVED (2026-07-27) — use app.sendMessage, not app.callServerTool, to chain into a different widget
+
+Fix confirmed live: catalog-selector's "Cobrar a cliente" switched from
+`app.callServerTool({name: "open_payment_link_wizard", ...})` to
+`app.sendMessage({role: "user", content: [{type: "text", text: "..."}]})`.
+`sendMessage` posts the text into the conversation as if the owner had
+typed it — Claude then processes it as a real turn and calls the tool
+itself. Every Claude-initiated tool call in this session rendered
+correctly; only app-initiated `callServerTool` calls silently failed to
+render. This matches design-guidelines.md's own interaction taxonomy:
+opening a *different* tool/widget is "Push to chat input: anything that
+benefits from Claude's interpretation", not "Handle within your app:
+confirming/executing a prepared action" (which is what `callServerTool`
+is actually meant for — same-widget mutations like `caja_ciclo_caja` or
+`create_tracked_payment_link` are unaffected and still use it correctly).
+
+**One real UX caveat found during the live test**: `sendMessage` does NOT
+auto-send. It stages the text in the composer with a visible security
+warning ("Use caution before running this prompt...") and needs an
+explicit user Send/Enter. This is a deliberate Claude-side consent gate
+(a widget can't silently inject and submit arbitrary text as the user),
+not a bug — but it means the chained flow now takes one extra click/Enter
+compared to the old (broken) direct-call design. Worth mentioning to
+Carlos as a real trade-off, not hiding it.
+
+Applied the same swap (with capability-gated fallback to the direct call
+for hosts without `message` support) to every other widget-to-widget
+chain in this codebase: `business-overview.tsx` (→ open_caja_status,
+open_pending_orders), `cobro-status.tsx` (→ open_delivery_receipt),
+`payment-link-wizard.tsx` (→ open_cobro_status), `pending-orders.tsx`
+(→ open_cobro_status), `sale-confirm.tsx` (→ open_cobro_status).
+
+The investigation history below is kept for context — it's how the fix
+was found, and documents real dead ends (console.log inside a sandboxed
+iframe, Network-tab checks) worth not repeating next time.
+
+---
+
+## Original investigation (2026-07-26)
+
+Confirmed live, TWO independent flows, same exact symptom —
 this is a systemic pattern, not a one-off bug in one widget's code:
 
 1. `catalog-selector.tsx` → `open_payment_link_wizard` ("Cobrar a cliente" button)
