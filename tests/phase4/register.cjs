@@ -38,6 +38,15 @@ Module._resolveFilename = function (request, parent, ...rest) {
     ) {
       return path.join(REPO_ROOT, "tests", "_stubs", "prisma.js");
     }
+    // google-auth-library: native + network-dependent (JWK fetch), unusable
+    // under ts-node CJS. cron-auth.ts calls `new OAuth2Client()` at module-load
+    // time, so any test that transitively requires it needs the stub in place
+    // BEFORE that import resolves — a per-test setMockModule() call is too late
+    // if cron-auth.ts loads earlier in the same process. Redirect globally here,
+    // same pattern as server-only/phosphor-icons/prisma above.
+    if (request === "google-auth-library") {
+      return path.join(REPO_ROOT, "tests", "_stubs", "google-auth-library.js");
+    }
     // @velora/core-utils → src/packages/core-utils (mirrors the tsconfig paths
     // block). Without this, any test importing the A2A jsonrpc-types chain fails
     // to load under the CJS test loader.
