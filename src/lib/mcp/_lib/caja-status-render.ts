@@ -18,6 +18,7 @@ import { z } from "zod";
 import { registerAppTool, registerAppResource, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
 import type { CajaBackend } from "./caja-backend.port";
 import { CAJA_STATUS_HTML } from "../widgets/generated/caja-status.html";
+import { nextSeq } from "./election-seq";
 
 /** Canonical ui:// URI for the caja-status widget resource. */
 export const CAJA_STATUS_RESOURCE_URI = "ui://caja-status";
@@ -158,8 +159,8 @@ export function registerCajaStatusRenderTool(
         // Election key for widget instance supersession (claude.com/docs/connectors/
         // building/mcp-apps/instance-supersession) — added here, not inside
         // resolveCajaPrefill, since that resolver is shared with business-overview
-        // and stays a pure data fetch.
-        const prefill = { ...cajaPrefill, createdAt: Date.now() };
+        // and stays a pure data fetch. seq tie-breaks createdAt ties (same-ms calls).
+        const prefill = { ...cajaPrefill, createdAt: Date.now(), seq: nextSeq() };
         return {
           content: [{ type: "text" as const, text: JSON.stringify(prefill) }],
           structuredContent: { prefill },

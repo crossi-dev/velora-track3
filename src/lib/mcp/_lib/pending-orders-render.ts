@@ -17,6 +17,7 @@ import { registerAppTool, registerAppResource, RESOURCE_MIME_TYPE } from "@model
 import type { PaymentsBackend, PendingOrder } from "./payments-backend.port";
 import type { UCPOrder } from "./ucp-types";
 import { PENDING_ORDERS_HTML } from "../widgets/generated/pending-orders.html";
+import { nextSeq } from "./election-seq";
 
 /** Canonical ui:// URI for the pending-orders dashboard widget resource. */
 export const PENDING_ORDERS_RESOURCE_URI = "ui://pending-orders";
@@ -99,7 +100,7 @@ export function registerPendingOrdersRenderTool(
         // `orders`, distinct from each order's own createdAt (its creation date).
         return {
           content: [{ type: "text" as const, text: JSON.stringify({ orders, total: orders.length }) }],
-          structuredContent: { prefill: { orders, createdAt: Date.now() } },
+          structuredContent: { prefill: { orders, createdAt: Date.now(), seq: nextSeq() } },
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";

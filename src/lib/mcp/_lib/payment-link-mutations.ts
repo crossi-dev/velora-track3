@@ -15,6 +15,7 @@
 
 import { cloudLog } from "@/lib/cloud-logger";
 import type { PaymentsBackend } from "./payments-backend.port";
+import { nextSeq } from "./election-seq";
 
 // ── Response shape (mirrors sales-mutations errResponse) ────────────────────────
 
@@ -80,8 +81,8 @@ export async function handleOpenPaymentLinkWizard(businessId: string, args: Open
     structuredContent: {
       // createdAt is the instance-supersession election key (Velora display
       // extension, not a business date) — same convention as
-      // cobro-status-render.ts / delivery-receipt-render.ts.
-      prefill: { ...result.prefill, createdAt: Date.now() },
+      // cobro-status-render.ts / delivery-receipt-render.ts. seq tie-breaks ties.
+      prefill: { ...result.prefill, createdAt: Date.now(), seq: nextSeq() },
     },
   };
 }

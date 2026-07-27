@@ -29,6 +29,7 @@ import type { VentasBackend, CatalogProductResult } from "./_lib/ventas-backend.
 import { createVentasBackend } from "./_lib/ventas-backend.factory";
 import { CATALOG_SELECTOR_HTML } from "./widgets/generated/catalog-selector.html";
 import { errResponse } from "./_lib/mcp-responses";
+import { nextSeq } from "./_lib/election-seq";
 /** Canonical ui:// URI for the catalog selector widget resource. */
 const CATALOG_SELECTOR_RESOURCE_URI = "ui://catalog-selector";
 
@@ -189,8 +190,8 @@ export function registerVentasTools(
           content: [{ type: "text" as const, text: JSON.stringify({ products, total: products.length }) }],
           // createdAt is the instance-supersession election key (Velora display
           // extension, not a business date) — same convention as
-          // cobro-status-render.ts / delivery-receipt-render.ts.
-          structuredContent: { prefill: { products, createdAt: Date.now() } },
+          // cobro-status-render.ts / delivery-receipt-render.ts. seq tie-breaks ties.
+          structuredContent: { prefill: { products, createdAt: Date.now(), seq: nextSeq() } },
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";

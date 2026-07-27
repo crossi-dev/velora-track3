@@ -25,6 +25,7 @@ import { registerAppTool, registerAppResource, RESOURCE_MIME_TYPE } from "@model
 import type { PaymentsBackend, CobroDetail, CobroEstado } from "./payments-backend.port";
 import type { UCPLineStatus, UCPOrder } from "./ucp-types";
 import { COBRO_STATUS_HTML } from "../widgets/generated/cobro-status.html";
+import { nextSeq } from "./election-seq";
 
 /** Canonical ui:// URI for the cobro-status widget resource. */
 export const COBRO_STATUS_RESOURCE_URI = "ui://cobro-status";
@@ -159,7 +160,7 @@ export function registerCobroStatusRenderTool(
                 text: JSON.stringify({ order: null, message: "No encontré ese cobro." }),
               },
             ],
-            structuredContent: { prefill: { order: null, createdAt: Date.now() } },
+            structuredContent: { prefill: { order: null, createdAt: Date.now(), seq: nextSeq() } },
           };
         }
 
@@ -184,8 +185,9 @@ export function registerCobroStatusRenderTool(
           ],
           // Election key for widget instance supersession (claude.com/docs/connectors/
           // building/mcp-apps/instance-supersession) — top-level, sibling to `order`,
-          // distinct from order.createdAt (the cobro's own creation date).
-          structuredContent: { prefill: { order: prefillOrder, createdAt: Date.now() } },
+          // distinct from order.createdAt (the cobro's own creation date). seq
+          // tie-breaks createdAt ties (same-ms calls — routine under rapid reopens).
+          structuredContent: { prefill: { order: prefillOrder, createdAt: Date.now(), seq: nextSeq() } },
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";

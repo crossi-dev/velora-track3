@@ -18,6 +18,7 @@ import { z } from "zod";
 import { registerAppTool, registerAppResource, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
 import { prisma } from "@/lib/prisma";
 import { SALE_CONFIRM_HTML } from "../widgets/generated/sale-confirm.html";
+import { nextSeq } from "./election-seq";
 
 /** Canonical ui:// URI for the sale-confirm widget resource. */
 export const SALE_CONFIRM_RESOURCE_URI = "ui://sale-confirm";
@@ -200,8 +201,8 @@ export function registerSaleConfirmRenderTool(
           content: [{ type: "text" as const, text: JSON.stringify(prefill) }],
           // createdAt is the instance-supersession election key (Velora display
           // extension, not a business date) — same convention as
-          // cobro-status-render.ts / delivery-receipt-render.ts.
-          structuredContent: { prefill: { ...prefill, createdAt: Date.now() } },
+          // cobro-status-render.ts / delivery-receipt-render.ts. seq tie-breaks ties.
+          structuredContent: { prefill: { ...prefill, createdAt: Date.now(), seq: nextSeq() } },
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";

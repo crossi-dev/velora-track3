@@ -24,6 +24,7 @@ import { registerAppTool, registerAppResource, RESOURCE_MIME_TYPE } from "@model
 import type { PaymentsBackend, DeliveryReceipt, DeliveryEnvio } from "./payments-backend.port";
 import type { UCPFulfillment, UCPOrder } from "./ucp-types";
 import { DELIVERY_RECEIPT_HTML } from "../widgets/generated/delivery-receipt.html";
+import { nextSeq } from "./election-seq";
 
 /** Canonical ui:// URI for the delivery-receipt widget resource. */
 export const DELIVERY_RECEIPT_RESOURCE_URI = "ui://delivery-receipt";
@@ -165,7 +166,7 @@ export function registerDeliveryReceiptRenderTool(
                 text: JSON.stringify({ order: null, message: "No encontré ese comprobante." }),
               },
             ],
-            structuredContent: { prefill: { order: null, createdAt: Date.now() } },
+            structuredContent: { prefill: { order: null, createdAt: Date.now(), seq: nextSeq() } },
           };
         }
 
@@ -189,8 +190,8 @@ export function registerDeliveryReceiptRenderTool(
           ],
           // createdAt is the instance-supersession election key (Velora display
           // extension, distinct from any order/receipt timestamp) — see
-          // cobro-status-render.ts for the same convention.
-          structuredContent: { prefill: { order: prefillOrder, createdAt: Date.now() } },
+          // cobro-status-render.ts for the same convention. seq tie-breaks ties.
+          structuredContent: { prefill: { order: prefillOrder, createdAt: Date.now(), seq: nextSeq() } },
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";

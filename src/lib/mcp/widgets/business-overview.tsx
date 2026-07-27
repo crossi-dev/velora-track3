@@ -142,6 +142,9 @@ type Cliente360Data =
 
 interface Prefill {
   createdAt: number;
+  /** Monotonic per-process tie-breaker for createdAt collisions (same-ms calls) —
+   * claude.com/docs/connectors/building/mcp-apps/instance-supersession. */
+  seq?: number;
   startInFullscreen: boolean;
   defaultTab: TabId;
   summary: {
@@ -658,29 +661,33 @@ function BusinessOverviewWidget(): React.JSX.Element {
   // per-conversation by default (no fixed _meta.ui.domain set on this resource).
   const instanceIdRef = useRef<string>(crypto.randomUUID());
   const orderKeyRef = useRef<number | undefined>(undefined);
+  const seqRef = useRef<number | undefined>(undefined);
   const keyFinalizedRef = useRef(false);
   const channelRef = useRef<BroadcastChannel | null>(null);
-  const peersRef = useRef(new Map<string, { orderKey: number; instanceId: string }>());
+  const peersRef = useRef(new Map<string, { orderKey: number; seq?: number; instanceId: string }>());
 
   useEffect(() => {
     const channel = new BroadcastChannel("velora-business-overview-supersede");
     channelRef.current = channel;
     const instanceId = instanceIdRef.current;
 
-    function isYounger(other: { orderKey: number; instanceId: string }) {
+    // seq tie-breaks createdAt ties (same-ms calls) before falling back to
+    // instanceId — claude.com/docs/connectors/building/mcp-apps/instance-supersession.
+    function isYounger(other: { orderKey: number; seq?: number; instanceId: string }) {
       if (!keyFinalizedRef.current || orderKeyRef.current == null) return false;
       if (other.orderKey !== orderKeyRef.current) return other.orderKey > orderKeyRef.current!;
+      if (other.seq != null && seqRef.current != null && other.seq !== seqRef.current) return other.seq > seqRef.current;
       return other.instanceId > instanceId;
     }
 
     channel.onmessage = (ev) => {
-      const msg = ev.data as { type?: string; instanceId?: string; orderKey?: number } | undefined;
+      const msg = ev.data as { type?: string; instanceId?: string; orderKey?: number; seq?: number } | undefined;
       if (!msg?.instanceId || msg.instanceId === instanceId || !keyFinalizedRef.current) return;
       if (msg.type === "hello") {
-        channel.postMessage({ type: "born", instanceId, orderKey: orderKeyRef.current });
+        channel.postMessage({ type: "born", instanceId, orderKey: orderKeyRef.current, seq: seqRef.current });
       }
       if (Number.isFinite(msg.orderKey)) {
-        peersRef.current.set(msg.instanceId, { orderKey: msg.orderKey!, instanceId: msg.instanceId });
+        peersRef.current.set(msg.instanceId, { orderKey: msg.orderKey!, seq: msg.seq, instanceId: msg.instanceId });
         setSuperseded([...peersRef.current.values()].some(isYounger));
       }
     };
@@ -692,8 +699,8 @@ function BusinessOverviewWidget(): React.JSX.Element {
     const channel = channelRef.current;
     if (!channel || orderKeyRef.current == null) return;
     const instanceId = instanceIdRef.current;
-    channel.postMessage({ type: "hello", instanceId, orderKey: orderKeyRef.current });
-    channel.postMessage({ type: "born", instanceId, orderKey: orderKeyRef.current });
+    channel.postMessage({ type: "hello", instanceId, orderKey: orderKeyRef.current, seq: seqRef.current });
+    channel.postMessage({ type: "born", instanceId, orderKey: orderKeyRef.current, seq: seqRef.current });
   }
 
   useEffect(() => {
@@ -707,6 +714,7 @@ function BusinessOverviewWidget(): React.JSX.Element {
       if (data.startInFullscreen) setFullscreen(true);
       if (Number.isFinite(data.createdAt)) {
         orderKeyRef.current = data.createdAt;
+        seqRef.current = Number.isFinite(data.seq) ? data.seq : undefined;
         keyFinalizedRef.current = true;
         announceInstance();
       }

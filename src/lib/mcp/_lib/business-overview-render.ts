@@ -37,6 +37,7 @@ import type { CustomerBackend } from "./customer-backend.port";
 import { getFiscalReadiness } from "@/app/api/agents/fiscal/jsonrpc/_lib/fiscal-readiness";
 import { errResponse } from "./mcp-responses";
 import { BUSINESS_OVERVIEW_HTML } from "../widgets/generated/business-overview.html";
+import { nextSeq } from "./election-seq";
 
 /** Canonical ui:// URI for the business-overview widget resource. */
 export const BUSINESS_OVERVIEW_RESOURCE_URI = "ui://business-overview";
@@ -280,14 +281,21 @@ export function registerBusinessOverviewRenderTool(
         // textbook case for it: if the owner re-asks "veamos mi negocio" mid-conversation,
         // the OLDER widget copy should gray itself out instead of both silently feeding
         // stale numbers back into Claude's context. No durable per-record counter exists
-        // for "a business snapshot" (unlike a cart/order row), so createdAt (server wall-
-        // clock) alone is the key; seq is intentionally omitted rather than faked with a
-        // per-process counter that wouldn't survive Cloud Run's stateless multi-instance
-        // scaling (the doc explicitly warns against that stand-in for production).
+        // for "a business snapshot" (unlike a cart/order row). seq (election-seq.ts) is a
+        // per-process counter, not durable across Cloud Run's multi-instance scaling — but
+        // it costs nothing when the two calls land on different instances (falls through to
+        // the existing instanceId tie-break, same as before) and correctly disambiguates the
+        // common same-instance case, which is most of them at this traffic volume. Reversed
+        // 2026-07-26: previously omitted here as "not durable enough to bother", but a
+        // best-effort tie-breaker that can only help, never mislead, is worth having — see
+        // election-seq.ts for the full reasoning, applied consistently across every widget
+        // that runs this election (cobro-status, pending-orders, sale-confirm, etc).
         const createdAt = Date.now();
+        const seq = nextSeq();
 
         const prefill = {
           createdAt,
+          seq,
           startInFullscreen: !!customerName || !!defaultTab,
           defaultTab: (defaultTab ?? (customerName ? "cliente_360" : "cierre_dia")) as TabId,
           summary: {
