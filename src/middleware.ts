@@ -152,7 +152,8 @@ function isCsrfBlocked(req: Parameters<Parameters<typeof auth>[0]>[0]): boolean 
 }
 
 export default auth(async (req) => {
-  const host = req.headers.get("host") ?? "";
+  // Firebase Hosting rewrites replace Host; public host arrives in X-Forwarded-Host.
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "";
   const { pathname } = req.nextUrl;
 
   // tools.somosvelora.com root → serve the MCP toolkit landing page.

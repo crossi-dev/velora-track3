@@ -156,7 +156,9 @@ const CACHE_HEADERS = {
 };
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
-  const host = req.headers.get("host") ?? "";
+  // Same X-Forwarded-Host fallback as src/middleware.ts: Firebase Hosting
+  // rewrites replace Host, so the public domain arrives forwarded.
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "";
 
   if (host === "tools.somosvelora.com") {
     return new NextResponse(TOOLS_LLMS_TXT, { status: 200, headers: CACHE_HEADERS });
