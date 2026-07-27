@@ -33,7 +33,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { Centered, StatusChip, StatusBanner, VeloraMark } from "./_widget-primitives";
+import { Centered, InlineSkeleton, StatusChip, StatusBanner, VeloraMark } from "./_widget-primitives";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -126,7 +126,7 @@ function OnboardingHub(): React.JSX.Element {
   if (!prefill && toolResultReceived) {
     return <Centered>No pudimos cargar el estado de tus integraciones. Probá de nuevo.</Centered>;
   }
-  if (!prefill) return <Centered>Cargando estado de integraciones…</Centered>;
+  if (!prefill) return <InlineSkeleton rows={4} label="Cargando estado de integraciones" />;
 
   const { integrations } = prefill;
   const connectedCount = integrations.filter((i) => i.connected).length;

@@ -26,7 +26,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
 import type { UCPOrder, UCPTotal } from "../_lib/ucp-types";
-import { Card, SecondaryButton, Centered, ReturnHint, SupersededNotice, TONE_CLASSES, type StatusTone } from "./_widget-primitives";
+import { Card, SecondaryButton, Centered, InlineSkeleton, ReturnHint, SupersededNotice, TONE_CLASSES, type StatusTone } from "./_widget-primitives";
 
 // ── Velora display extensions (not UCP fields) ────────────────────────────────
 
@@ -201,7 +201,7 @@ function CobroStatusWidget(): React.JSX.Element {
     return <Centered>No pudimos abrir el estado del cobro. {error.message}</Centered>;
   }
   if (!isConnected) return <Centered>Conectando…</Centered>;
-  if (!loaded) return <Centered>Cargando estado del cobro…</Centered>;
+  if (!loaded) return <InlineSkeleton rows={3} label="Cargando estado del cobro" />;
   if (order === null) {
     return <Centered>No encontré ese cobro.</Centered>;
   }

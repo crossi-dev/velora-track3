@@ -87,6 +87,28 @@ export function Centered({ children }: { children: React.ReactNode }): React.JSX
   return <div className="mx-auto max-w-md p-8 text-center text-base text-ink-soft">{children}</div>;
 }
 
+/** Loading skeleton matching the general shape of a widget Card (title + a
+ *  few rows + a bottom button bar) — design-guidelines.md: "Show skeleton
+ *  screens while content loads... Avoid spinners for inline content." Every
+ *  widget was using a plain "Cargando…" Centered() text instead; this is the
+ *  shared replacement. rows defaults to 3, matching the typical single-record
+ *  detail widgets (cobro-status, delivery-receipt, sale-confirm, etc). List
+ *  widgets (catalog-selector, pending-orders) pass a higher count. */
+export function InlineSkeleton({ rows = 3, label }: { rows?: number; label: string }): React.JSX.Element {
+  return (
+    <main className="mx-auto flex max-w-md flex-col gap-4 p-5" aria-busy="true" aria-label={label}>
+      <div className="h-6 w-40 animate-pulse rounded-control bg-surface-2" />
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="flex h-16 flex-col justify-center gap-2 rounded-control bg-surface-2 p-4">
+          <div className="h-3 w-20 animate-pulse rounded-full bg-surface" />
+          <div className="h-4 w-32 animate-pulse rounded-full bg-surface" />
+        </div>
+      ))}
+      <div className="h-11 w-full animate-pulse rounded-control bg-surface-2" />
+    </main>
+  );
+}
+
 // ── Return hint ──────────────────────────────────────────────────────────────
 // Discoverability nudge for widgets reached by jumping from another widget
 // (pending-orders → cobro-status → delivery-receipt, business-overview → caja-status).

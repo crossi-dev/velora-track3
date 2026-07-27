@@ -34,7 +34,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { Card, PrimaryButton, SecondaryButton, Centered, ReturnHint, StatusBanner, StatusChip, SupersededNotice } from "./_widget-primitives";
+import { Card, PrimaryButton, SecondaryButton, Centered, InlineSkeleton, ReturnHint, StatusBanner, StatusChip, SupersededNotice } from "./_widget-primitives";
 
 type CajaState = "OPEN" | "CLOSED" | "NO_SESSION";
 
@@ -219,7 +219,7 @@ function CajaStatusWidget(): React.JSX.Element {
   if (error) return <Centered>No pudimos abrir el estado de caja. {error.message}</Centered>;
   if (!isConnected) return <Centered>Conectando…</Centered>;
   if (!prefill && received) return <Centered>No pudimos cargar el estado de la caja. Probá de nuevo.</Centered>;
-  if (!prefill) return <Centered>Cargando estado de caja…</Centered>;
+  if (!prefill) return <InlineSkeleton rows={3} label="Cargando estado de caja" />;
 
   const safeArea = app?.getHostContext()?.safeAreaInsets;
   const safeAreaStyle: React.CSSProperties = safeArea

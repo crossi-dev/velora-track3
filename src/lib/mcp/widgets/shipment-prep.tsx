@@ -20,7 +20,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { Card, Centered, StatusChip } from "./_widget-primitives";
+import { Card, Centered, InlineSkeleton, StatusChip } from "./_widget-primitives";
 
 // ── Data contract (matches shipment-prep-render.ts) ──────────────────────────
 
@@ -99,7 +99,7 @@ function ShipmentPrepWidget(): React.JSX.Element {
 
   if (error) return <Centered>No pudimos abrir la vista previa de envío. {error.message}</Centered>;
   if (!isConnected) return <Centered>Conectando…</Centered>;
-  if (!loaded) return <Centered>Cargando vista previa de envío…</Centered>;
+  if (!loaded) return <InlineSkeleton rows={2} label="Cargando vista previa de envío" />;
   if (!prefill || prefill.items.length === 0) {
     return <Centered>No hay productos para preparar el envío.</Centered>;
   }

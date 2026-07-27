@@ -23,7 +23,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { Card, SecondaryButton, Centered, ReturnHint, SupersededNotice, StatusChip, type StatusTone } from "./_widget-primitives";
+import { Card, SecondaryButton, Centered, InlineSkeleton, ReturnHint, SupersededNotice, StatusChip, type StatusTone } from "./_widget-primitives";
 import type { UCPOrder, UCPTotal } from "../_lib/ucp-types";
 
 // ── Velora display extensions ─────────────────────────────────────────────────
@@ -231,7 +231,7 @@ function DeliveryReceiptWidget(): React.JSX.Element {
     return <Centered>No pudimos abrir el comprobante. {error.message}</Centered>;
   }
   if (!isConnected) return <Centered>Conectando…</Centered>;
-  if (!loaded) return <Centered>Cargando comprobante…</Centered>;
+  if (!loaded) return <InlineSkeleton rows={3} label="Cargando comprobante" />;
   if (order === null) {
     return <Centered>No encontré el comprobante de esta venta.</Centered>;
   }

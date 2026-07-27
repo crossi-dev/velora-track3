@@ -28,7 +28,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
 import { CustomerField, type CustomerMatch } from "./customer-field";
-import { Card, Field, PrimaryButton, SecondaryButton, Centered, ReturnHint, SupersededNotice } from "./_widget-primitives";
+import { Card, Field, PrimaryButton, SecondaryButton, Centered, InlineSkeleton, ReturnHint, SupersededNotice } from "./_widget-primitives";
 
 interface PrefillItem {
   productId: string;
@@ -286,7 +286,7 @@ function PaymentLinkWizard(): React.JSX.Element {
   if (error) return <Centered>No pudimos abrir el asistente de cobro. {error.message}</Centered>;
   if (!isConnected) return <Centered>Conectando…</Centered>;
   if (!prefill && toolResultReceived) return <Centered>No pudimos cargar los datos del cobro. Probá de nuevo.</Centered>;
-  if (!prefill) return <Centered>Cargando cobro…</Centered>;
+  if (!prefill) return <InlineSkeleton rows={3} label="Cargando cobro" />;
 
   // Safe areas (claude.com/docs/connectors/building/mcp-apps/design-guidelines
   // #host-context-for-layout): add hostContext.safeAreaInsets on top of the

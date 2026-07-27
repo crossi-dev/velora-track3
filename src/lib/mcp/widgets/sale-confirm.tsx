@@ -38,7 +38,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { Card, Field, PrimaryButton, SecondaryButton, Centered, SupersededNotice } from "./_widget-primitives";
+import { Card, Field, PrimaryButton, SecondaryButton, Centered, InlineSkeleton, SupersededNotice } from "./_widget-primitives";
 
 // Same cap convention as pending-orders.tsx's DISPLAY_CAP — the host clips
 // (doesn't scroll) inline content past its height, so an uncapped item list
@@ -386,7 +386,7 @@ function SaleConfirmWidget(): React.JSX.Element {
   if (!isConnected) return <Centered>Conectando…</Centered>;
   if (!prefill && toolResultReceived)
     return <Centered>No pudimos cargar los datos de la venta. Probá de nuevo.</Centered>;
-  if (!prefill) return <Centered>Cargando venta…</Centered>;
+  if (!prefill) return <InlineSkeleton rows={3} label="Cargando venta" />;
 
   // Safe areas (claude.com/docs/connectors/building/mcp-apps/design-guidelines
   // #host-context-for-layout): on mobile the chat composer/nav bar can overlay

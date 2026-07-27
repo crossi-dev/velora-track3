@@ -22,7 +22,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useApp, useHostStyleVariables, useHostFonts } from "@modelcontextprotocol/ext-apps/react";
-import { Card, PrimaryButton, SecondaryButton, Centered, SupersededNotice } from "./_widget-primitives";
+import { Card, PrimaryButton, SecondaryButton, Centered, InlineSkeleton, SupersededNotice } from "./_widget-primitives";
 
 // ── Cobrar action state ───────────────────────────────────────────────────────
 // open_payment_link_wizard input item shape (matches WIZARD_ITEM_SCHEMA in payments-tools.ts)
@@ -247,7 +247,7 @@ function CatalogSelector(): React.JSX.Element {
   if (error) return <Centered>No pudimos abrir el selector de catálogo. {error.message}</Centered>;
   if (!isConnected) return <Centered>Conectando…</Centered>;
   if (!products.length && toolResultReceived) return <Centered>No pudimos cargar el catálogo. Probá de nuevo.</Centered>;
-  if (!products.length) return <Centered>Cargando catálogo…</Centered>;
+  if (!products.length) return <InlineSkeleton rows={5} label="Cargando catálogo" />;
 
   // Safe areas (claude.com/docs/connectors/building/mcp-apps/design-guidelines
   // #host-context-for-layout): add hostContext.safeAreaInsets on top of the
