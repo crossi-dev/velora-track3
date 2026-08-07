@@ -7,8 +7,8 @@
 | Track 3 entry points |  |
 |----------------------|--|
 | **Live demo (Spanish-first, EN toggle)** | https://somosvelora.com |
-| **Judge tour (always English)** | https://somosvelora.com/track3 |
-| **Public agent card (A2A v0.3.0)** | https://somosvelora.com/.well-known/agent-card.json |
+| **Judge tour (always English)** | https://somosvelora.com/track3 — ⚠️ currently returns 404; the route is down while other pages on the site are up |
+| **Public agent card (A2A v0.3.0)** | https://somosvelora.com/.well-known/agent-card.json — ⚠️ currently returns 404; same outage as the judge tour route |
 | **Submission writeup** | [docs/SUBMISSION_DESCRIPTION.md](./docs/SUBMISSION_DESCRIPTION.md) |
 | **Architecture diagram (Mermaid)** | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) |
 | **Contest Period scope delineation** | [docs/CONTEST_PERIOD_WORK.md](./docs/CONTEST_PERIOD_WORK.md) |
@@ -43,7 +43,8 @@ The fastest way for a judge to run a live Velora tool call:
 # Install Gemini CLI (requires Node 18+)
 npm install -g @google/gemini-cli
 
-# Clone this repo — .gemini/settings.json with demo key is included
+# Clone this repo — .gemini/settings.json ships pre-configured for the demo
+# tenant; you only need to drop in your own X-API-Key (see below)
 git clone https://github.com/crossi-dev/velora-track3
 cd velora-track3
 
@@ -62,11 +63,11 @@ Alternatively, add the server without cloning:
 gemini mcp add velora \
   --transport http \
   --url https://tools.somosvelora.com/api/mcp \
-  --header "X-API-Key: <get from .gemini/settings.json>" \
+  --header "X-API-Key: <request one at somosvelora.com>" \
   --header "X-Business-Id: cmpow3rq70009s601j07xgmf0"
 ```
 
-The `.gemini/settings.json` file at the repo root contains the demo tenant HMAC key (scoped to a single demo business) and the live MCP endpoint. The key authenticates against `tools.somosvelora.com/api/mcp` (51 tools across 14 packs — 50 exposed in production; `connect_tiendanube` is hidden until `TIENDANUBE_CLIENT_ID`/`TIENDANUBE_CLIENT_SECRET` env vars are configured — source: `src/lib/mcp/server.ts`). This key is HMAC-scoped to the public demo tenant only — it cannot read or act on any other business.
+The `.gemini/settings.json` file at the repo root ships pre-configured with the live MCP endpoint and the demo `X-Business-Id`, but **not** a real key — that field is a placeholder (`REPLACE_WITH_YOUR_X_API_KEY`), since this is a sanitized public snapshot and a real key is never committed. Request one at [somosvelora.com](https://somosvelora.com) and drop it in. Once set, the key authenticates against `tools.somosvelora.com/api/mcp` (51 tools across 14 packs — 50 exposed in production; `connect_tiendanube` is hidden until `TIENDANUBE_CLIENT_ID`/`TIENDANUBE_CLIENT_SECRET` env vars are configured — source: `src/lib/mcp/server.ts`). A demo key is HMAC-scoped to the public demo tenant only — it cannot read or act on any other business.
 
 ## Local Development
 
