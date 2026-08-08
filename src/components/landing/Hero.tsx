@@ -28,6 +28,10 @@ export type HeroCopy = {
   ctaMicroTrust?: string;
   /** Optional alt text for the app screenshot. Falls back to a sensible default. */
   imageAlt?: string;
+  /** Caption shown in the hero visual's placeholder box until a real capture
+   *  of the live widget exists (see HeroVisual.tsx). Falls back to the
+   *  Spanish default. */
+  visualPlaceholderCaption?: string;
 };
 
 export default function Hero({
@@ -122,7 +126,11 @@ export default function Hero({
 
         {/* App screenshot — "see Velora in use" above the fold */}
         <div className="md:justify-self-end">
-          <HeroVisual alt={copy.imageAlt ?? DEFAULT_IMAGE_ALT} screenshotSrc={HERO_SCREENSHOT_SRC} />
+          <HeroVisual
+            alt={copy.imageAlt ?? DEFAULT_IMAGE_ALT}
+            screenshotSrc={HERO_SCREENSHOT_SRC}
+            placeholderCaption={copy.visualPlaceholderCaption}
+          />
         </div>
       </div>
     </section>

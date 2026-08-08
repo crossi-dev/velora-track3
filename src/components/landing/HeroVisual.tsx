@@ -2,6 +2,9 @@
 
 import Image from "next/image";
 
+const DEFAULT_PLACEHOLDER_CAPTION =
+  'Captura real del widget “veamos mi negocio” — próximamente';
+
 /**
  * The hero visual — a laptop showing a browser tab open on claude.ai, with
  * Velora's "veamos mi negocio" widget (open_business_overview) rendered inside.
@@ -17,9 +20,11 @@ import Image from "next/image";
 export default function HeroVisual({
   alt,
   screenshotSrc,
+  placeholderCaption,
 }: {
   alt: string;
   screenshotSrc?: string;
+  placeholderCaption?: string;
 }) {
   return (
     <div className="relative mx-auto w-full max-w-[560px] md:mx-0">
@@ -74,7 +79,7 @@ export default function HeroVisual({
           ) : (
             <div className="m-4 flex h-[calc(100%-2rem)] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[color:var(--color-line)] px-6 text-center">
               <p className="m-0 text-[color:var(--color-ink-60)]" style={{ fontSize: "0.875rem" }}>
-                Captura real del widget &ldquo;veamos mi negocio&rdquo; — próximamente
+                {placeholderCaption ?? DEFAULT_PLACEHOLDER_CAPTION}
               </p>
             </div>
           )}

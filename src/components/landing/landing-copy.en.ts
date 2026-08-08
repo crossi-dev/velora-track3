@@ -24,6 +24,7 @@ export const defaultCopyEn: LandingCopy = {
     ctaLabel: "Start free with Google",
     ctaMicroTrust: "Free in beta · no card",
     imageAlt: "Velora in use: the owner asks about a product and sees the catalog in the chat",
+    visualPlaceholderCaption: 'Real capture of the “let’s see my business” widget — coming soon',
   },
   benefits: {
     label: "Capabilities",
@@ -171,7 +172,7 @@ export const defaultCopyEn: LandingCopy = {
       },
       {
         q: "How much does it cost?",
-        a: "Currently in private beta at no cost. Write to us to coordinate early access.",
+        a: "Still being decided. The private beta is free for as long as it lasts. Write to us to coordinate early access.",
       },
       {
         q: "How do I connect my providers?",
